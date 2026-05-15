@@ -1,7 +1,10 @@
+print("CONFIG FILE LOADED")
+print(__file__)
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = BASE_DIR / "data"
-APP_NAME = "Anspruchssystem"
-WINDOW_WIDTH = 1280
+DB_PATH = DATA_DIR / "system.db"
+
+WINDOW_WIDTH = 1200
 WINDOW_HEIGHT = 800
