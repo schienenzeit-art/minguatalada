@@ -1,0 +1,1 @@
+from domain.services.pruefung_service import EvaluationResult, PruefungService

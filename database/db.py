@@ -1,38 +1,637 @@
-import sqlite3
+﻿import sqlite3
 from pathlib import Path
+from datetime import datetime
 
 from app.config import DATA_DIR, DB_PATH
+from core.claim_status import ClaimStatus
+from services.password_service import PasswordService
+from domain.categories import CATEGORIES
 
 
 def ensure_data_dir() -> None:
-    print("CREATE DATA DIR:", DATA_DIR)
-
     Path(DATA_DIR).mkdir(parents=True, exist_ok=True)
 
-    print("DIR EXISTS:", DATA_DIR.exists())
+
+def get_connection() -> sqlite3.Connection:
+    connection = sqlite3.connect(DB_PATH)
+    connection.row_factory = sqlite3.Row
+    connection.execute("PRAGMA foreign_keys = ON")
+    return connection
 
 
 def initialize_database() -> None:
-    print("INIT DATABASE")
-
     ensure_data_dir()
 
-    print("DB PATH:", DB_PATH)
+    with get_connection() as connection:
+        connection.executescript(
+            """
+            CREATE TABLE IF NOT EXISTS locations (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL UNIQUE,
+                is_active INTEGER NOT NULL DEFAULT 1
+            );
 
-    connection = sqlite3.connect(DB_PATH)
+            CREATE TABLE IF NOT EXISTS roles (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL UNIQUE,
+                is_active INTEGER NOT NULL DEFAULT 1
+            );
 
-    print("CONNECTED")
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                full_name TEXT NOT NULL,
+                username TEXT NOT NULL UNIQUE,
+                password_hash TEXT NOT NULL,
+                role_id INTEGER NOT NULL,
+                location_id INTEGER,
+                is_active INTEGER NOT NULL DEFAULT 1,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (role_id) REFERENCES roles(id),
+                FOREIGN KEY (location_id) REFERENCES locations(id)
+            );
 
-    connection.close()
+            CREATE TABLE IF NOT EXISTS categories (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL UNIQUE
+            );
 
-    print("DONE")
+            CREATE TABLE IF NOT EXISTS settings (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                key TEXT NOT NULL UNIQUE,
+                value TEXT NOT NULL,
+                value_type TEXT NOT NULL,
+                category TEXT,
+                description TEXT,
+                editable_by_admin INTEGER NOT NULL DEFAULT 1,
+                updated_by INTEGER,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (updated_by) REFERENCES users(id) ON DELETE SET NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS persons (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                first_name TEXT NOT NULL,
+                last_name TEXT NOT NULL,
+                address TEXT NOT NULL,
+                postal_code TEXT NOT NULL,
+                city TEXT NOT NULL,
+                email TEXT,
+                category_id INTEGER,
+                location_id INTEGER,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (category_id) REFERENCES categories(id),
+                FOREIGN KEY (location_id) REFERENCES locations(id)
+            );
+
+            CREATE TABLE IF NOT EXISTS claims (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                case_number TEXT NOT NULL UNIQUE,
+                person_id INTEGER,
+                user_id INTEGER NOT NULL,
+                location_id INTEGER NOT NULL,
+                category_id INTEGER,
+                status TEXT NOT NULL,
+                description TEXT NOT NULL,
+                start_date TEXT,
+                end_date TEXT,
+                created_by INTEGER,
+                examiner_id INTEGER,
+                evaluation_date TEXT,
+                adult_count INTEGER DEFAULT 1,
+                child_count INTEGER DEFAULT 0,
+                disability_degree INTEGER,
+                evaluation_reason TEXT,
+                total_income REAL,
+                total_expenses REAL,
+                free_income REAL,
+                entitlement_limit REAL,
+                hardship_limit REAL,
+                evaluation_details TEXT,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (person_id) REFERENCES persons(id),
+                FOREIGN KEY (user_id) REFERENCES users(id),
+                FOREIGN KEY (location_id) REFERENCES locations(id),
+                FOREIGN KEY (category_id) REFERENCES categories(id),
+                FOREIGN KEY (created_by) REFERENCES users(id),
+                FOREIGN KEY (examiner_id) REFERENCES users(id)
+            );
+
+            CREATE TABLE IF NOT EXISTS incomes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                claim_id INTEGER NOT NULL,
+                type TEXT NOT NULL,
+                amount REAL NOT NULL,
+                note TEXT,
+                FOREIGN KEY (claim_id) REFERENCES claims(id) ON DELETE CASCADE
+            );
+
+            CREATE TABLE IF NOT EXISTS expenses (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                claim_id INTEGER NOT NULL,
+                type TEXT NOT NULL,
+                amount REAL NOT NULL,
+                has_proof INTEGER NOT NULL DEFAULT 0,
+                note TEXT,
+                FOREIGN KEY (claim_id) REFERENCES claims(id) ON DELETE CASCADE
+            );
+
+            CREATE TABLE IF NOT EXISTS cards (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                card_number TEXT NOT NULL UNIQUE,
+                claim_id INTEGER NOT NULL,
+                person_id INTEGER NOT NULL,
+                location_id INTEGER NOT NULL,
+                issue_date TEXT NOT NULL,
+                expiry_date TEXT NOT NULL,
+                status TEXT NOT NULL DEFAULT 'AKTIV',
+                note TEXT,
+                created_by INTEGER NOT NULL,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (claim_id) REFERENCES claims(id) ON DELETE CASCADE,
+                FOREIGN KEY (person_id) REFERENCES persons(id) ON DELETE CASCADE,
+                FOREIGN KEY (location_id) REFERENCES locations(id),
+                FOREIGN KEY (created_by) REFERENCES users(id)
+            );
+
+            CREATE TABLE IF NOT EXISTS tasks (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT NOT NULL,
+                description TEXT,
+                task_type TEXT,
+                status TEXT NOT NULL,
+                priority TEXT NOT NULL,
+                due_date TEXT,
+                assigned_user_id INTEGER,
+                location_id INTEGER,
+                source_type TEXT,
+                source_ref_type TEXT,
+                source_ref_id INTEGER,
+                source_description TEXT,
+                is_system_task INTEGER NOT NULL DEFAULT 0,
+                created_by INTEGER,
+                completed_at TEXT,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (assigned_user_id) REFERENCES users(id),
+                FOREIGN KEY (location_id) REFERENCES locations(id),
+                FOREIGN KEY (created_by) REFERENCES users(id)
+            );
+
+            CREATE TABLE IF NOT EXISTS audit_logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                user_id INTEGER,
+                action TEXT NOT NULL,
+                object_type TEXT NOT NULL,
+                object_id INTEGER,
+                details TEXT,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+            );
+            """
+        )
+
+        migrate_existing_claim_statuses(connection)
+
+        # Ensure optional columns exist for older DBs
+        try:
+            connection.execute("ALTER TABLE claims ADD COLUMN person_id INTEGER")
+        except Exception:
+            pass
+        try:
+            connection.execute("ALTER TABLE claims ADD COLUMN category_id INTEGER")
+        except Exception:
+            pass
+        try:
+            connection.execute("ALTER TABLE claims ADD COLUMN adult_count INTEGER DEFAULT 1")
+        except Exception:
+            pass
+        try:
+            connection.execute("ALTER TABLE claims ADD COLUMN child_count INTEGER DEFAULT 0")
+        except Exception:
+            pass
+        try:
+            connection.execute("ALTER TABLE claims ADD COLUMN disability_degree INTEGER")
+        except Exception:
+            pass
+        try:
+            connection.execute("ALTER TABLE claims ADD COLUMN evaluation_reason TEXT")
+        except Exception:
+            pass
+        try:
+            connection.execute("ALTER TABLE claims ADD COLUMN total_income REAL")
+        except Exception:
+            pass
+        try:
+            connection.execute("ALTER TABLE claims ADD COLUMN total_expenses REAL")
+        except Exception:
+            pass
+        try:
+            connection.execute("ALTER TABLE claims ADD COLUMN free_income REAL")
+        except Exception:
+            pass
+        try:
+            connection.execute("ALTER TABLE claims ADD COLUMN entitlement_limit REAL")
+        except Exception:
+            pass
+        try:
+            connection.execute("ALTER TABLE claims ADD COLUMN hardship_limit REAL")
+        except Exception:
+            pass
+        try:
+            connection.execute("ALTER TABLE claims ADD COLUMN evaluation_details TEXT")
+        except Exception:
+            pass
+        try:
+            connection.execute("ALTER TABLE claims ADD COLUMN examiner_id INTEGER")
+        except Exception:
+            pass
+        try:
+            connection.execute("ALTER TABLE claims ADD COLUMN evaluation_date TEXT")
+        except Exception:
+            pass
+        # Ensure case_number column exists (older DBs may not have it)
+        try:
+            connection.execute("ALTER TABLE claims ADD COLUMN case_number TEXT")
+        except Exception:
+            pass
+
+        seed_basic_data(connection)
+
+        # Assign case numbers to existing claims that don't have one
+        try:
+            rows = connection.execute("SELECT id, case_number FROM claims ORDER BY id").fetchall()
+            year = datetime.utcnow().year
+            for row in rows:
+                if not row["case_number"]:
+                    # find last existing sequence for this year
+                    last = connection.execute(
+                        "SELECT case_number FROM claims WHERE case_number LIKE ? ORDER BY case_number DESC LIMIT 1",
+                        (f"AS-{year}-%",),
+                    ).fetchone()
+
+                    if last and last["case_number"]:
+                        try:
+                            seq = int(last["case_number"].split("-")[-1]) + 1
+                        except Exception:
+                            seq = 1
+                    else:
+                        seq = 1
+
+                    case_number = f"AS-{year}-{seq:06d}"
+                    connection.execute(
+                        "UPDATE claims SET case_number = ? WHERE id = ?",
+                        (case_number, row["id"]),
+                    )
+            connection.commit()
+        except Exception:
+            # best effort; if this fails, leave existing rows unchanged
+            pass
+
+        def has_column(table_name: str, col: str) -> bool:
+            cols = connection.execute(f"PRAGMA table_info({table_name})").fetchall()
+            return any(c[1] == col for c in cols)
+
+        # Backwards compatibility: if an older table named 'claim' exists, ensure it has expected columns
+        try:
+            tbl = connection.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='claim' LIMIT 1"
+            ).fetchone()
+            if tbl:
+                # add missing columns to old `claim` table so code can work with both schemas
+                try:
+                    if not has_column('claim', 'person_id'):
+                        connection.execute("ALTER TABLE claim ADD COLUMN person_id INTEGER")
+                except Exception:
+                    pass
+                try:
+                    if not has_column('claim', 'category_id'):
+                        connection.execute("ALTER TABLE claim ADD COLUMN category_id INTEGER")
+                except Exception:
+                    pass
+                try:
+                    if not has_column('claim', 'case_number'):
+                        connection.execute("ALTER TABLE claim ADD COLUMN case_number TEXT")
+                except Exception:
+                    pass
+                try:
+                    if not has_column('claim', 'adult_count'):
+                        connection.execute("ALTER TABLE claim ADD COLUMN adult_count INTEGER DEFAULT 1")
+                except Exception:
+                    pass
+                try:
+                    if not has_column('claim', 'child_count'):
+                        connection.execute("ALTER TABLE claim ADD COLUMN child_count INTEGER DEFAULT 0")
+                except Exception:
+                    pass
+                try:
+                    if not has_column('claim', 'disability_degree'):
+                        connection.execute("ALTER TABLE claim ADD COLUMN disability_degree INTEGER")
+                except Exception:
+                    pass
+                try:
+                    if not has_column('claim', 'evaluation_reason'):
+                        connection.execute("ALTER TABLE claim ADD COLUMN evaluation_reason TEXT")
+                except Exception:
+                    pass
+                try:
+                    if not has_column('claim', 'total_income'):
+                        connection.execute("ALTER TABLE claim ADD COLUMN total_income REAL")
+                except Exception:
+                    pass
+                try:
+                    if not has_column('claim', 'total_expenses'):
+                        connection.execute("ALTER TABLE claim ADD COLUMN total_expenses REAL")
+                except Exception:
+                    pass
+                try:
+                    if not has_column('claim', 'free_income'):
+                        connection.execute("ALTER TABLE claim ADD COLUMN free_income REAL")
+                except Exception:
+                    pass
+                try:
+                    if not has_column('claim', 'entitlement_limit'):
+                        connection.execute("ALTER TABLE claim ADD COLUMN entitlement_limit REAL")
+                except Exception:
+                    pass
+                try:
+                    if not has_column('claim', 'hardship_limit'):
+                        connection.execute("ALTER TABLE claim ADD COLUMN hardship_limit REAL")
+                except Exception:
+                    pass
+                try:
+                    if not has_column('claim', 'evaluation_details'):
+                        connection.execute("ALTER TABLE claim ADD COLUMN evaluation_details TEXT")
+                except Exception:
+                    pass
+                try:
+                    if not has_column('claim', 'examiner_id'):
+                        connection.execute("ALTER TABLE claim ADD COLUMN examiner_id INTEGER")
+                except Exception:
+                    pass
+                try:
+                    if not has_column('claim', 'evaluation_date'):
+                        connection.execute("ALTER TABLE claim ADD COLUMN evaluation_date TEXT")
+                except Exception:
+                    pass
+                connection.commit()
+        except Exception:
+            pass
+
+        try:
+            if not has_column('locations', 'is_active'):
+                connection.execute("ALTER TABLE locations ADD COLUMN is_active INTEGER NOT NULL DEFAULT 1")
+        except Exception:
+            pass
+        try:
+            if not has_column('roles', 'is_active'):
+                connection.execute("ALTER TABLE roles ADD COLUMN is_active INTEGER NOT NULL DEFAULT 1")
+        except Exception:
+            pass
+
+
+def seed_basic_data(connection: sqlite3.Connection) -> None:
+    locations = [
+        ("Bludenz",),
+        ("Feldkirch",),
+        ("Dornbirn",),
+    ]
+
+    roles = [
+        ("Mitarbeiter",),
+        ("Standortleitung",),
+        ("Admin",),
+    ]
+
+    connection.executemany(
+        "INSERT OR IGNORE INTO locations (name) VALUES (?)",
+        locations,
+    )
+
+    connection.executemany(
+        "INSERT OR IGNORE INTO roles (name) VALUES (?)",
+        roles,
+    )
+
+    # seed categories from domain
+    categories = [(name,) for name in CATEGORIES]
+    connection.executemany(
+        "INSERT OR IGNORE INTO categories (name) VALUES (?)",
+        categories,
+    )
+
+    seed_settings(connection)
+
+    admin_password_hash = PasswordService.hash_password("admin123")
+    employee_password_hash = PasswordService.hash_password("test123")
+
+    connection.execute(
+        """
+        INSERT OR IGNORE INTO users (
+            full_name,
+            username,
+            password_hash,
+            role_id,
+            location_id,
+            is_active
+        ) VALUES (
+            ?,
+            ?,
+            ?,
+            (SELECT id FROM roles WHERE name = ?),
+            (SELECT id FROM locations WHERE name = ?),
+            1
+        )
+        """,
+        (
+            "System Administrator",
+            "admin",
+            admin_password_hash,
+            "Admin",
+            "Bludenz",
+        ),
+    )
+
+    connection.execute(
+        """
+        INSERT OR IGNORE INTO users (
+            full_name,
+            username,
+            password_hash,
+            role_id,
+            location_id,
+            is_active
+        ) VALUES (
+            ?,
+            ?,
+            ?,
+            (SELECT id FROM roles WHERE name = ?),
+            (SELECT id FROM locations WHERE name = ?),
+            1
+        )
+        """,
+        (
+            "Max Mitarbeiter",
+            "mitarbeiter1",
+            employee_password_hash,
+            "Mitarbeiter",
+            "Feldkirch",
+        ),
+    )
+
+    connection.commit()
+    seed_claims(connection)
+
+
+def seed_settings(connection: sqlite3.Connection) -> None:
+    defaults = [
+        (
+            "BASE_LIMIT",
+            "820.0",
+            "number",
+            "Anspruchsgrenzen",
+            "Basisgrenze pro erwachsene Person.",
+            1,
+        ),
+        (
+            "ADDITIONAL_ADULT_LIMIT",
+            "390.0",
+            "number",
+            "Anspruchsgrenzen",
+            "Zuschlag für weitere erwachsene Haushaltsmitglieder.",
+            1,
+        ),
+        (
+            "CHILD_LIMIT",
+            "185.0",
+            "number",
+            "Anspruchsgrenzen",
+            "Zuschlag für Kinder.",
+            1,
+        ),
+        (
+            "HARDSHIP_FACTOR",
+            "1.1",
+            "number",
+            "Härtefall",
+            "Multiplikator zur Berechnung der Härtefallgrenze.",
+            1,
+        ),
+    ]
+
+    connection.executemany(
+        "INSERT OR IGNORE INTO settings (key, value, value_type, category, description, editable_by_admin) VALUES (?, ?, ?, ?, ?, ?)",
+        defaults,
+    )
+    connection.commit()
+
+
+def seed_claims(connection: sqlite3.Connection) -> None:
+    # Simple seed claims to allow UI to show examples
+    example_claims = [
+        {
+            "username": "mitarbeiter1",
+            "location": "Feldkirch",
+            "status": ClaimStatus.IN_PRUEFUNG,
+            "description": "Erstmalige Beantragung von Unterstützung im Mai 2026.",
+            "start_date": "2026-05-01",
+            "end_date": "2026-05-31",
+            "created_by": "mitarbeiter1",
+        }
+    ]
+
+    for claim in example_claims:
+        existing = connection.execute(
+            "SELECT 1 FROM claims WHERE description = ? LIMIT 1",
+            (claim["description"],),
+        ).fetchone()
+
+        if existing:
+            continue
+
+        # generate a simple case number
+        year = datetime.utcnow().year
+        last = connection.execute(
+            "SELECT case_number FROM claims WHERE case_number LIKE ? ORDER BY case_number DESC LIMIT 1",
+            (f"AS-{year}-%",),
+        ).fetchone()
+
+        if last:
+            try:
+                seq = int(last["case_number"].split("-")[-1]) + 1
+            except Exception:
+                seq = 1
+        else:
+            seq = 1
+
+        case_number = f"AS-{year}-{seq:06d}"
+
+        connection.execute(
+            """
+            INSERT INTO claims (
+                case_number,
+                person_id,
+                user_id,
+                location_id,
+                category_id,
+                status,
+                description,
+                start_date,
+                end_date,
+                created_by
+            ) VALUES (
+                ?,
+                NULL,
+                (SELECT id FROM users WHERE username = ?),
+                (SELECT id FROM locations WHERE name = ?),
+                NULL,
+                ?,
+                ?,
+                ?,
+                ?,
+                (SELECT id FROM users WHERE username = ?)
+            )
+            """,
+            (
+                case_number,
+                claim["username"],
+                claim["location"],
+                claim["status"],
+                claim["description"],
+                claim["start_date"],
+                claim["end_date"],
+                claim["created_by"],
+            ),
+        )
+
+    connection.commit()
+
+
+def migrate_existing_claim_statuses(connection: sqlite3.Connection) -> None:
+    mapping = {
+        "Entwurf": ClaimStatus.IN_PRUEFUNG,
+        "Eingereicht": ClaimStatus.IN_PRUEFUNG,
+        "In Prüfung": ClaimStatus.IN_PRUEFUNG,
+        "Genehmigt": ClaimStatus.ANSPRUCHSBERECHTIGT,
+        "Abgelehnt": ClaimStatus.ABGELEHNT,
+        "Erledigt": ClaimStatus.ARCHIVIERT,
+    }
+
+    for old_status, new_status in mapping.items():
+        connection.execute(
+            "UPDATE claims SET status = ? WHERE status = ?",
+            (new_status, old_status),
+        )
+    connection.commit()
 
 
 def is_database_ready() -> bool:
     try:
         ensure_data_dir()
-        connection = sqlite3.connect(DB_PATH)
-        connection.close()
+        with get_connection() as connection:
+            connection.execute("SELECT 1")
         return True
     except sqlite3.Error:
         return False
