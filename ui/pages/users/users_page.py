@@ -1,5 +1,6 @@
 from PyQt6.QtCore import Qt
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QTableWidget, QTableWidgetItem, QHeaderView, QScrollArea, QMessageBox
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QTableWidgetItem, QHeaderView, QScrollArea, QMessageBox
+from ui.components.table_widget import TableWidget
 
 from services.user_service import UserService
 from ui.components.page_header import PageHeader
@@ -31,6 +32,7 @@ class UsersPage(QWidget):
         toolbar = QHBoxLayout()
         toolbar.setSpacing(12)
         self.search_input = QLineEdit()
+        self.search_input.setObjectName("searchInput")
         self.search_input.setPlaceholderText("Benutzername, Rolle oder Standort suchen")
         self.search_input.setMinimumWidth(320)
         self.search_input.returnPressed.connect(self.load_users)
@@ -40,12 +42,12 @@ class UsersPage(QWidget):
         toolbar.addWidget(self.filter_button)
         layout.addLayout(toolbar)
 
-        self.table = QTableWidget(0, 5)
+        self.table = TableWidget(5)
         self.table.setHorizontalHeaderLabels(["Name", "Benutzername", "Rolle", "Standort", "Status"])
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.table.verticalHeader().hide()
-        self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
-        self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        self.table.setEditTriggers(TableWidget.EditTrigger.NoEditTriggers)
+        self.table.setSelectionBehavior(TableWidget.SelectionBehavior.SelectRows)
         self.table.setObjectName("dataTable")
         self.table.cellDoubleClicked.connect(self.on_user_row_double_clicked)
 

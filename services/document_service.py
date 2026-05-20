@@ -84,6 +84,9 @@ class DocumentService:
     def get_document_by_id(self, document_id: int) -> Optional[Dict[str, object]]:
         return self.repository.get_document_by_id(document_id)
 
+    def update_document_title(self, document_id: int, title: str) -> bool:
+        return self.repository.update_document_title(document_id, title)
+
     def create_document(
         self,
         source_file_path: str,

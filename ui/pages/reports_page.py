@@ -6,10 +6,10 @@ from PyQt6.QtWidgets import (
     QLabel,
     QComboBox,
     QPushButton,
-    QTableWidget,
     QTableWidgetItem,
     QHeaderView,
 )
+from ui.components.table_widget import TableWidget
 
 from core.session import Session
 from services.report_service import ReportService
@@ -66,17 +66,17 @@ class ReportsPage(QWidget):
         stats_row.addStretch()
         layout.addLayout(stats_row)
 
-        self.claim_table = QTableWidget(0, 2)
+        self.claim_table = TableWidget(2)
         self.claim_table.setHorizontalHeaderLabels(["Anspruchsstatus", "Anzahl"])
         self.claim_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
-        self.claim_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
-        self.claim_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        self.claim_table.setEditTriggers(TableWidget.EditTrigger.NoEditTriggers)
+        self.claim_table.setSelectionBehavior(TableWidget.SelectionBehavior.SelectRows)
 
-        self.card_table = QTableWidget(0, 2)
+        self.card_table = TableWidget(2)
         self.card_table.setHorizontalHeaderLabels(["Kartenstatus", "Anzahl"])
         self.card_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
-        self.card_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
-        self.card_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        self.card_table.setEditTriggers(TableWidget.EditTrigger.NoEditTriggers)
+        self.card_table.setSelectionBehavior(TableWidget.SelectionBehavior.SelectRows)
 
         layout.addWidget(QLabel("Anspruchsübersicht nach Status"))
         layout.addWidget(self.claim_table)

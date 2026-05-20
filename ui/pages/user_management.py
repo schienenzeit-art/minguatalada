@@ -6,11 +6,11 @@ from PyQt6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QPushButton,
-    QTableWidget,
     QTableWidgetItem,
     QMessageBox,
     QHeaderView,
 )
+from ui.components.table_widget import TableWidget
 
 from services.user_service import UserService
 from ui.dialogs.user_dialog import AddUserDialog
@@ -44,7 +44,7 @@ class UserManagementPage(QWidget):
         button_layout.addWidget(self.refresh_button)
         button_layout.addWidget(self.toggle_active_button)
 
-        self.table = QTableWidget(0, 6)
+        self.table = TableWidget(6)
         self.table.setHorizontalHeaderLabels([
             "ID",
             "Name",
@@ -54,8 +54,8 @@ class UserManagementPage(QWidget):
             "Aktiv",
         ])
         self.table.hideColumn(0)
-        self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
-        self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+        self.table.setSelectionBehavior(TableWidget.SelectionBehavior.SelectRows)
+        self.table.setEditTriggers(TableWidget.EditTrigger.NoEditTriggers)
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
 
         layout.addWidget(header_label)

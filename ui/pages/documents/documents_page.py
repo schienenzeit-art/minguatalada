@@ -8,12 +8,12 @@ from PyQt6.QtWidgets import (
     QLineEdit,
     QComboBox,
     QPushButton,
-    QTableWidget,
     QTableWidgetItem,
     QHeaderView,
     QMessageBox,
     QDialog,
 )
+from ui.components.table_widget import TableWidget
 
 from core.document_status import DocumentStatus
 from services.document_service import DocumentService
@@ -54,6 +54,7 @@ class DocumentsPage(QWidget):
         filter_layout_top.setSpacing(12)
 
         self.search_input = QLineEdit()
+        self.search_input.setObjectName("searchInput")
         self.search_input.setPlaceholderText("Suche nach Titel, Dateiname, Bezug oder Typ")
         self.search_input.textChanged.connect(self.refresh_documents)
 
@@ -112,7 +113,7 @@ class DocumentsPage(QWidget):
         filter_layout_bottom.addWidget(self.date_to_input)
         filter_layout_bottom.addWidget(self.refresh_button)
 
-        self.table = QTableWidget(0, 10)
+        self.table = TableWidget(10)
         self.table.setHorizontalHeaderLabels([
             "Titel",
             "Typ",
@@ -125,8 +126,8 @@ class DocumentsPage(QWidget):
             "Ersteller",
             "Aktion",
         ])
-        self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
-        self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+        self.table.setSelectionBehavior(TableWidget.SelectionBehavior.SelectRows)
+        self.table.setEditTriggers(TableWidget.EditTrigger.NoEditTriggers)
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.table.cellDoubleClicked.connect(self.on_row_double_clicked)
 

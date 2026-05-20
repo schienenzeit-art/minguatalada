@@ -4,7 +4,6 @@ from PyQt6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QPushButton,
-    QTableWidget,
     QTableWidgetItem,
     QComboBox,
     QLineEdit,
@@ -12,6 +11,7 @@ from PyQt6.QtWidgets import (
     QFormLayout,
     QMessageBox,
 )
+from ui.components.table_widget import TableWidget
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QColor
 
@@ -93,7 +93,7 @@ class CardsPage(QWidget):
         layout.addLayout(buttons_layout)
 
         # Tabelle
-        self.table = QTableWidget()
+        self.table = TableWidget(7)
         self.table.setColumnCount(7)
         self.table.setHorizontalHeaderLabels([
             "Kartennummer",
@@ -111,8 +111,8 @@ class CardsPage(QWidget):
         self.table.setColumnWidth(4, 110)
         self.table.setColumnWidth(5, 110)
         self.table.setColumnWidth(6, 120)
-        self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
-        self.table.setSelectionMode(QTableWidget.SelectionMode.SingleSelection)
+        self.table.setSelectionBehavior(TableWidget.SelectionBehavior.SelectRows)
+        self.table.setSelectionMode(TableWidget.SelectionMode.SingleSelection)
         self.table.itemDoubleClicked.connect(self.on_card_double_clicked)
 
         layout.addWidget(self.table)

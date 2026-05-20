@@ -6,11 +6,11 @@ from PyQt6.QtWidgets import (
     QHBoxLayout,
     QComboBox,
     QPushButton,
-    QTableWidget,
     QTableWidgetItem,
     QHeaderView,
     QLineEdit,
 )
+from ui.components.table_widget import TableWidget
 
 from core.session import Session
 from services.case_service import CaseService
@@ -77,7 +77,7 @@ class ClaimsPage(QWidget):
         self.create_button.clicked.connect(self.open_create_dialog)
         filter_layout.addWidget(self.create_button)
 
-        self.table = QTableWidget(0, 8)
+        self.table = TableWidget(8)
         self.table.setHorizontalHeaderLabels([
             "ID",
             "Fallnummer",
@@ -88,8 +88,8 @@ class ClaimsPage(QWidget):
             "Zeitraum",
             "Erstellt",
         ])
-        self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
-        self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+        self.table.setSelectionBehavior(TableWidget.SelectionBehavior.SelectRows)
+        self.table.setEditTriggers(TableWidget.EditTrigger.NoEditTriggers)
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.table.hideColumn(0)
         self.table.cellDoubleClicked.connect(self.on_table_double_clicked)

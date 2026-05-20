@@ -9,11 +9,11 @@ from PyQt6.QtWidgets import (
     QComboBox,
     QCheckBox,
     QPushButton,
-    QTableWidget,
     QTableWidgetItem,
     QHeaderView,
     QMessageBox,
 )
+from ui.components.table_widget import TableWidget
 
 from core.session import Session
 from core.task_priority import TaskPriority
@@ -63,6 +63,7 @@ class TasksPage(QWidget):
         filter_layout.setSpacing(12)
 
         self.search_input = QLineEdit()
+        self.search_input.setObjectName("searchInput")
         self.search_input.setPlaceholderText("Suche nach Betreff, Notiz oder Quelle")
         self.search_input.textChanged.connect(self.refresh_tasks)
 
@@ -126,7 +127,8 @@ class TasksPage(QWidget):
         filter_layout.addWidget(self.mine_only_checkbox)
         layout.addLayout(filter_layout)
 
-        self.table = QTableWidget(0, 10)
+        self.table = TableWidget(9)
+        self.table.setObjectName("dataTable")
         self.table.setHorizontalHeaderLabels([
             "Status",
             "Betreff",
@@ -137,10 +139,9 @@ class TasksPage(QWidget):
             "Standort",
             "Quelle",
             "Systemaufgabe",
-            "Aktion",
         ])
-        self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
-        self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+        self.table.setSelectionBehavior(TableWidget.SelectionBehavior.SelectRows)
+        self.table.setEditTriggers(TableWidget.EditTrigger.NoEditTriggers)
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.table.cellDoubleClicked.connect(self.on_row_double_clicked)
         layout.addWidget(self.table)
@@ -208,22 +209,6 @@ class TasksPage(QWidget):
             source_text = task.get("source_description") or task.get("source_ref_type", "-")
             self.table.setItem(row_index, 7, QTableWidgetItem(source_text))
             self.table.setItem(row_index, 8, QTableWidgetItem("Ja" if task.get("is_system_task") else "Nein"))
-
-            action_button = QPushButton("Öffnen")
-            action_button.clicked.connect(lambda _, t=task: self.open_task_source(t))
-            if not task.get("is_system_task") and task.get("status") != TaskStatus.ERLEDIGT:
-                complete_button = QPushButton("Erledigen")
-                complete_button.clicked.connect(lambda _, t=task: self.complete_task(t))
-                action_widget = QWidget()
-                action_layout = QHBoxLayout()
-                action_layout.setContentsMargins(0, 0, 0, 0)
-                action_layout.setSpacing(6)
-                action_layout.addWidget(action_button)
-                action_layout.addWidget(complete_button)
-                action_widget.setLayout(action_layout)
-                self.table.setCellWidget(row_index, 9, action_widget)
-            else:
-                self.table.setCellWidget(row_index, 9, action_button)
 
         self.complete_button.setEnabled(False)
 

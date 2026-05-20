@@ -26,9 +26,26 @@ QLineEdit, QComboBox, QTextEdit, QPlainTextEdit, QDateEdit, QSpinBox, QDoubleSpi
     color: #37352f;
 }
 
+QLineEdit#searchInput, QLineEdit#loginInput, QLineEdit#filterInput, QComboBox#filterCombo {
+    min-height: 44px;
+}
+
 QLineEdit:focus, QComboBox:focus, QTextEdit:focus, QPlainTextEdit:focus, QDateEdit:focus, QSpinBox:focus, QDoubleSpinBox:focus {
     border: 1px solid #2383e2;
     outline: none;
+}
+
+QPushButton#actionButton {
+    background-color: #ffffff;
+    color: #37352f;
+    border: 1px solid #d9d9d8;
+    border-radius: 12px;
+    min-height: 42px;
+    padding: 10px 16px;
+}
+
+QPushButton#actionButton:hover {
+    background-color: #f3f5f8;
 }
 
 QPushButton {

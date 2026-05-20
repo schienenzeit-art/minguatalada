@@ -90,6 +90,15 @@ class DocumentRepository:
             ).fetchone()
         return dict(row) if row else None
 
+    def update_document_title(self, document_id: int, title: str) -> bool:
+        with get_connection() as connection:
+            cursor = connection.execute(
+                "UPDATE documents SET title = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                (title.strip(), document_id),
+            )
+            connection.commit()
+            return cursor.rowcount > 0
+
     def list_documents(
         self,
         search_text: str | None = None,

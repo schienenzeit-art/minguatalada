@@ -6,12 +6,12 @@ from PyQt6.QtWidgets import (
     QHBoxLayout,
     QComboBox,
     QPushButton,
-    QTableWidget,
     QTableWidgetItem,
     QHeaderView,
     QInputDialog,
     QMessageBox,
 )
+from ui.components.table_widget import TableWidget
 
 from core.session import Session
 from services.location_service import LocationService
@@ -51,7 +51,7 @@ class LocationPage(QWidget):
         control_layout.addWidget(self.location_select)
         control_layout.addWidget(self.refresh_button)
 
-        self.table = QTableWidget(0, 5)
+        self.table = TableWidget(5)
         self.table.setHorizontalHeaderLabels([
             "Name",
             "Benutzername",
@@ -59,15 +59,15 @@ class LocationPage(QWidget):
             "Standort",
             "Aktiv",
         ])
-        self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
-        self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+        self.table.setSelectionBehavior(TableWidget.SelectionBehavior.SelectRows)
+        self.table.setEditTriggers(TableWidget.EditTrigger.NoEditTriggers)
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
 
-        self.location_table = QTableWidget(0, 3)
+        self.location_table = TableWidget(3)
         self.location_table.setHorizontalHeaderLabels(["ID", "Standort", "Aktiv"])
         self.location_table.hideColumn(0)
-        self.location_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
-        self.location_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+        self.location_table.setSelectionBehavior(TableWidget.SelectionBehavior.SelectRows)
+        self.location_table.setEditTriggers(TableWidget.EditTrigger.NoEditTriggers)
         self.location_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
 
         self.add_location_button = QPushButton("Neuen Standort")

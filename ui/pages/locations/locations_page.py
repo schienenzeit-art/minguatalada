@@ -1,5 +1,6 @@
 from PyQt6.QtCore import Qt
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QTableWidget, QTableWidgetItem, QHeaderView, QScrollArea, QInputDialog, QMessageBox
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QTableWidgetItem, QHeaderView, QScrollArea, QInputDialog, QMessageBox
+from ui.components.table_widget import TableWidget
 
 from services.location_service import LocationService
 from services.user_service import UserService
@@ -32,6 +33,7 @@ class LocationsPage(QWidget):
         toolbar = QHBoxLayout()
         toolbar.setSpacing(12)
         self.search_input = QLineEdit()
+        self.search_input.setObjectName("searchInput")
         self.search_input.setPlaceholderText("Standort suchen")
         self.search_input.setMinimumWidth(320)
         self.search_input.returnPressed.connect(self.load_locations)
@@ -44,12 +46,12 @@ class LocationsPage(QWidget):
         toolbar.addWidget(self.toggle_active_button)
         layout.addLayout(toolbar)
 
-        self.table = QTableWidget(0, 2)
+        self.table = TableWidget(2)
         self.table.setHorizontalHeaderLabels(["Standort", "Status"])
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.table.verticalHeader().hide()
-        self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
-        self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        self.table.setEditTriggers(TableWidget.EditTrigger.NoEditTriggers)
+        self.table.setSelectionBehavior(TableWidget.SelectionBehavior.SelectRows)
         self.table.setObjectName("dataTable")
         self.table.cellDoubleClicked.connect(self.on_location_row_double_clicked)
 

@@ -3,7 +3,6 @@ from PyQt6.QtWidgets import (
     QVBoxLayout,
     QHBoxLayout,
     QGridLayout,
-    QTableWidget,
     QTableWidgetItem,
     QHeaderView,
     QLabel,
@@ -18,6 +17,8 @@ from PyQt6.QtGui import QBrush, QColor, QFont
 
 from services.dashboard_service import DashboardService
 from ui.components.page_header import PageHeader
+from ui.components.table_widget import TableWidget
+from core.claim_status import ClaimStatus
 
 
 class ClickableCard(QFrame):
@@ -149,21 +150,12 @@ class DashboardPage(QWidget):
         card_layout.addWidget(self.build_table())
         return card
 
-    def build_table(self) -> QTableWidget:
-        self.table = QTableWidget(5, 5)
+    def build_table(self) -> TableWidget:
+        self.table = TableWidget(5)
         self.table.setHorizontalHeaderLabels([
             "Fallnummer", "Antragsteller", "Standort", "Status", "Datum"
         ])
-        self.table.verticalHeader().setVisible(False)
-        self.table.setShowGrid(False)
-        self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
-        self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
-        self.table.setFocusPolicy(Qt.FocusPolicy.NoFocus)
-        self.table.setWordWrap(False)
-        self.table.setCornerButtonEnabled(False)
         self.table.setSortingEnabled(False)
-        self.table.setAlternatingRowColors(False)
-        self.table.horizontalHeader().setStretchLastSection(False)
         self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
         self.table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
         self.table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
@@ -172,7 +164,6 @@ class DashboardPage(QWidget):
         self.table.horizontalHeader().setMinimumSectionSize(120)
         self.table.horizontalHeader().resizeSection(3, 200)
         self.table.cellClicked.connect(self.on_table_cell_clicked)
-        self.table.verticalHeader().setDefaultSectionSize(62)
         return self.table
 
     def showEvent(self, event):
@@ -246,28 +237,31 @@ class DashboardPage(QWidget):
         return card
 
     def _refresh_table_rows(self):
-        sample_rows = [
-            ("A-2026-001", "Anna Meier", "Bern-Mitte", "BEREIT ZUR PRÜFUNG", "20.05.2026"),
-            ("A-2026-002", "Luca Huber", "Wien", "UNTERLAGEN FEHLEN", "19.05.2026"),
-            ("A-2026-003", "Mila Schneider", "Bern-Mitte", "IN BEARBEITUNG", "18.05.2026"),
-            ("A-2026-004", "Jonas Keller", "Zürich", "BERECHTIGT", "17.05.2026"),
-            ("A-2026-005", "Lea Baumann", "Wien", "ABGELEHNT", "16.05.2026"),
-        ]
+        recent_claims = self.dashboard_service.get_recent_claims(limit=5)
+        self.table.setRowCount(len(recent_claims))
 
-        self.table.setRowCount(len(sample_rows))
-        for row_index, (case, applicant, location, status, date_text) in enumerate(sample_rows):
+        for row_index, claim in enumerate(recent_claims):
+            case = claim.get("case_number") or "-"
+            applicant = claim.get("person_display_name") or claim.get("user_name") or "-"
+            location = claim.get("location_name") or "-"
+            raw_status = claim.get("status") or "-"
+            status = ClaimStatus.get_display(raw_status)
+            date_text = claim.get("created_at")[:10] if claim.get("created_at") else "-"
+
             self.table.setItem(row_index, 0, self._create_clickable_item(case))
             self.table.setItem(row_index, 1, self._create_clickable_item(applicant))
             self.table.setItem(row_index, 2, QTableWidgetItem(location))
             self.table.setItem(row_index, 4, QTableWidgetItem(date_text))
 
             status_label = QLabel(status)
-            if status == "BERECHTIGT":
+            if raw_status in ("ANSPRUCHSBERECHTIGT", "HAERTEFALL"):
                 status_label.setObjectName("BadgeSuccess")
-            elif status == "ABGELEHNT":
+            elif raw_status == "ABGELEHNT":
                 status_label.setObjectName("BadgeDanger")
-            else:
+            elif raw_status == "ABGELAUFEN":
                 status_label.setObjectName("BadgeWarning")
+            else:
+                status_label.setObjectName("BadgeSecondary")
             status_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             self.table.setCellWidget(row_index, 3, status_label)
             self.table.setRowHeight(row_index, 64)

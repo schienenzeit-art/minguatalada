@@ -5,14 +5,15 @@ from PyQt6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QPushButton,
-    QTableWidget,
     QTableWidgetItem,
     QHeaderView,
     QMessageBox,
     QInputDialog,
 )
+from ui.components.table_widget import TableWidget
 
 from services.role_service import RoleService
+from ui.components.page_header import PageHeader
 
 
 class RoleManagementPage(QWidget):
@@ -24,8 +25,14 @@ class RoleManagementPage(QWidget):
 
     def setup_ui(self):
         layout = QVBoxLayout()
-        header_label = QLabel("Rollenverwaltung")
-        header_label.setStyleSheet("font-size: 20px; font-weight: bold;")
+
+        header = PageHeader(
+            title="Rollenverwaltung",
+            subtitle="Verwalten Sie Rollen und Zugriffsbeschränkungen.",
+            action_text="Neue Rolle",
+            action_callback=self.on_add_role,
+        )
+        layout.addWidget(header)
 
         button_layout = QHBoxLayout()
         self.add_button = QPushButton("Neue Rolle")
@@ -43,11 +50,11 @@ class RoleManagementPage(QWidget):
         button_layout.addWidget(self.toggle_button)
         button_layout.addWidget(self.refresh_button)
 
-        self.table = QTableWidget(0, 3)
+        self.table = TableWidget(3)
         self.table.setHorizontalHeaderLabels(["ID", "Name", "Aktiv"])
         self.table.hideColumn(0)
-        self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
-        self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+        self.table.setSelectionBehavior(TableWidget.SelectionBehavior.SelectRows)
+        self.table.setEditTriggers(TableWidget.EditTrigger.NoEditTriggers)
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
 
         layout.addWidget(header_label)

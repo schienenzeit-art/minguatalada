@@ -74,6 +74,10 @@ class DashboardService:
             },
         ]
 
+    def get_recent_claims(self, status: str | None = None, limit: int = 5) -> list[dict]:
+        claims = self.claim_service.list_claims(status=status)
+        return claims[:limit]
+
     def get_summary_items(self) -> List[Dict[str, object]]:
         return [
             {

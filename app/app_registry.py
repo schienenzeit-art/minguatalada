@@ -35,6 +35,12 @@ class AppRegistry:
             page_key="documents",
         ),
         AppMetadata(
+            id="archiv",
+            title="Archiv",
+            description="Archivierte Dokumente und ältere Belege",
+            page_key="archive",
+        ),
+        AppMetadata(
             id="reporting",
             title="Reporting",
             description="Kennzahlen, Auswertungen und Berichte",

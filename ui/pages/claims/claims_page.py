@@ -1,5 +1,6 @@
 from PyQt6.QtCore import Qt
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QTableWidget, QTableWidgetItem, QHeaderView, QScrollArea, QMessageBox
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QTableWidgetItem, QHeaderView, QScrollArea, QMessageBox
+from ui.components.table_widget import TableWidget
 
 from services.card_service import CardService
 from services.case_service import CaseService
@@ -50,12 +51,12 @@ class ClaimsPage(QWidget):
 
         layout.addLayout(filter_row)
 
-        self.table = QTableWidget(0, 6)
+        self.table = TableWidget(6)
         self.table.setHorizontalHeaderLabels(["Antragsnummer", "Person", "Status", "Standort", "Bearbeiter", "Datum"])
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.table.verticalHeader().hide()
-        self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
-        self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        self.table.setEditTriggers(TableWidget.EditTrigger.NoEditTriggers)
+        self.table.setSelectionBehavior(TableWidget.SelectionBehavior.SelectRows)
         self.table.setObjectName("dataTable")
         self.table.cellDoubleClicked.connect(self.on_claim_row_activated)
 

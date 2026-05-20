@@ -20,6 +20,15 @@ class ClaimStatus:
         ARCHIVIERT,
     ]
 
+    DISPLAY_NAMES: ClassVar[Dict[str, str]] = {
+        IN_PRUEFUNG: "In Prüfung",
+        ANSPRUCHSBERECHTIGT: "anspruchsberechtigt",
+        HAERTEFALL: "Härtefall",
+        ABGELEHNT: "abgelehnt",
+        ABGELAUFEN: "abgelaufen",
+        ARCHIVIERT: "archiviert",
+    }
+
     ROLE_TRANSITIONS: ClassVar[Dict[str, Dict[str, List[str]]]] = {
         "Mitarbeiter": {
             IN_PRUEFUNG: [ANSPRUCHSBERECHTIGT, HAERTEFALL, ABGELEHNT],
@@ -43,6 +52,10 @@ class ClaimStatus:
     @classmethod
     def is_valid_status(cls, status: str) -> bool:
         return status in cls.ALL_STATUSES
+
+    @classmethod
+    def get_display(cls, status: str) -> str:
+        return cls.DISPLAY_NAMES.get(status, status)
 
     @classmethod
     def get_allowed_transitions(cls, current_status: str, role_name: str) -> List[str]:

@@ -7,11 +7,11 @@ from PyQt6.QtWidgets import (
     QGroupBox,
     QFormLayout,
     QScrollArea,
-    QTableWidget,
     QTableWidgetItem,
     QTextEdit,
     QMessageBox,
 )
+from ui.components.table_widget import TableWidget
 from PyQt6.QtCore import Qt
 
 from core.session import Session
@@ -50,16 +50,16 @@ class SettingsPage(QWidget):
         info_card.setLayout(settings_layout)
         layout.addWidget(info_card)
 
-        self.settings_table = QTableWidget()
+        self.settings_table = TableWidget(5)
         self.settings_table.setColumnCount(5)
         self.settings_table.setHorizontalHeaderLabels(
             ["Schlüssel", "Wert", "Typ", "Kategorie", "Beschreibung"]
         )
         self.settings_table.horizontalHeader().setStretchLastSection(True)
         self.settings_table.setEditTriggers(
-            QTableWidget.EditTrigger.DoubleClicked
+            TableWidget.EditTrigger.DoubleClicked
             if self.is_admin
-            else QTableWidget.EditTrigger.NoEditTriggers
+            else TableWidget.EditTrigger.NoEditTriggers
         )
         layout.addWidget(self.settings_table)
 

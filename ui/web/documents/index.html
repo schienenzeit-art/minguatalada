@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dokumente</title>
+    <script type="module" src="https://unpkg.com/@vscode-elements/elements?module"></script>
+    <script src="qrc:///qtwebchannel/qwebchannel.js"></script>
+    <link rel="stylesheet" href="documents.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <header class="hero">
+        <div>
+          <h1 id="pageTitle">Dokumente</h1>
+          <p id="pageDescription">Personenzentrierte Dossieransicht mit Suche, Status und editierbaren Titeln.</p>
+        </div>
+        <vscode-text-field id="search" placeholder="Suche nach Name, Fall-ID oder Dokument" size="medium"></vscode-text-field>
+      </header>
+
+      <section class="filters">
+        <vscode-select id="statusFilter" label="Status">
+          <vscode-option value="">Alle Status</vscode-option>
+          <vscode-option value="VORHANDEN">Vorhanden</vscode-option>
+          <vscode-option value="GEPRUEFT">Geprüft</vscode-option>
+          <vscode-option value="FEHLT">Fehlt</vscode-option>
+          <vscode-option value="ARCHIVIERT">Archiviert</vscode-option>
+          <vscode-option value="UNGUELTIG">Ungültig</vscode-option>
+        </vscode-select>
+        <vscode-select id="locationFilter" label="Standort">
+          <vscode-option value="-1">Alle Standorte</vscode-option>
+        </vscode-select>
+        <vscode-button id="reload" appearance="secondary">Aktualisieren</vscode-button>
+      </section>
+
+      <section id="groups" class="groups"></section>
+    </div>
+
+    <template id="person-group-template">
+      <details class="group">
+        <summary>
+          <div>
+            <span class="group-title"></span>
+            <span class="group-meta"></span>
+          </div>
+          <vscode-badge class="group-count"></vscode-badge>
+        </summary>
+        <div class="documents"></div>
+      </details>
+    </template>
+
+    <template id="document-row-template">
+      <vscode-card class="document-row" elevation="1">
+        <div class="document-main">
+          <div class="document-title"></div>
+          <div class="document-reference"></div>
+        </div>
+        <div class="document-actions">
+          <vscode-badge class="document-status"></vscode-badge>
+          <vscode-button appearance="secondary" class="rename-button">Umbenennen</vscode-button>
+        </div>
+      </vscode-card>
+    </template>
+
+    <script type="module" src="documents.js"></script>
+  </body>
+</html>
