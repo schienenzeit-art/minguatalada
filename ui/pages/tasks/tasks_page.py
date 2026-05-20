@@ -275,7 +275,7 @@ class TasksPage(QWidget):
                 self.navigate_callback("cards", filter_context={"search_text": str(ref_id)})
                 return
             if ref_type == "document":
-                self.navigate_callback("documents")
+                self.navigate_callback("documents", filter_context={"document_id": ref_id})
                 return
             if ref_type == "location":
                 self.navigate_callback("locations")

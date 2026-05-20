@@ -25,7 +25,7 @@ class AppLauncherSection(QWidget):
 
         for app in AppRegistry.get_visible_apps():
             card = AppCard(title=app.title, subtitle=app.description)
-            card.clicked.connect(lambda _, page_key=app.page_key: self.on_app_clicked(page_key))
+            card.clicked.connect(lambda page_key=app.page_key: self.on_app_clicked(page_key))
             apps_layout.addWidget(card)
 
         layout.addLayout(apps_layout)

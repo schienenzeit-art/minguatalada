@@ -13,6 +13,7 @@ from services.card_service import CardService
 from services.case_service import CaseService
 from services.category_service import CategoryService
 from services.claim_service import ClaimService
+from services.document_service import DocumentService
 from services.location_service import LocationService
 from services.role_service import RoleService
 from services.report_service import ReportService
@@ -39,6 +40,7 @@ class ServiceContainer:
     pdf_service: PDFService
     task_service: TaskService
     dashboard_service: DashboardService
+    document_service: DocumentService
 
 
 def build_service_container() -> ServiceContainer:
@@ -91,6 +93,8 @@ def build_service_container() -> ServiceContainer:
         task_service=task_service,
     )
 
+    document_service = DocumentService()
+
     return ServiceContainer(
         auth_service=auth_service,
         case_service=case_service,
@@ -105,4 +109,5 @@ def build_service_container() -> ServiceContainer:
         report_service=report_service,
         pdf_service=pdf_service,
         dashboard_service=dashboard_service,
+        document_service=document_service,
     )

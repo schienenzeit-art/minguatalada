@@ -66,7 +66,10 @@ class MainWindow(QMainWindow):
         )
         self.register_page(
             "documents",
-            DocumentsPage(pdf_service=self.services.pdf_service),
+            DocumentsPage(
+                document_service=self.services.document_service,
+                location_service=self.services.location_service,
+            ),
         )
         self.register_page(
             "reports",

@@ -161,6 +161,41 @@ def initialize_database() -> None:
                 FOREIGN KEY (created_by) REFERENCES users(id)
             );
 
+            CREATE TABLE IF NOT EXISTS document_types (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL UNIQUE,
+                description TEXT,
+                is_active INTEGER NOT NULL DEFAULT 1
+            );
+
+            CREATE TABLE IF NOT EXISTS documents (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT NOT NULL,
+                original_file_name TEXT NOT NULL,
+                file_name TEXT NOT NULL,
+                storage_path TEXT NOT NULL,
+                mime_type TEXT NOT NULL,
+                file_size INTEGER NOT NULL,
+                document_type_id INTEGER NOT NULL,
+                status TEXT NOT NULL,
+                description TEXT,
+                claim_id INTEGER,
+                person_id INTEGER,
+                card_id INTEGER,
+                location_id INTEGER,
+                uploaded_by INTEGER,
+                uploaded_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                archived_at TEXT,
+                is_deleted INTEGER NOT NULL DEFAULT 0,
+                FOREIGN KEY (document_type_id) REFERENCES document_types(id),
+                FOREIGN KEY (claim_id) REFERENCES claims(id),
+                FOREIGN KEY (person_id) REFERENCES persons(id),
+                FOREIGN KEY (card_id) REFERENCES cards(id),
+                FOREIGN KEY (location_id) REFERENCES locations(id),
+                FOREIGN KEY (uploaded_by) REFERENCES users(id)
+            );
+
             CREATE TABLE IF NOT EXISTS tasks (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 title TEXT NOT NULL,
@@ -487,6 +522,7 @@ def seed_basic_data(connection: sqlite3.Connection) -> None:
     )
 
     connection.commit()
+    seed_document_types(connection)
     seed_claims(connection)
 
 
@@ -529,6 +565,24 @@ def seed_settings(connection: sqlite3.Connection) -> None:
     connection.executemany(
         "INSERT OR IGNORE INTO settings (key, value, value_type, category, description, editable_by_admin) VALUES (?, ?, ?, ?, ?, ?)",
         defaults,
+    )
+    connection.commit()
+
+
+def seed_document_types(connection: sqlite3.Connection) -> None:
+    document_types = [
+        ("Ausweis", "Personalausweis, Reisepass oder ähnliche Identifikationsdokumente.", 1),
+        ("Einkommensnachweis", "Lohnabrechnung, Gehaltsbescheinigung oder Einkommensnachweis.", 1),
+        ("Haushaltsnachweis", "Nachweis über Haushaltsgröße, Kosten oder Bedarfssituation.", 1),
+        ("Antrag", "Formulare oder Anträge zum Leistungsbezug.", 1),
+        ("Prüfprotokoll", "Protokolle, Prüfberichte oder interne Dokumente zur Anspruchsprüfung.", 1),
+        ("Bescheid", "Bescheide, Entscheidungen oder Schriftstücke mit hohem Beweiskraftwert.", 1),
+        ("Kartenunterlage", "Unterlagen zur Kartenherstellung und Kartenausgabe.", 1),
+        ("Sonstiges", "Weitere Dokumente ohne speziellen Typ.", 1),
+    ]
+    connection.executemany(
+        "INSERT OR IGNORE INTO document_types (name, description, is_active) VALUES (?, ?, ?)",
+        document_types,
     )
     connection.commit()
 
