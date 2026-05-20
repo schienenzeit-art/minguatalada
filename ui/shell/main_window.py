@@ -13,6 +13,8 @@ from ui.pages.locations.locations_page import LocationsPage
 from ui.pages.reports_page import ReportsPage
 from ui.pages.settings.settings_page import SettingsPage
 from ui.pages.cards_page import CardsPage
+from ui.pages.apps.anspruchspruefung_app_page import AnspruchspruefungAppPage
+from ui.pages.apps.administration_app_page import AdministrationAppPage
 
 
 class MainWindow(QMainWindow):
@@ -50,12 +52,8 @@ class MainWindow(QMainWindow):
             ),
         )
         self.register_page(
-            "claims",
-            ClaimsPage(
-                claim_service=self.services.claim_service,
-                case_service=self.services.case_service,
-                card_service=self.services.card_service,
-            ),
+            "anspruchspruefung",
+            AnspruchspruefungAppPage(navigate_callback=self.navigate),
         )
         self.register_page(
             "tasks",
@@ -67,19 +65,18 @@ class MainWindow(QMainWindow):
             ),
         )
         self.register_page(
-            "cards",
-            CardsPage(
-                card_service=self.services.card_service,
-                location_service=self.services.location_service,
-                claim_service=self.services.claim_service,
-            ),
+            "documents",
+            DocumentsPage(pdf_service=self.services.pdf_service),
         )
         self.register_page(
             "reports",
             ReportsPage(report_service=self.services.report_service),
         )
+        self.register_page(
+            "administration",
+            AdministrationAppPage(navigate_callback=self.navigate),
+        )
         self.register_page("users", UsersPage(user_service=self.services.user_service))
-        self.register_page("documents", DocumentsPage(pdf_service=self.services.pdf_service))
         self.register_page(
             "locations",
             LocationsPage(
@@ -90,6 +87,22 @@ class MainWindow(QMainWindow):
         self.register_page(
             "settings",
             SettingsPage(settings_service=self.services.settings_service),
+        )
+        self.register_page(
+            "claims",
+            ClaimsPage(
+                claim_service=self.services.claim_service,
+                case_service=self.services.case_service,
+                card_service=self.services.card_service,
+            ),
+        )
+        self.register_page(
+            "cards",
+            CardsPage(
+                card_service=self.services.card_service,
+                location_service=self.services.location_service,
+                claim_service=self.services.claim_service,
+            ),
         )
 
         self.stack.setCurrentWidget(self.pages["dashboard"])
@@ -115,7 +128,24 @@ class MainWindow(QMainWindow):
                 page_widget.apply_filters(**filter_context)
             self.stack.setCurrentWidget(page_widget)
             self.topbar.set_title(self.get_page_title(page))
-            self.sidebar.set_active(page)
+            self.set_active_app_for(page)
+
+    def set_active_app_for(self, page: str) -> None:
+        parent_page = {
+            "claims": "anspruchspruefung",
+            "cards": "anspruchspruefung",
+            "tasks": "tasks",
+            "documents": "documents",
+            "reports": "reports",
+            "users": "administration",
+            "locations": "administration",
+            "settings": "administration",
+            "anspruchspruefung": "anspruchspruefung",
+            "administration": "administration",
+            "dashboard": "dashboard",
+        }.get(page, page)
+
+        self.sidebar.set_active(parent_page)
 
     def get_page_title(self, page: str) -> str:
         titles = {

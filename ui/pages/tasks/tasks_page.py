@@ -18,6 +18,7 @@ from PyQt6.QtWidgets import (
 from core.session import Session
 from core.task_priority import TaskPriority
 from core.task_status import TaskStatus
+from core.task_type import TaskType
 from services.task_service import TaskService
 from services.user_service import UserService
 from services.location_service import LocationService
@@ -77,6 +78,24 @@ class TasksPage(QWidget):
             self.priority_combo.addItem(TaskPriority.get_display(priority), priority)
         self.priority_combo.currentIndexChanged.connect(self.refresh_tasks)
 
+        self.task_type_combo = QComboBox()
+        self.task_type_combo.addItem("Alle Typen", None)
+        for task_type in TaskType.ALL_TYPES:
+            self.task_type_combo.addItem(TaskType.get_display(task_type), task_type)
+        self.task_type_combo.currentIndexChanged.connect(self.refresh_tasks)
+
+        self.source_combo = QComboBox()
+        self.source_combo.addItem("Alle Quellen", None)
+        self.source_combo.addItem("Manuell", "manual")
+        self.source_combo.addItem("System", "system")
+        self.source_combo.currentIndexChanged.connect(self.refresh_tasks)
+
+        self.due_combo = QComboBox()
+        self.due_combo.addItem("Alle Aufgaben", None)
+        self.due_combo.addItem("Heute fällig", "today")
+        self.due_combo.addItem("Überfällig", "overdue")
+        self.due_combo.currentIndexChanged.connect(self.refresh_tasks)
+
         self.assigned_user_combo = QComboBox()
         self.assigned_user_combo.addItem("Alle Verantwortlichen", None)
         self.assigned_user_combo.currentIndexChanged.connect(self.refresh_tasks)
@@ -92,8 +111,14 @@ class TasksPage(QWidget):
         filter_layout.addWidget(self.search_input)
         filter_layout.addWidget(QLabel("Status:"))
         filter_layout.addWidget(self.status_combo)
+        filter_layout.addWidget(QLabel("Typ:"))
+        filter_layout.addWidget(self.task_type_combo)
         filter_layout.addWidget(QLabel("Priorität:"))
         filter_layout.addWidget(self.priority_combo)
+        filter_layout.addWidget(QLabel("Quelle:"))
+        filter_layout.addWidget(self.source_combo)
+        filter_layout.addWidget(QLabel("Fälligkeit:"))
+        filter_layout.addWidget(self.due_combo)
         filter_layout.addWidget(QLabel("Verantwortlich:"))
         filter_layout.addWidget(self.assigned_user_combo)
         filter_layout.addWidget(QLabel("Standort:"))
@@ -148,6 +173,9 @@ class TasksPage(QWidget):
     def refresh_tasks(self):
         status = self.status_combo.currentData()
         priority = self.priority_combo.currentData()
+        task_type = self.task_type_combo.currentData()
+        source_type = self.source_combo.currentData()
+        due_date_scope = self.due_combo.currentData()
         assigned_user_id = self.assigned_user_combo.currentData()
         location_id = self.location_combo.currentData()
         mine_only = self.mine_only_checkbox.isChecked()
@@ -156,6 +184,9 @@ class TasksPage(QWidget):
         self.tasks = self.task_service.list_tasks(
             status=status,
             priority=priority,
+            task_type=task_type,
+            source_type=source_type,
+            due_date_scope=due_date_scope,
             assigned_user_id=assigned_user_id,
             location_id=location_id,
             mine_only=mine_only,

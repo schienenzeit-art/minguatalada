@@ -142,9 +142,11 @@ class TaskRepository:
         statuses: List[str] | None = None,
         priority: str | None = None,
         task_type: str | None = None,
+        source_type: str | None = None,
         assigned_user_id: int | None = None,
         location_id: int | None = None,
         search_text: str | None = None,
+        due_date_scope: str | None = None,
         include_system_tasks: bool = False,
     ) -> List[Dict[str, object]]:
         query = [
@@ -186,6 +188,16 @@ class TaskRepository:
         if location_id is not None:
             query.append("AND t.location_id = ?")
             params.append(location_id)
+
+        if source_type is not None:
+            query.append("AND t.source_type = ?")
+            params.append(source_type)
+
+        if due_date_scope == "today":
+            query.append("AND DATE(t.due_date) = DATE('now')")
+        elif due_date_scope == "overdue":
+            query.append("AND t.due_date IS NOT NULL AND DATE(t.due_date) < DATE('now') AND t.status != ?")
+            params.append("ERLEDIGT")
 
         if search_text:
             query.append(

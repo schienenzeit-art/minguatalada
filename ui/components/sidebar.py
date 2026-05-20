@@ -1,6 +1,7 @@
 ﻿from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QPushButton, QSpacerItem, QSizePolicy
 from PyQt6.QtCore import Qt
 
+from app.app_registry import AppRegistry
 from core.session import Session
 
 
@@ -27,15 +28,13 @@ class Sidebar(QWidget):
         layout.addWidget(logo)
 
         self.add_nav_item(layout, "Dashboard", "dashboard")
-        self.add_nav_item(layout, "Anträge", "claims")
-        self.add_nav_item(layout, "Aufgaben", "tasks")
-        self.add_nav_item(layout, "Karten", "cards")
-        self.add_nav_item(layout, "Berichte", "reports")
-        self.add_nav_item(layout, "Benutzer", "users")
-        self.add_nav_item(layout, "Dokumente", "documents")
-        self.add_nav_item(layout, "Standorte", "locations")
-        if Session.is_admin():
-            self.add_nav_item(layout, "Einstellungen", "settings")
+
+        app_title = QLabel("Applikationen")
+        app_title.setObjectName("sidebarSectionTitle")
+        layout.addWidget(app_title)
+
+        for app in AppRegistry.get_visible_apps():
+            self.add_nav_item(layout, app.title, app.page_key)
 
         layout.addSpacerItem(QSpacerItem(20, 20, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding))
 

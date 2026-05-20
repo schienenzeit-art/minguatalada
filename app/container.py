@@ -88,6 +88,7 @@ def build_service_container() -> ServiceContainer:
         claim_service=claim_service,
         card_service=card_service,
         location_service=location_service,
+        task_service=task_service,
     )
 
     return ServiceContainer(

@@ -14,6 +14,8 @@ from PyQt6.QtCore import QDate
 
 from core.task_priority import TaskPriority
 from core.task_status import TaskStatus
+from core.task_type import TaskType
+from core.task_source_type import TaskSourceType
 from services.location_service import LocationService
 from services.user_service import UserService
 
@@ -35,13 +37,7 @@ class TaskDialog(QDialog):
         self.title_input = QLineEdit()
         self.description_input = QTextEdit()
         self.type_input = QComboBox()
-        self.type_input.addItems([
-            "Allgemein",
-            "Prüfung",
-            "Dokument",
-            "Karte",
-            "Wiedervorlage",
-        ])
+        self.type_input.addItems(TaskType.ALL_TYPES)
         self.status_input = QComboBox()
         self.status_input.addItems([TaskStatus.get_display(status) for status in TaskStatus.ALL_STATUSES])
         self.priority_input = QComboBox()
@@ -152,6 +148,8 @@ class TaskDialog(QDialog):
         elif source_type == "Standort":
             source_ref_type = "location"
 
+        source_type_value = TaskSourceType.MANUAL if source_ref_type else "manual"
+
         source_ref_id = self.source_ref_id_input.text().strip()
         return {
             "title": self.title_input.text().strip(),
@@ -162,7 +160,7 @@ class TaskDialog(QDialog):
             "due_date": self.due_date_input.date().toString("yyyy-MM-dd"),
             "assigned_user_id": self.assigned_user_input.currentData(),
             "location_id": self.location_input.currentData(),
-            "source_type": "manual",
+            "source_type": source_type_value,
             "source_ref_type": source_ref_type,
             "source_ref_id": int(source_ref_id) if source_ref_id.isdigit() else None,
             "source_description": self.source_description_input.text().strip(),

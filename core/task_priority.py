@@ -4,19 +4,23 @@ from typing import ClassVar, Dict, List
 
 
 class TaskPriority:
+    KRITISCH: ClassVar[str] = "KRITISCH"
     HOCH: ClassVar[str] = "HOCH"
     MITTEL: ClassVar[str] = "MITTEL"
     NIEDRIG: ClassVar[str] = "NIEDRIG"
+    NORMAL: ClassVar[str] = MITTEL
 
     ALL_PRIORITIES: ClassVar[List[str]] = [
+        KRITISCH,
         HOCH,
         MITTEL,
         NIEDRIG,
     ]
 
     DISPLAY_NAMES: ClassVar[Dict[str, str]] = {
+        KRITISCH: "Kritisch",
         HOCH: "Hoch",
-        MITTEL: "Mittel",
+        MITTEL: "Normal",
         NIEDRIG: "Niedrig",
     }
 

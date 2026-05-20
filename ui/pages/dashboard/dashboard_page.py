@@ -3,6 +3,7 @@ from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QScr
 from services.dashboard_service import DashboardService
 from ui.components.page_header import PageHeader
 from ui.components.stat_card import StatCard
+from ui.pages.dashboard.app_launcher import AppLauncherSection
 
 
 class DashboardPage(QWidget):
@@ -39,6 +40,9 @@ class DashboardPage(QWidget):
         summary_title = QLabel("Schnelle Zusammenfassung")
         summary_title.setStyleSheet("font-size: 18px; font-weight: 600; margin-bottom: 8px;")
         layout.addWidget(summary_title)
+
+        self.app_launcher = AppLauncherSection(navigate_callback=self.navigate_callback)
+        layout.addWidget(self.app_launcher)
 
         self.summary_section = QWidget()
         self.summary_section.setObjectName("pageSection")
