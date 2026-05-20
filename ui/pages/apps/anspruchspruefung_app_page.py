@@ -42,6 +42,7 @@ class AnspruchspruefungAppPage(QWidget):
 
     def add_navigation_button(self, layout, label: str, page_key: str):
         button = QPushButton(label)
+        button.setObjectName("PrimaryButton")
         button.setCursor(Qt.CursorShape.PointingHandCursor)
         button.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         button.clicked.connect(lambda: self.navigate_callback(page_key) if self.navigate_callback else None)

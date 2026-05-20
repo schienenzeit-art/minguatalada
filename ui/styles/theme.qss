@@ -44,24 +44,47 @@ QPushButton:hover {
     background-color: #efefed;
 }
 
-QPushButton#primaryButton {
+QPushButton#primaryButton, QPushButton#PrimaryButton {
     background-color: #2383e2;
     color: #ffffff;
     border: none;
 }
 
-QPushButton#primaryButton:hover {
+QPushButton#primaryButton:hover, QPushButton#PrimaryButton:hover {
     background-color: #1a6ac8;
 }
 
-QPushButton#secondaryButton {
+QPushButton#secondaryButton, QPushButton#SecondaryButton {
     background-color: #ffffff;
     color: #37352f;
     border: 1px solid #d9d9d8;
 }
 
-QPushButton#secondaryButton:hover {
+QPushButton#secondaryButton:hover, QPushButton#SecondaryButton:hover {
     background-color: #f2f2f1;
+}
+
+QPushButton#SoftButton {
+    background-color: #f5f8ff;
+    color: #1f4f8b;
+    border: 1px solid #d7e4f5;
+}
+
+QPushButton#SoftButton:hover {
+    background-color: #e9f1ff;
+}
+
+QPushButton#RowActionButton {
+    background-color: #f8f9fc;
+    color: #333333;
+    border: 1px solid #dfe3ea;
+    min-height: 34px;
+    border-radius: 12px;
+    padding: 8px 14px;
+}
+
+QPushButton#RowActionButton:hover {
+    background-color: #eef2fb;
 }
 
 QPushButton#topbarButton {
@@ -228,6 +251,96 @@ QWidget#appTile QLabel#appTileSubtitle {
     margin-top: 6px;
 }
 
+QFrame#TopBarCard, QFrame#Card, QFrame#LoginCard {
+    background: #ffffff;
+    border: 1px solid rgba(34, 49, 63, 0.08);
+    border-radius: 20px;
+}
+
+QFrame#LoginCard {
+    max-width: 440px;
+    padding: 10px;
+}
+
+QDialog#loginDialog {
+    background-color: transparent;
+}
+
+QFrame#Card[accent="true"] {
+    background: #f0fbf9;
+    border-color: #c8e7e1;
+}
+
+QFrame#Card:hover, ClickableCard:hover {
+    border-color: #a5c8f7;
+    background-color: #f5f8ff;
+}
+
+QLabel#PageTitle {
+    font-size: 26px;
+    font-weight: 700;
+    color: #172930;
+}
+
+QLabel#PageSubtitle {
+    color: #5c6b75;
+    font-size: 13px;
+}
+
+QLabel#SectionTitle {
+    font-size: 17px;
+    font-weight: 700;
+    color: #1f3644;
+}
+
+QLabel#SectionDescription {
+    color: #5d6d76;
+    font-size: 13px;
+}
+
+QLabel#KpiValue {
+    font-size: 28px;
+    font-weight: 700;
+    color: #0f4f4a;
+}
+
+QLabel#KpiLabel {
+    font-size: 13px;
+    color: #5c6c75;
+}
+
+QLabel#KpiSubtitle {
+    font-size: 12px;
+    color: #6d7f88;
+}
+
+QLabel#BadgeSuccess {
+    background: #e6f5ef;
+    color: #196551;
+    border: 1px solid #bde6d2;
+    border-radius: 12px;
+    padding: 6px 12px;
+    font-weight: 700;
+}
+
+QLabel#BadgeWarning {
+    background: #fff4e8;
+    color: #8a5d22;
+    border: 1px solid #f2d3b0;
+    border-radius: 12px;
+    padding: 6px 12px;
+    font-weight: 700;
+}
+
+QLabel#BadgeDanger {
+    background: #fde8e8;
+    color: #9a3b3b;
+    border: 1px solid #efc7c7;
+    border-radius: 12px;
+    padding: 6px 12px;
+    font-weight: 700;
+}
+
 QPushButton#pageHeaderAction {
     background-color: #2383e2;
     color: #ffffff;
@@ -298,6 +411,15 @@ QHeaderView::section {
 
 QTableWidget::item {
     padding: 14px;
+}
+
+QTableWidget::item:hover {
+    background-color: #eef4ff;
+}
+
+QTableWidget::item:selected {
+    background-color: #dce9ff;
+    color: #172930;
 }
 
 QTableCornerButton::section {

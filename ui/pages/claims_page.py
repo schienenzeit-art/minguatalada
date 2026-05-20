@@ -47,10 +47,11 @@ class ClaimsPage(QWidget):
         layout.setSpacing(12)
 
         title_label = QLabel("Fälle")
-        title_label.setStyleSheet("font-size: 20px; font-weight: bold;")
+        title_label.setObjectName("SectionTitle")
 
         filter_layout = QHBoxLayout()
         self.search_input = QLineEdit()
+        self.search_input.setObjectName("searchInput")
         self.search_input.setPlaceholderText("Suche nach Name oder Fallnummer")
         self.search_input.returnPressed.connect(self.refresh_claims)
 

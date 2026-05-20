@@ -1,6 +1,9 @@
+from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
     QDialog,
+    QFrame,
     QVBoxLayout,
+    QHBoxLayout,
     QLabel,
     QLineEdit,
     QPushButton,
@@ -19,31 +22,58 @@ class LoginWindow(QDialog):
         self.setup_ui()
 
     def setup_ui(self):
-        self.setWindowTitle("Login")
-        self.setMinimumWidth(320)
+        self.setObjectName("loginDialog")
+        self.setWindowTitle("Anspruchssystem Anmeldung")
+        self.setMinimumSize(420, 460)
+        self.setModal(True)
 
-        layout = QVBoxLayout()
+        root_layout = QVBoxLayout(self)
+        root_layout.setContentsMargins(24, 24, 24, 24)
+        root_layout.setSpacing(0)
 
-        title_label = QLabel("Anmeldung")
+        card = QFrame()
+        card.setObjectName("LoginCard")
+        card_layout = QVBoxLayout(card)
+        card_layout.setContentsMargins(32, 32, 32, 32)
+        card_layout.setSpacing(18)
+
+        title_label = QLabel("Willkommen zurück")
+        title_label.setObjectName("PageTitle")
+        subtitle_label = QLabel("Melden Sie sich mit Ihren Zugangsdaten an, um das Anspruchssystem zu öffnen.")
+        subtitle_label.setObjectName("PageSubtitle")
+        subtitle_label.setWordWrap(True)
 
         self.username_input = QLineEdit()
+        self.username_input.setObjectName("loginInput")
         self.username_input.setPlaceholderText("Benutzername")
 
         self.password_input = QLineEdit()
+        self.password_input.setObjectName("loginInput")
         self.password_input.setPlaceholderText("Passwort")
         self.password_input.setEchoMode(QLineEdit.EchoMode.Password)
 
         self.login_button = QPushButton("Anmelden")
+        self.login_button.setObjectName("PrimaryButton")
+        self.login_button.setCursor(Qt.CursorShape.PointingHandCursor)
         self.login_button.clicked.connect(self.on_login_clicked)
 
-        layout.addWidget(title_label)
-        layout.addWidget(QLabel("Benutzername"))
-        layout.addWidget(self.username_input)
-        layout.addWidget(QLabel("Passwort"))
-        layout.addWidget(self.password_input)
-        layout.addWidget(self.login_button)
+        card_layout.addWidget(title_label)
+        card_layout.addWidget(subtitle_label)
+        card_layout.addWidget(QLabel("Benutzername"))
+        card_layout.addWidget(self.username_input)
+        card_layout.addWidget(QLabel("Passwort"))
+        card_layout.addWidget(self.password_input)
+        card_layout.addWidget(self.login_button)
 
-        self.setLayout(layout)
+        footer_spacer = QHBoxLayout()
+        footer_spacer.addStretch()
+        card_layout.addLayout(footer_spacer)
+
+        root_layout.addStretch()
+        root_layout.addWidget(card)
+        root_layout.addStretch()
+
+        self.setLayout(root_layout)
 
     def on_login_clicked(self):
         username = self.username_input.text()

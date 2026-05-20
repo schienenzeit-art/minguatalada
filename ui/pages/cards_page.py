@@ -48,7 +48,7 @@ class CardsPage(QWidget):
 
         # Titel
         title_label = QLabel("Kartenverwaltung")
-        title_label.setStyleSheet("font-size: 20px; font-weight: bold; padding: 10px;")
+        title_label.setObjectName("SectionTitle")
         layout.addWidget(title_label)
 
         # Filter-Bereich
@@ -70,6 +70,7 @@ class CardsPage(QWidget):
         self.status_combo.currentIndexChanged.connect(self.on_filter_changed)
 
         self.search_input = QLineEdit()
+        self.search_input.setObjectName("searchInput")
         self.search_input.setPlaceholderText("Suche: Kartennummer, Name...")
         self.search_input.textChanged.connect(self.on_filter_changed)
 
@@ -85,6 +86,7 @@ class CardsPage(QWidget):
         buttons_layout.addStretch()
 
         refresh_btn = QPushButton("Aktualisieren")
+        refresh_btn.setObjectName("SecondaryButton")
         refresh_btn.clicked.connect(self.load_cards)
         buttons_layout.addWidget(refresh_btn)
 
