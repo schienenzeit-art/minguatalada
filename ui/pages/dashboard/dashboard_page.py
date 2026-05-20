@@ -1,9 +1,10 @@
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QScrollArea, QLabel
 
+from app.app_registry import AppRegistry
 from services.dashboard_service import DashboardService
+from ui.components.app_tile import AppTile
 from ui.components.page_header import PageHeader
 from ui.components.stat_card import StatCard
-from ui.pages.dashboard.app_launcher import AppLauncherSection
 
 
 class DashboardPage(QWidget):
@@ -13,6 +14,7 @@ class DashboardPage(QWidget):
         self.navigate_callback = navigate_callback
         self.kpi_cards: list[StatCard] = []
         self.summary_cards: list[StatCard] = []
+        self.app_tiles: list[AppTile] = []
         self.setup_ui()
         self.load_dashboard()
 
@@ -29,6 +31,14 @@ class DashboardPage(QWidget):
         )
         layout.addWidget(header)
 
+        self.launch_section = QWidget()
+        self.launch_section.setObjectName("pageSection")
+        self.launch_layout = QGridLayout()
+        self.launch_layout.setContentsMargins(20, 20, 20, 20)
+        self.launch_layout.setSpacing(16)
+        self.launch_section.setLayout(self.launch_layout)
+        layout.addWidget(self.launch_section)
+
         self.stats_section = QWidget()
         self.stats_section.setObjectName("pageSection")
         self.stats_section_layout = QGridLayout()
@@ -40,9 +50,6 @@ class DashboardPage(QWidget):
         summary_title = QLabel("Schnelle Zusammenfassung")
         summary_title.setStyleSheet("font-size: 18px; font-weight: 600; margin-bottom: 8px;")
         layout.addWidget(summary_title)
-
-        self.app_launcher = AppLauncherSection(navigate_callback=self.navigate_callback)
-        layout.addWidget(self.app_launcher)
 
         self.summary_section = QWidget()
         self.summary_section.setObjectName("pageSection")
@@ -68,8 +75,32 @@ class DashboardPage(QWidget):
         self.load_dashboard()
 
     def load_dashboard(self):
+        self._refresh_app_tiles()
         self._refresh_kpi_cards()
         self._refresh_summary_cards()
+
+    def _refresh_app_tiles(self):
+        for i in reversed(range(self.launch_layout.count())):
+            item = self.launch_layout.takeAt(i)
+            if item and item.widget():
+                item.widget().deleteLater()
+
+        self.app_tiles = []
+        columns = 3
+        for index, app in enumerate(AppRegistry.get_visible_apps()):
+            tile = AppTile(
+                title=app.title,
+                subtitle=app.description,
+                accent="#2383e2",
+            )
+            tile.clicked.connect(lambda page_key=app.page_key: self.on_app_tile_clicked(page_key))
+            self.app_tiles.append(tile)
+            row = index // columns
+            column = index % columns
+            self.launch_layout.addWidget(tile, row, column)
+
+        for i in range(columns):
+            self.launch_layout.setColumnStretch(i, 1)
 
     def _refresh_kpi_cards(self):
         for i in reversed(range(self.stats_section_layout.count())):

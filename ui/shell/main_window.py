@@ -1,8 +1,8 @@
-﻿from PyQt6.QtWidgets import QMainWindow, QWidget, QHBoxLayout, QVBoxLayout, QStackedWidget
+﻿from PyQt6.QtWidgets import QMainWindow, QWidget, QHBoxLayout, QVBoxLayout
 
 from app.container import ServiceContainer
 from core.session import Session
-from ui.components.sidebar import Sidebar
+from ui.components.app_navigation import AppNavigation
 from ui.components.topbar import TopBar
 from ui.pages.dashboard.dashboard_page import DashboardPage
 from ui.pages.claims.claims_page import ClaimsPage
@@ -15,6 +15,8 @@ from ui.pages.settings.settings_page import SettingsPage
 from ui.pages.cards_page import CardsPage
 from ui.pages.apps.anspruchspruefung_app_page import AnspruchspruefungAppPage
 from ui.pages.apps.administration_app_page import AdministrationAppPage
+from ui.navigation.navigation_controller import NavigationController
+from ui.shell.workspace_host import WorkspaceHost
 
 
 class MainWindow(QMainWindow):
@@ -22,10 +24,10 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.services = service_container
         self.current_user = Session.get_user()
-        self.pages = {}
-        self.stack = QStackedWidget()
-        self.sidebar = None
+        self.workspace_host = WorkspaceHost()
+        self.navigation_controller = NavigationController(self.workspace_host, self.on_route_changed)
         self.topbar = None
+        self.navigation = None
         self.init_ui()
 
     def init_ui(self):
@@ -34,132 +36,124 @@ class MainWindow(QMainWindow):
         root_layout.setContentsMargins(0, 0, 0, 0)
         root_layout.setSpacing(0)
 
-        self.topbar = TopBar("Dashboard")
+        self.topbar = TopBar("Startcockpit")
         root_layout.addWidget(self.topbar)
 
         body_layout = QHBoxLayout()
         body_layout.setContentsMargins(0, 0, 0, 0)
         body_layout.setSpacing(0)
 
-        self.sidebar = Sidebar(self.navigate)
-        body_layout.addWidget(self.sidebar)
+        self.navigation = AppNavigation(self.route_to)
+        body_layout.addWidget(self.navigation)
 
-        self.register_page(
+        self.register_route(
             "dashboard",
             DashboardPage(
                 dashboard_service=self.services.dashboard_service,
-                navigate_callback=self.navigate,
+                navigate_callback=self.route_to,
             ),
+            title="Dashboard",
+            parent_app="dashboard",
         )
-        self.register_page(
+        self.register_route(
             "anspruchspruefung",
-            AnspruchspruefungAppPage(navigate_callback=self.navigate),
+            AnspruchspruefungAppPage(navigate_callback=self.route_to),
+            title="Anspruchsprüfung",
+            parent_app="anspruchspruefung",
         )
-        self.register_page(
+        self.register_route(
             "tasks",
             TasksPage(
                 task_service=self.services.task_service,
                 user_service=self.services.user_service,
                 location_service=self.services.location_service,
-                navigate_callback=self.navigate,
+                navigate_callback=self.route_to,
             ),
+            title="Aufgaben",
+            parent_app="tasks",
         )
-        self.register_page(
+        self.register_route(
             "documents",
             DocumentsPage(
                 document_service=self.services.document_service,
                 location_service=self.services.location_service,
             ),
+            title="Dokumente",
+            parent_app="documents",
         )
-        self.register_page(
+        self.register_route(
             "reports",
             ReportsPage(report_service=self.services.report_service),
+            title="Berichte",
+            parent_app="reports",
         )
-        self.register_page(
+        self.register_route(
             "administration",
-            AdministrationAppPage(navigate_callback=self.navigate),
+            AdministrationAppPage(navigate_callback=self.route_to),
+            title="Administration",
+            parent_app="administration",
         )
-        self.register_page("users", UsersPage(user_service=self.services.user_service))
-        self.register_page(
+        self.register_route(
+            "users",
+            UsersPage(user_service=self.services.user_service),
+            title="Benutzer",
+            parent_app="administration",
+        )
+        self.register_route(
             "locations",
             LocationsPage(
                 location_service=self.services.location_service,
                 user_service=self.services.user_service,
             ),
+            title="Standorte",
+            parent_app="administration",
         )
-        self.register_page(
+        self.register_route(
             "settings",
             SettingsPage(settings_service=self.services.settings_service),
+            title="Einstellungen",
+            parent_app="administration",
         )
-        self.register_page(
+        self.register_route(
             "claims",
             ClaimsPage(
                 claim_service=self.services.claim_service,
                 case_service=self.services.case_service,
                 card_service=self.services.card_service,
             ),
+            title="Anträge",
+            parent_app="anspruchspruefung",
         )
-        self.register_page(
+        self.register_route(
             "cards",
             CardsPage(
                 card_service=self.services.card_service,
                 location_service=self.services.location_service,
                 claim_service=self.services.claim_service,
             ),
+            title="Karten",
+            parent_app="anspruchspruefung",
         )
 
-        self.stack.setCurrentWidget(self.pages["dashboard"])
-        body_layout.addWidget(self.stack, 1)
+        self.workspace_host.set_current_page("dashboard")
+        body_layout.addWidget(self.workspace_host, 1)
 
         root_layout.addLayout(body_layout)
         root.setLayout(root_layout)
         self.setCentralWidget(root)
-        self.sidebar.set_active("dashboard")
+        self.navigation.set_active("dashboard")
+        self.topbar.set_title(self.navigation_controller.get_page_title("dashboard"))
 
-    def register_page(self, key: str, widget: QWidget) -> None:
-        self.pages[key] = widget
-        self.stack.addWidget(widget)
+    def register_route(self, key: str, widget: QWidget, title: str, parent_app: str | None = None) -> None:
+        self.navigation_controller.register_route(key, widget, title, parent_app)
 
-    def navigate(self, page: str, filter_context: dict | None = None) -> None:
+    def route_to(self, page: str, filter_context: dict | None = None) -> None:
         if page == "logout":
             self.close()
             return
 
-        page_widget = self.pages.get(page)
-        if page_widget:
-            if filter_context and hasattr(page_widget, "apply_filters"):
-                page_widget.apply_filters(**filter_context)
-            self.stack.setCurrentWidget(page_widget)
-            self.topbar.set_title(self.get_page_title(page))
-            self.set_active_app_for(page)
+        self.navigation_controller.navigate(page, filter_context)
 
-    def set_active_app_for(self, page: str) -> None:
-        parent_page = {
-            "claims": "anspruchspruefung",
-            "cards": "anspruchspruefung",
-            "tasks": "tasks",
-            "documents": "documents",
-            "reports": "reports",
-            "users": "administration",
-            "locations": "administration",
-            "settings": "administration",
-            "anspruchspruefung": "anspruchspruefung",
-            "administration": "administration",
-            "dashboard": "dashboard",
-        }.get(page, page)
-
-        self.sidebar.set_active(parent_page)
-
-    def get_page_title(self, page: str) -> str:
-        titles = {
-            "dashboard": "Dashboard",
-            "claims": "Anträge",
-            "tasks": "Aufgaben",
-            "users": "Benutzer",
-            "documents": "Dokumente",
-            "locations": "Standorte",
-            "cards": "Karten",
-            "reports": "Berichte",
-            "settings": "Einstellungen",
-        }
-        return titles.get(page, "Anspruchssystem")
+    def on_route_changed(self, page: str) -> None:
+        self.topbar.set_title(self.navigation_controller.get_page_title(page))
+        self.navigation.set_active(self.navigation_controller.get_parent_app(page))

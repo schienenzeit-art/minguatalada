@@ -119,6 +119,67 @@ QWidget#sidebar QPushButton#logoutButton:hover {
     background-color: #fdecea;
 }
 
+QWidget#appNavigation {
+    background-color: #ffffff;
+    border-right: 1px solid #e8e8e8;
+}
+
+QWidget#appNavigation QLabel#appNavTitle {
+    font-size: 18px;
+    font-weight: 700;
+    padding-bottom: 6px;
+}
+
+QWidget#appNavigation QLabel#appNavSubtitle {
+    color: #6b6b6b;
+    font-size: 12px;
+    padding-bottom: 16px;
+}
+
+QWidget#appNavigation QLabel#appNavSection {
+    margin-top: 16px;
+    margin-bottom: 10px;
+    color: #6b6b6b;
+    font-size: 12px;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+}
+
+QWidget#appNavigation QPushButton {
+    background-color: transparent;
+    color: #37352f;
+    text-align: left;
+    padding: 12px 18px;
+    border-radius: 12px;
+    border: none;
+    font-weight: 600;
+}
+
+QWidget#appNavigation QPushButton:hover {
+    background-color: #f2f6ff;
+}
+
+QWidget#appNavigation QPushButton#activeAppNav {
+    background-color: #eef4ff;
+    color: #2383e2;
+}
+
+QWidget#appNavigation QLabel#appNavMeta {
+    color: #5a5a5a;
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+QWidget#appNavigation QPushButton#appNavLogout {
+    background-color: transparent;
+    color: #db4437;
+    border: 1px solid #f2dede;
+}
+
+QWidget#appNavigation QPushButton#appNavLogout:hover {
+    background-color: #fdecea;
+}
+
 QWidget#topBar {
     background-color: transparent;
     border-bottom: 1px solid #e8e8e8;
@@ -142,6 +203,29 @@ QLabel#pageHeaderTitle {
 QLabel#pageHeaderSubtitle {
     color: #6b6b6b;
     font-size: 13px;
+}
+
+QWidget#appTile {
+    border-radius: 18px;
+    border: 1px solid #e8e8e8;
+    padding: 18px;
+    background-color: #ffffff;
+}
+
+QWidget#appTile:hover {
+    border-color: #2383e2;
+    background-color: #f6f9ff;
+}
+
+QWidget#appTile QLabel#appTileTitle {
+    font-size: 16px;
+    font-weight: 700;
+}
+
+QWidget#appTile QLabel#appTileSubtitle {
+    color: #5f6781;
+    font-size: 12px;
+    margin-top: 6px;
 }
 
 QPushButton#pageHeaderAction {
