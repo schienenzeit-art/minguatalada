@@ -1,4 +1,5 @@
-﻿from PyQt6.QtWidgets import QMainWindow, QWidget, QHBoxLayout, QVBoxLayout
+﻿from PyQt6.QtGui import QAction
+from PyQt6.QtWidgets import QMainWindow, QWidget, QHBoxLayout, QVBoxLayout, QMessageBox
 
 from app.container import ServiceContainer
 from core.session import Session
@@ -10,7 +11,7 @@ from ui.pages.tasks.tasks_page import TasksPage
 from ui.pages.users.users_page import UsersPage
 from ui.pages.documents_web_page import DocumentsWebPage
 from ui.pages.locations.locations_page import LocationsPage
-from ui.pages.reports_page import ReportsPage
+from ui.pages.reports_web_page import ReportsWebPage
 from ui.pages.settings.settings_page import SettingsPage
 from ui.pages.cards_page import CardsPage
 from ui.pages.apps.anspruchspruefung_app_page import AnspruchspruefungAppPage
@@ -45,6 +46,8 @@ class MainWindow(QMainWindow):
 
         self.navigation = AppNavigation(self.route_to)
         body_layout.addWidget(self.navigation)
+
+        self.setup_menu()
 
         self.register_route(
             "dashboard",
@@ -94,7 +97,7 @@ class MainWindow(QMainWindow):
         )
         self.register_route(
             "reports",
-            ReportsPage(report_service=self.services.report_service),
+            ReportsWebPage(report_service=self.services.report_service),
             title="Berichte",
             parent_app="reports",
         )
@@ -154,6 +157,25 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(root)
         self.navigation.set_active("dashboard")
         self.topbar.set_title(self.navigation_controller.get_page_title("dashboard"))
+
+    def setup_menu(self) -> None:
+        file_menu = self.menuBar().addMenu("Datei")
+        print_action = QAction("Drucken", self)
+        print_action.triggered.connect(self.on_print_requested)
+        file_menu.addAction(print_action)
+
+        file_menu.addSeparator()
+        exit_action = QAction("Beenden", self)
+        exit_action.triggered.connect(self.close)
+        file_menu.addAction(exit_action)
+
+    def on_print_requested(self) -> None:
+        current_widget = self.workspace_host.stack.currentWidget()
+        if current_widget is not None and hasattr(current_widget, "on_print_dossier"):
+            current_widget.on_print_dossier()
+            return
+
+        QMessageBox.information(self, "Drucken", "Druckfunktion ist im aktuellen Bereich nicht verfügbar. Öffnen Sie das Personendossier, um es zu drucken.")
 
     def register_route(self, key: str, widget: QWidget, title: str, parent_app: str | None = None) -> None:
         self.navigation_controller.register_route(key, widget, title, parent_app)

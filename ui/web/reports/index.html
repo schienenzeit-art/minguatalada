@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Zeitraumreport</title>
+  <script type="module" src="https://unpkg.com/@vscode-elements/elements/vscode-element.js"></script>
+  <script src="qrc:///qtwebchannel/qwebchannel.js"></script>
+  <link rel="stylesheet" href="reports.css" />
+</head>
+<body>
+  <main>
+    <section class="hero">
+      <div>
+        <h1>Zeitraumreport</h1>
+        <p>Erstellt Berichtszahlen für Anträge, Prüfungen, Entscheidungen und Kundenstamm pro Laden im gewählten Zeitraum.</p>
+      </div>
+      <div class="actions">
+        <vscode-button id="refreshButton" appearance="secondary">Aktualisieren</vscode-button>
+        <vscode-button id="exportPdfButton">PDF exportieren</vscode-button>
+        <vscode-button id="exportExcelButton" appearance="secondary">Excel exportieren</vscode-button>
+      </div>
+    </section>
+
+    <section class="filters">
+      <div class="filter-row">
+        <label for="locationSelect">Standort</label>
+        <vscode-dropdown id="locationSelect"></vscode-dropdown>
+      </div>
+      <div class="filter-row">
+        <label for="startDateInput">Startdatum</label>
+        <input id="startDateInput" type="date" />
+      </div>
+      <div class="filter-row">
+        <label for="endDateInput">Enddatum</label>
+        <input id="endDateInput" type="date" />
+      </div>
+    </section>
+
+    <section class="metrics">
+      <h2>Report-Parameter</h2>
+      <div class="metric-grid">
+        <div><vscode-checkbox id="metric-applications" checked>Anträge</vscode-checkbox></div>
+        <div><vscode-checkbox id="metric-evaluations" checked>Prüfungen</vscode-checkbox></div>
+        <div><vscode-checkbox id="metric-approved" checked>anspruchsberechtigte</vscode-checkbox></div>
+        <div><vscode-checkbox id="metric-rejected" checked>abgelehnte</vscode-checkbox></div>
+        <div><vscode-checkbox id="metric-hardship" checked>Härtefälle</vscode-checkbox></div>
+        <div><vscode-checkbox id="metric-cards" checked>Kundenstamm pro Laden</vscode-checkbox></div>
+      </div>
+    </section>
+
+    <section class="report-card">
+      <div class="report-summary">
+        <div>
+          <span class="label">Standort</span>
+          <strong id="reportLocation">-</strong>
+        </div>
+        <div>
+          <span class="label">Zeitraum</span>
+          <strong id="reportPeriod">-</strong>
+        </div>
+      </div>
+      <table id="reportTable">
+        <thead>
+          <tr>
+            <th>Bericht</th>
+            <th>Wert</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <div id="locationSection" class="location-section hidden">
+        <h3>Kundenstamm pro Laden</h3>
+        <table id="locationTable">
+          <thead>
+            <tr>
+              <th>Standort</th>
+              <th>Karten im Zeitraum</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div id="message" class="message"></div>
+    </section>
+  </main>
+  <script src="reports.js"></script>
+</body>
+</html>

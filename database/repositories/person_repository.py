@@ -37,3 +37,34 @@ class PersonRepository:
             return None
 
         return dict(row)
+
+    def count_persons(
+        self,
+        location_id: int | None = None,
+        created_from: str | None = None,
+        created_to: str | None = None,
+    ) -> int:
+        with get_connection() as connection:
+            query = ["SELECT COUNT(*) AS total FROM persons"]
+            params: list[object] = []
+            filters: list[str] = []
+
+            if location_id is not None:
+                filters.append("location_id = ?")
+                params.append(location_id)
+
+            if created_from is not None:
+                filters.append("DATE(created_at) >= DATE(?)")
+                params.append(created_from)
+
+            if created_to is not None:
+                filters.append("DATE(created_at) <= DATE(?)")
+                params.append(created_to)
+
+            if filters:
+                query.append("WHERE " + " AND ".join(filters))
+
+            sql = " ".join(query)
+            row = connection.execute(sql, tuple(params)).fetchone()
+
+        return int(row["total"] if row else 0)

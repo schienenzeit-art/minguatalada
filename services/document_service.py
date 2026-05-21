@@ -87,6 +87,18 @@ class DocumentService:
     def update_document_title(self, document_id: int, title: str) -> bool:
         return self.repository.update_document_title(document_id, title)
 
+    def delete_document(self, document_id: int) -> bool:
+        deleted = self.repository.delete_document(document_id)
+        if deleted:
+            self._record_audit_log(
+                user_id=Session.get_user_id(),
+                action="delete_document",
+                object_type="document",
+                object_id=document_id,
+                details={"document_id": document_id},
+            )
+        return deleted
+
     def create_document(
         self,
         source_file_path: str,

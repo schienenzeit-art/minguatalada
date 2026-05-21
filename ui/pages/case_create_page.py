@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from PyQt6.QtWidgets import (
     QDialog,
     QVBoxLayout,
@@ -10,11 +12,14 @@ from PyQt6.QtWidgets import (
     QMessageBox,
     QGroupBox,
     QWidget,
+    QFileDialog,
+    QListWidget,
 )
 from PyQt6.QtCore import Qt
 
 from services.case_service import CaseService
 from services.claim_service import ClaimService
+from services.document_service import DocumentService
 from ui.pages.claim_evaluation_dialog import ClaimEvaluationDialog
 
 
@@ -31,8 +36,10 @@ class CaseCreateDialog(QDialog):
 
         self.case_service = case_service or CaseService()
         self.claim_service = claim_service or ClaimService()
+        self.document_service = DocumentService()
 
         self.created_case = None
+        self.selected_files: list[str] = []
 
         self.setup_ui()
 
@@ -96,6 +103,40 @@ class CaseCreateDialog(QDialog):
         case_card.setLayout(case_layout)
         main_layout.addWidget(case_card)
 
+        document_card = QGroupBox("Dokumente zum Antrag")
+        document_layout = QVBoxLayout()
+        document_layout.setSpacing(12)
+
+        self.document_type_combo = QComboBox()
+        self.document_description = QLineEdit()
+        self.document_description.setPlaceholderText("Optionale Beschreibung")
+        self.selected_files_list = QListWidget()
+        self.selected_files_list.setSelectionMode(QListWidget.SelectionMode.SingleSelection)
+        self.selected_files_list.setFixedHeight(120)
+
+        file_button_row = QHBoxLayout()
+        self.select_files_button = QPushButton("Dateien auswählen")
+        self.select_files_button.clicked.connect(self.on_select_files)
+        self.clear_files_button = QPushButton("Auswahl löschen")
+        self.clear_files_button.clicked.connect(self.on_clear_files)
+        file_button_row.addWidget(self.select_files_button)
+        file_button_row.addWidget(self.clear_files_button)
+        file_button_row.addStretch()
+
+        document_form = QFormLayout()
+        document_form.setLabelAlignment(Qt.AlignmentFlag.AlignLeft)
+        document_form.setFormAlignment(Qt.AlignmentFlag.AlignLeft)
+        document_form.setHorizontalSpacing(20)
+        document_form.setVerticalSpacing(10)
+        document_form.addRow("Dokumenttyp", self.document_type_combo)
+        document_form.addRow("Beschreibung", self.document_description)
+
+        document_layout.addLayout(document_form)
+        document_layout.addLayout(file_button_row)
+        document_layout.addWidget(self.selected_files_list)
+        document_card.setLayout(document_layout)
+        main_layout.addWidget(document_card)
+
         button_layout = QHBoxLayout()
         button_layout.setSpacing(12)
 
@@ -113,9 +154,39 @@ class CaseCreateDialog(QDialog):
         button_layout.addStretch()
 
         main_layout.addLayout(button_layout)
-
         self.setLayout(main_layout)
         self.load_choices()
+        self.load_document_types()
+
+    def _upload_documents(self, created_case: dict[str, object]) -> None:
+        if not created_case:
+            return
+
+        claim_id = created_case.get("id")
+        person_id = created_case.get("person_id")
+        location_id = self.location_combo.currentData()
+        document_type_id = self.document_type_combo.currentData()
+        description = self.document_description.text().strip() or None
+
+        for file_path in self.selected_files:
+            try:
+                self.document_service.create_document(
+                    source_file_path=file_path,
+                    title=Path(file_path).stem,
+                    document_type_id=document_type_id,
+                    description=description,
+                    claim_id=claim_id,
+                    person_id=person_id,
+                    location_id=location_id,
+                )
+            except Exception as e:
+                QMessageBox.warning(
+                    self,
+                    "Dokument hochladen fehlgeschlagen",
+                    f"Datei '{Path(file_path).name}' konnte nicht hochgeladen werden: {e}",
+                )
+
+        self.load_document_types()
 
     def load_choices(self):
         self.category_combo.clear()
@@ -125,6 +196,34 @@ class CaseCreateDialog(QDialog):
         self.location_combo.clear()
         for l in self.case_service.list_locations():
             self.location_combo.addItem(l["name"], l["id"])
+
+    def load_document_types(self):
+        self.document_type_combo.clear()
+        doc_types = self.document_service.list_document_types()
+        if not doc_types:
+            self.document_type_combo.addItem("Keine Dokumenttypen verfügbar", None)
+            return
+
+        for document_type in doc_types:
+            self.document_type_combo.addItem(document_type["name"], document_type["id"])
+        self.document_type_combo.setCurrentIndex(0)
+
+    def on_select_files(self):
+        files, _ = QFileDialog.getOpenFileNames(
+            self,
+            "Dokumente zum Antrag auswählen",
+            str(Path.home()),
+            "PDF-Dateien (*.pdf);;Alle Dateien (*)",
+        )
+        if files:
+            self.selected_files = files
+            self.selected_files_list.clear()
+            for file_path in files:
+                self.selected_files_list.addItem(file_path)
+
+    def on_clear_files(self):
+        self.selected_files = []
+        self.selected_files_list.clear()
 
     def on_save(self):
         # validate required fields
@@ -168,7 +267,11 @@ class CaseCreateDialog(QDialog):
         self.created_case = result
         self.case_number_label.setText(f"Fallnummer: {result['case_number']}")
         self.start_eval_button.setEnabled(True)
-        QMessageBox.information(self, "Erfolg", "Person und Fall wurden angelegt.")
+
+        if self.selected_files:
+            self._upload_documents(result)
+
+        QMessageBox.information(self, "Erfolg", "Person, Fall und ggf. Dokumente wurden angelegt.")
 
     def _get_current_user_id(self) -> int | None:
         from core.session import Session

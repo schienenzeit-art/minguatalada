@@ -267,6 +267,49 @@ class CardRepository:
 
         return int(row["total"] if row else 0)
 
+    def count_cards_by_location(
+        self,
+        location_id: int | None = None,
+        issued_from: str | None = None,
+        issued_to: str | None = None,
+    ) -> list[dict]:
+        query = [
+            "SELECT",
+            "    l.id AS location_id,",
+            "    COALESCE(l.name, 'Unbekannt') AS location_name,",
+            "    COUNT(c.id) AS card_count",
+            "FROM cards c",
+            "LEFT JOIN locations l ON c.location_id = l.id",
+        ]
+        params: list[object] = []
+        filters: list[str] = []
+
+        if location_id is not None:
+            filters.append("c.location_id = ?")
+            params.append(location_id)
+
+        if issued_from is not None:
+            filters.append("DATE(c.issue_date) >= DATE(?)")
+            params.append(issued_from)
+
+        if issued_to is not None:
+            filters.append("DATE(c.issue_date) <= DATE(?)")
+            params.append(issued_to)
+
+        if filters:
+            query.append("WHERE " + " AND ".join(filters))
+
+        query.extend([
+            "GROUP BY l.id, l.name",
+            "ORDER BY l.name ASC",
+        ])
+
+        sql = "\n".join(query)
+        with get_connection() as connection:
+            rows = connection.execute(sql, tuple(params)).fetchall()
+
+        return [self._row_to_dict(row) for row in rows]
+
     def count_expiring_cards(self, days: int = 30) -> int:
         with get_connection() as connection:
             row = connection.execute(

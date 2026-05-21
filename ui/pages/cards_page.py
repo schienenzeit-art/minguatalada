@@ -90,6 +90,11 @@ class CardsPage(QWidget):
         refresh_btn.clicked.connect(self.load_cards)
         buttons_layout.addWidget(refresh_btn)
 
+        self.lock_button = QPushButton("Karte sperren")
+        self.lock_button.setObjectName("SecondaryButton")
+        self.lock_button.clicked.connect(self.on_lock_selected_card)
+        buttons_layout.addWidget(self.lock_button)
+
         layout.addLayout(buttons_layout)
 
         # Tabelle
@@ -203,8 +208,27 @@ class CardsPage(QWidget):
                 QMessageBox.information(
                     self,
                     "Karte ausgewählt",
-                    f"Kartennummer: {card.get('card_number', '-')}",
+                    f"Kartennummer: {card.get('card_number', '-')}"
                 )
+
+    def on_lock_selected_card(self):
+        row = self.table.currentRow()
+        if row < 0 or row >= len(self.cards):
+            QMessageBox.information(self, "Keine Karte ausgewählt", "Bitte wählen Sie zuerst eine Karte aus.")
+            return
+
+        card = self.cards[row]
+        card_id = card.get("id")
+        if card.get("status") == CardStatus.GESPERRT:
+            QMessageBox.information(self, "Bereits gesperrt", "Die ausgewählte Karte ist bereits gesperrt.")
+            return
+
+        success = self.card_service.lock_card(card_id)
+        if success:
+            QMessageBox.information(self, "Karte gesperrt", "Die Karte wurde erfolgreich gesperrt.")
+            self.load_cards()
+        else:
+            QMessageBox.warning(self, "Fehler", "Die Karte konnte nicht gesperrt werden.")
 
     def apply_filters(
         self,

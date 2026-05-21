@@ -56,6 +56,7 @@ class ClaimService:
         category_id: int | None = None,
         examiner_id: int | None = None,
         search_text: str | None = None,
+        person_id: int | None = None,
     ) -> list[dict]:
         return self.claim_repository.get_claims(
             location_id=location_id,
@@ -63,6 +64,7 @@ class ClaimService:
             category_id=category_id,
             examiner_id=examiner_id,
             search_text=search_text,
+            person_id=person_id,
         )
 
     def evaluate_claim(

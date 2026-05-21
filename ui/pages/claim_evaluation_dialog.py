@@ -22,6 +22,8 @@ from PyQt6.QtCore import Qt
 
 from core.session import Session
 from services.claim_service import ClaimService
+from services.document_service import DocumentService
+from services.pdf_service import PDFService
 
 
 class ClaimEvaluationDialog(QDialog):
@@ -386,6 +388,22 @@ class ClaimEvaluationDialog(QDialog):
                 disability_degree=disability_degree,
                 examiner_id=Session.get_user_id(),
             )
+
+            pdf_service = PDFService()
+            pdf_path = pdf_service.generate_claim_evaluation_pdf(self.claim_id)
+            document_service = DocumentService()
+            document_types = document_service.list_document_types()
+            pruefprotokoll = next((dt for dt in document_types if dt["name"] == "Prüfprotokoll"), None)
+            if pruefprotokoll is not None:
+                document_service.create_document(
+                    source_file_path=pdf_path,
+                    title="Prüfungsprotokoll",
+                    document_type_id=pruefprotokoll["id"],
+                    description="Automatisch generiertes Prüfungsprotokoll",
+                    claim_id=self.claim_id,
+                    person_id=self.claim.get("person_id") if self.claim else None,
+                    location_id=self.claim.get("location_id") if self.claim else None,
+                )
         except Exception as e:
             QMessageBox.critical(self, "Fehler", f"Fehler beim Speichern der Daten: {e}")
             return

@@ -20,6 +20,7 @@ from services.claim_service import ClaimService
 from services.user_service import UserService
 from ui.pages.claim_detail_page import ClaimDetailPage
 from ui.pages.case_create_page import CaseCreateDialog
+from ui.pages.person_dossier_dialog import PersonDossierDialog
 
 
 class ClaimsPage(QWidget):
@@ -181,6 +182,12 @@ class ClaimsPage(QWidget):
         try:
             claim_id = int(id_item.text())
         except ValueError:
+            return
+
+        claim = self.claims[row]
+        if column == 2 and claim.get("person_id"):
+            dialog = PersonDossierDialog(person_id=claim["person_id"])
+            dialog.exec()
             return
 
         dialog = ClaimDetailPage(

@@ -17,7 +17,9 @@ from reportlab.platypus.tables import TableStyle
 
 from services.claim_service import ClaimService
 from services.card_service import CardService
+from services.document_service import DocumentService
 from services.report_service import ReportService
+from database.repositories.person_repository import PersonRepository
 
 
 PDF_ROOT = Path("data") / "pdfs"
@@ -28,8 +30,11 @@ class PDFService:
         self,
         claim_service: ClaimService | None = None,
         card_service: CardService | None = None,
+        document_service: DocumentService | None = None,
         report_service: ReportService | None = None,
     ):
+        self.document_service = document_service or DocumentService()
+        self.person_repository = PersonRepository()
         self.claim_service = claim_service or ClaimService()
         self.card_service = card_service or CardService()
         self.report_service = report_service or ReportService()
@@ -140,6 +145,60 @@ class PDFService:
 
         return self._build_document(Path(file_path), story)
 
+    def generate_person_dossier_pdf(
+        self,
+        person_id: int,
+        file_path: Optional[str] = None,
+    ) -> str:
+        person = self.person_repository.get_person_by_id(person_id)
+        if person is None:
+            raise ValueError("Person nicht gefunden.")
+
+        claims = self.claim_service.list_claims(person_id=person_id)
+        documents = self.document_service.list_documents(person_id=person_id)
+
+        if file_path is None:
+            file_path = str(PDF_ROOT / f"Dossier_Person_{person_id}.pdf")
+
+        story: list = []
+        story.append(Paragraph("Personendossier", self.heading_style))
+        story.append(Paragraph(f"Name: {person.get('first_name','-')} {person.get('last_name','-')}", self.normal_style))
+        story.append(Paragraph(f"Adresse: {person.get('address','-')}", self.normal_style))
+        story.append(Paragraph(f"Ort: {person.get('postal_code','-')} {person.get('city','-')}", self.normal_style))
+        story.append(Paragraph(f"E-Mail: {person.get('email','-')}", self.normal_style))
+        story.append(Spacer(1, 12))
+
+        story.append(Paragraph("Fälle", self.section_style))
+        if claims:
+            claim_rows = [["Fallnummer", "Status", "Kategorie", "Standort"]]
+            for claim in claims:
+                claim_rows.append([
+                    claim.get("case_number", "-"),
+                    claim.get("status", "-"),
+                    claim.get("category_name", "-"),
+                    claim.get("location_name", "-"),
+                ])
+            story.append(self._format_table(claim_rows, [120, 110, 110, 110]))
+        else:
+            story.append(Paragraph("Keine zugeordneten Fälle.", self.normal_style))
+
+        story.append(Spacer(1, 12))
+        story.append(Paragraph("Dokumente", self.section_style))
+        if documents:
+            doc_rows = [["Titel", "Typ", "Hochgeladen", "Status"]]
+            for doc in documents:
+                doc_rows.append([
+                    doc.get("title", "-"),
+                    doc.get("document_type_name", "-"),
+                    doc.get("uploaded_at", "-"),
+                    doc.get("status", "-"),
+                ])
+            story.append(self._format_table(doc_rows, [160, 120, 120, 100]))
+        else:
+            story.append(Paragraph("Keine Dokumente vorhanden.", self.normal_style))
+
+        return self._build_document(Path(file_path), story)
+
     def generate_case_summary_pdf(
         self,
         claim_id: int,
@@ -163,58 +222,82 @@ class PDFService:
 
         return self._build_document(Path(file_path), story)
 
-    def generate_card_print_pdf(
+    def generate_customer_report_pdf(
         self,
-        card_id: int,
+        location_id: Optional[int],
+        year: int,
+        month: int,
         file_path: Optional[str] = None,
     ) -> str:
-        card = self.card_service.get_card(card_id)
-        if card is None:
-            raise ValueError("Karte nicht gefunden.")
-
+        report = self.report_service.get_customer_monthly_report(location_id, year, month)
+        location_part = report["location_name"].replace(" ", "_")
         if file_path is None:
-            filename = f"Kartenausdruck_{card_id}.pdf"
-            file_path = str(PDF_ROOT / filename)
+            file_path = str(PDF_ROOT / f"Kundenbestand_{location_part}_{year}_{month:02d}.pdf")
 
         story: list = []
-        story.append(Paragraph("Kartenausdruck", self.heading_style))
-        story.append(Paragraph(f"Kartennummer: {card.get('card_number', '-')}", self.normal_style))
-        story.append(Paragraph(f"Fallnummer: {card.get('case_number', '-')}", self.normal_style))
-        person_name = f"{card.get('person_first_name', '-') } {card.get('person_last_name', '-') }"
-        story.append(Paragraph(f"Person: {person_name}", self.normal_style))
+        story.append(Paragraph("Monatsreport Kundenbestand", self.heading_style))
+        story.append(Paragraph(f"Standort: {report['location_name']}", self.normal_style))
+        story.append(Paragraph(f"Monat: {report['report_month']}", self.normal_style))
+        story.append(Spacer(1, 12))
+        story.append(Paragraph("Neukunden im Monat", self.section_style))
+        story.append(Paragraph(str(report["new_customers"]), self.normal_style))
+        story.append(Spacer(1, 12))
+        story.append(Paragraph("Gesamtbestand Kunden", self.section_style))
+        story.append(Paragraph(str(report["total_customers"]), self.normal_style))
 
         return self._build_document(Path(file_path), story)
 
-    def generate_location_report_pdf(
+    def generate_period_report_pdf(
         self,
-        location_id: Optional[int] = None,
+        location_id: Optional[int],
+        start_date: str,
+        end_date: str,
+        selected_metrics: list[str] | None = None,
+        file_path: Optional[str] = None,
     ) -> str:
-        report = self.report_service.get_location_report(location_id)
-        if location_id is None:
-            filename = "Standortreport_alle.pdf"
-        else:
-            filename = f"Standortreport_{location_id}.pdf"
+        report = self.report_service.get_period_report(start_date, end_date, location_id)
+        if file_path is None:
+            location_part = report["location_name"].replace(" ", "_")
+            file_path = str(PDF_ROOT / f"Zeitraumreport_{location_part}_{start_date}_{end_date}.pdf")
 
-        file_path = str(PDF_ROOT / filename)
+        if selected_metrics is None:
+            selected_metrics = [
+                "applications",
+                "evaluations",
+                "approved",
+                "rejected",
+                "hardship",
+                "cards",
+            ]
 
         story: list = []
-        story.append(Paragraph("Standortreport", self.heading_style))
-        story.append(Paragraph(f"Standort: {report.get('location_name', '-')}", self.normal_style))
+        story.append(Paragraph("Zeitraumreport", self.heading_style))
+        story.append(Paragraph(f"Standort: {report['location_name']}", self.normal_style))
+        story.append(Paragraph(f"Zeitraum: {report['start_date']} bis {report['end_date']}", self.normal_style))
         story.append(Spacer(1, 12))
 
-        claim_rows = [["Status", "Anzahl"]] + [[item['status'], str(item['count'])] for item in report['claim_status_counts']]
-        card_rows = [["Status", "Anzahl"]] + [[item['status'], str(item['count'])] for item in report['card_status_counts']]
+        metric_rows = [["Kennzahl", "Wert"]]
+        if "applications" in selected_metrics:
+            metric_rows.append(["Anträge", str(report["total_applications"])])
+        if "evaluations" in selected_metrics:
+            metric_rows.append(["Prüfungen", str(report["total_evaluations"])])
+        if "approved" in selected_metrics:
+            metric_rows.append(["anspruchsberechtigte", str(report["approved_claims"])])
+        if "rejected" in selected_metrics:
+            metric_rows.append(["abgelehnte", str(report["rejected_claims"])])
+        if "hardship" in selected_metrics:
+            metric_rows.append(["Härtefälle", str(report["hardship_claims"])])
 
-        story.append(Paragraph("Anspruchsstatus", self.section_style))
-        story.append(self._format_table(claim_rows))
-        story.append(Spacer(1, 12))
-        story.append(Paragraph("Kartenstatus", self.section_style))
-        story.append(self._format_table(card_rows))
+        if len(metric_rows) > 1:
+            story.append(self._format_table(metric_rows))
+            story.append(Spacer(1, 12))
 
-        return self._build_document(Path(file_path), story)
-        story.append(Paragraph(
-            f"Begründung: {claim.get('evaluation_reason', '-')}", self.normal_style
-        ))
+        if "cards" in selected_metrics and report["cards_by_location"]:
+            story.append(Paragraph("Kundenstamm pro Laden", self.section_style))
+            card_rows = [["Standort", "Karten im Zeitraum"]]
+            for item in report["cards_by_location"]:
+                card_rows.append([item.get("location_name", "-"), str(item.get("card_count", 0))])
+            story.append(self._format_table(card_rows))
 
         return self._build_document(Path(file_path), story)
 
@@ -285,11 +368,11 @@ class PDFService:
 
         story.append(Paragraph("Anspruchsstatus", self.section_style))
         claim_rows = [["Status", "Anzahl"]] + [[item["status"], str(item["count"])] for item in report["claim_status_counts"]]
-        story.append(self._format_table(claim_rows, [8 * cm, 8 * cm]))
+        story.append(self._format_table(claim_rows))
         story.append(Spacer(1, 12))
 
         story.append(Paragraph("Kartenstatus", self.section_style))
         card_rows = [["Status", "Anzahl"]] + [[item["status"], str(item["count"])] for item in report["card_status_counts"]]
-        story.append(self._format_table(card_rows, [8 * cm, 8 * cm]))
+        story.append(self._format_table(card_rows))
 
         return self._build_document(Path(file_path), story)

@@ -1,0 +1,144 @@
+body {
+  margin: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: #f3f5f9;
+  color: #0f172a;
+}
+
+main {
+  max-width: 1200px;
+  margin: 24px auto;
+  padding: 0 24px 24px;
+}
+
+.hero {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 24px;
+}
+
+.hero h1 {
+  margin: 0;
+  font-size: 2rem;
+}
+
+.hero p {
+  margin: 8px 0 0;
+  color: #475569;
+  max-width: 720px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.metrics {
+  margin-bottom: 24px;
+}
+
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.metric-grid vscode-checkbox {
+  width: 100%;
+}
+
+.filter-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.filter-row label {
+  font-weight: 600;
+  color: #334155;
+}
+
+.report-card {
+  background: white;
+  border-radius: 18px;
+  box-shadow: 0 18px 56px rgba(15, 23, 42, 0.08);
+  padding: 24px;
+}
+
+.report-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  margin-bottom: 20px;
+}
+
+.report-summary div {
+  min-width: 220px;
+}
+
+.report-summary .label {
+  display: block;
+  font-size: 0.9rem;
+  color: #64748b;
+}
+
+.report-summary strong {
+  display: block;
+  margin-top: 6px;
+  font-size: 1.1rem;
+}
+
+#reportTable {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 14px;
+}
+
+#reportTable th,
+#reportTable td,
+#locationTable th,
+#locationTable td {
+  text-align: left;
+  padding: 14px 16px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+#reportTable th,
+#locationTable th {
+  background: #f8fafc;
+  color: #334155;
+  font-weight: 700;
+}
+
+.location-section {
+  margin-top: 20px;
+}
+
+.location-section.hidden {
+  display: none;
+}
+
+.message {
+  min-height: 1.5em;
+  font-size: 0.95rem;
+  color: #475569;
+}
+
+.message.error {
+  color: #b42318;
+}
+
+.message.success {
+  color: #0f766e;
+}

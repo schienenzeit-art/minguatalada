@@ -90,6 +90,7 @@ class ClaimRepository:
         category_id: int | None = None,
         examiner_id: int | None = None,
         search_text: str | None = None,
+        person_id: int | None = None,
     ) -> list[dict]:
         with get_connection() as connection:
             tbl = self._table_name(connection)
@@ -109,6 +110,7 @@ class ClaimRepository:
                 "    e.full_name AS examiner_name,",
                 "    l.id AS location_id,",
                 "    l.name AS location_name,",
+                "    p.id AS person_id,",
                 "    p.first_name AS person_first_name,",
                 "    p.last_name AS person_last_name,",
                 "    cat.id AS category_id,",
@@ -139,6 +141,10 @@ class ClaimRepository:
                 filters.append("c.examiner_id = ?")
                 params.append(examiner_id)
 
+            if person_id is not None:
+                filters.append("c.person_id = ?")
+                params.append(person_id)
+
             if search_text:
                 search = f"%{search_text.strip().lower()}%"
                 filters.append(
@@ -165,6 +171,10 @@ class ClaimRepository:
         examiner_id: int | None = None,
         start_date: str | None = None,
         created_since_days: int | None = None,
+        created_from: str | None = None,
+        created_to: str | None = None,
+        evaluation_from: str | None = None,
+        evaluation_to: str | None = None,
     ) -> int:
         with get_connection() as connection:
             tbl = self._table_name(connection)
@@ -198,6 +208,22 @@ class ClaimRepository:
             if created_since_days is not None:
                 filters.append("DATE(c.created_at) >= DATE('now', ?)")
                 params.append(f"-{created_since_days} days")
+
+            if created_from is not None:
+                filters.append("DATE(c.created_at) >= DATE(?)")
+                params.append(created_from)
+
+            if created_to is not None:
+                filters.append("DATE(c.created_at) <= DATE(?)")
+                params.append(created_to)
+
+            if evaluation_from is not None:
+                filters.append("DATE(c.evaluation_date) >= DATE(?)")
+                params.append(evaluation_from)
+
+            if evaluation_to is not None:
+                filters.append("DATE(c.evaluation_date) <= DATE(?)")
+                params.append(evaluation_to)
 
             if filters:
                 query.append("WHERE " + " AND ".join(filters))

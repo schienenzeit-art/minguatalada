@@ -19,6 +19,7 @@ from services.card_service import CardService
 from services.claim_service import ClaimService
 from core.session import Session
 from ui.pages.claim_evaluation_dialog import ClaimEvaluationDialog
+from ui.pages.person_dossier_dialog import PersonDossierDialog
 
 
 class ClaimDetailPage(QDialog):
@@ -68,7 +69,10 @@ class ClaimDetailPage(QDialog):
         header_layout.setVerticalSpacing(12)
 
         self.case_number_label = QLabel("-")
-        self.person_label = QLabel("-")
+        self.person_label = QPushButton("-")
+        self.person_label.setFlat(True)
+        self.person_label.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.person_label.clicked.connect(self.open_person_dossier)
         self.location_label = QLabel("-")
         self.user_label = QLabel("-")
         self.status_label = QLabel("-")
@@ -255,6 +259,15 @@ class ClaimDetailPage(QDialog):
             f"{claim['start_date'] or '-'} bis {claim['end_date'] or '-'}"
         )
         self.description_label.setText(claim["description"] or "-")
+        self.person_label.setEnabled(bool(claim.get("person_id")))
+        if claim.get("person_display_name"):
+            self.person_label.setText(claim.get("person_display_name"))
+            self.person_label.setStyleSheet(
+                "text-align:left; color:#1a73e8; text-decoration: underline; background: transparent; border: none;"
+            )
+        else:
+            self.person_label.setText("-")
+            self.person_label.setStyleSheet("")
         self.created_label.setText(claim["created_at"] or "-")
         self.updated_label.setText(claim["updated_at"] or "-")
         self.examiner_label.setText(claim.get("examiner_name") or "-")
@@ -333,6 +346,14 @@ class ClaimDetailPage(QDialog):
 
         # Karten laden und anzeigen
         self.load_cards()
+
+    def open_person_dossier(self):
+        if not self.claim or not self.claim.get("person_id"):
+            QMessageBox.information(self, "Person nicht verfügbar", "Keine Person zum Anzeigen gefunden.")
+            return
+
+        dialog = PersonDossierDialog(person_id=self.claim["person_id"])
+        dialog.exec()
 
     def load_cards(self):
         """Lädt und zeigt Karten für den Fall an."""
