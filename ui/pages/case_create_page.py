@@ -14,6 +14,7 @@ from PyQt6.QtWidgets import (
     QWidget,
     QFileDialog,
     QListWidget,
+    QScrollArea,
 )
 from PyQt6.QtCore import Qt
 
@@ -32,7 +33,15 @@ class CaseCreateDialog(QDialog):
     ):
         super().__init__(parent)
         self.setWindowTitle("Neuen Antrag / Person erfassen")
-        self.setMinimumWidth(720)
+        # Make this dialog a proper top-level window with minimize/maximize
+        flags = self.windowFlags()
+        flags |= Qt.WindowType.Window
+        flags |= Qt.WindowType.WindowMinimizeButtonHint
+        flags |= Qt.WindowType.WindowMaximizeButtonHint
+        self.setWindowFlags(flags)
+        # Allow resizing and sensible default size
+        self.setMinimumSize(720, 480)
+        self.resize(900, 700)
 
         self.case_service = case_service or CaseService()
         self.claim_service = claim_service or ClaimService()
@@ -44,9 +53,10 @@ class CaseCreateDialog(QDialog):
         self.setup_ui()
 
     def setup_ui(self):
-        main_layout = QVBoxLayout()
-        main_layout.setSpacing(16)
-        main_layout.setContentsMargins(20, 20, 20, 20)
+        # Main content layout placed inside a scrollable area
+        content_layout = QVBoxLayout()
+        content_layout.setSpacing(16)
+        content_layout.setContentsMargins(20, 20, 20, 20)
 
         header = QLabel("Neue Person und neuer Fall")
         header.setObjectName("pageTitle")
@@ -62,7 +72,7 @@ class CaseCreateDialog(QDialog):
         header_card_layout.addWidget(header)
         header_card_layout.addWidget(description)
 
-        main_layout.addWidget(header_card)
+        content_layout.addWidget(header_card)
 
         person_card = QGroupBox("Personendaten")
         person_form = QFormLayout()
@@ -90,7 +100,7 @@ class CaseCreateDialog(QDialog):
         person_form.addRow("Standort", self.location_combo)
 
         person_card.setLayout(person_form)
-        main_layout.addWidget(person_card)
+        content_layout.addWidget(person_card)
 
         case_card = QGroupBox("Fallinformation")
         case_layout = QVBoxLayout()
@@ -101,7 +111,7 @@ class CaseCreateDialog(QDialog):
         case_layout.addWidget(case_number_text)
         case_layout.addWidget(self.case_number_label)
         case_card.setLayout(case_layout)
-        main_layout.addWidget(case_card)
+        content_layout.addWidget(case_card)
 
         document_card = QGroupBox("Dokumente zum Antrag")
         document_layout = QVBoxLayout()
@@ -135,11 +145,9 @@ class CaseCreateDialog(QDialog):
         document_layout.addLayout(file_button_row)
         document_layout.addWidget(self.selected_files_list)
         document_card.setLayout(document_layout)
-        main_layout.addWidget(document_card)
+        content_layout.addWidget(document_card)
 
-        button_layout = QHBoxLayout()
-        button_layout.setSpacing(12)
-
+        # Action buttons are placed outside the scroll area so they remain reachable
         self.save_button = QPushButton("Speichern und Fall anlegen")
         self.save_button.setObjectName("primaryButton")
         self.save_button.clicked.connect(self.on_save)
@@ -149,12 +157,27 @@ class CaseCreateDialog(QDialog):
         self.start_eval_button.setEnabled(False)
         self.start_eval_button.clicked.connect(self.on_start_evaluation)
 
-        button_layout.addWidget(self.save_button)
-        button_layout.addWidget(self.start_eval_button)
-        button_layout.addStretch()
+        action_bar = QWidget()
+        action_layout = QHBoxLayout(action_bar)
+        action_layout.setContentsMargins(12, 8, 12, 12)
+        action_layout.setSpacing(12)
+        action_layout.addWidget(self.save_button)
+        action_layout.addWidget(self.start_eval_button)
+        action_layout.addStretch()
 
-        main_layout.addLayout(button_layout)
-        self.setLayout(main_layout)
+        # Scroll area for content
+        scroll = QScrollArea(self)
+        scroll.setWidgetResizable(True)
+        content_widget = QWidget()
+        content_widget.setLayout(content_layout)
+        scroll.setWidget(content_widget)
+
+        outer_layout = QVBoxLayout()
+        outer_layout.setContentsMargins(0, 0, 0, 0)
+        outer_layout.addWidget(scroll)
+        outer_layout.addWidget(action_bar)
+
+        self.setLayout(outer_layout)
         self.load_choices()
         self.load_document_types()
 

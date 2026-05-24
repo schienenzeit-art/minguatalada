@@ -93,19 +93,42 @@ function renderReport(report) {
   } else {
     locationSection.classList.add('hidden');
   }
+
+  const hasAnyMetricData = selectedMetrics.some(metric => {
+    switch (metric) {
+      case 'applications':
+        return report.total_applications > 0;
+      case 'evaluations':
+        return report.total_evaluations > 0;
+      case 'approved':
+        return report.approved_claims > 0;
+      case 'rejected':
+        return report.rejected_claims > 0;
+      case 'hardship':
+        return report.hardship_claims > 0;
+      case 'cards':
+        return report.cards_by_location && report.cards_by_location.length > 0;
+      default:
+        return false;
+    }
+  });
+
+  if (!hasAnyMetricData && selectedMetrics.length > 0) {
+    showMessage('Für den gewählten Zeitraum wurden keine Ergebnisse gefunden.', 'info');
+  }
 }
 
 async function loadLocations() {
   const locationSelect = document.getElementById('locationSelect');
   locationSelect.innerHTML = '';
-  const allOption = document.createElement('vscode-option');
+  const allOption = document.createElement('option');
   allOption.value = -1;
   allOption.textContent = 'Alle Standorte';
   locationSelect.appendChild(allOption);
 
   const locations = await bridge.get_locations();
   locations.forEach(location => {
-    const option = document.createElement('vscode-option');
+    const option = document.createElement('option');
     option.value = location.id;
     option.textContent = location.name;
     locationSelect.appendChild(option);
@@ -139,9 +162,14 @@ async function loadReport() {
     return;
   }
 
-  const report = await bridge.get_period_report(locationId, startDate, endDate);
-  setReportSummary(report);
-  renderReport(report);
+  try {
+    const report = await bridge.get_period_report(locationId, startDate, endDate);
+    setReportSummary(report);
+    renderReport(report);
+  } catch (error) {
+    console.error(error);
+    showMessage('Fehler beim Laden des Reports: ' + (error.message || error), 'error');
+  }
 }
 
 async function exportPdf() {
@@ -158,13 +186,18 @@ async function exportPdf() {
     return;
   }
 
-  const path = await bridge.export_report_pdf(locationId, startDate, endDate, selectedMetrics);
-  if (path) {
-    const url = `file:///${path.replace(/\\/g, '/')}`;
-    window.open(url);
-    showMessage('PDF wurde generiert und sollte nun geöffnet werden.', 'success');
-  } else {
-    showMessage('PDF konnte nicht erstellt werden.', 'error');
+  try {
+    const path = await bridge.export_report_pdf(locationId, startDate, endDate, selectedMetrics);
+    if (path) {
+      const url = `file:///${path.replace(/\\/g, '/')}`;
+      window.open(url);
+      showMessage('PDF wurde generiert und sollte nun geöffnet werden.', 'success');
+    } else {
+      showMessage('PDF konnte nicht erstellt werden.', 'error');
+    }
+  } catch (error) {
+    console.error(error);
+    showMessage('Fehler beim PDF-Export: ' + (error.message || error), 'error');
   }
 }
 
@@ -182,13 +215,18 @@ async function exportExcel() {
     return;
   }
 
-  const path = await bridge.export_report_excel(locationId, startDate, endDate, selectedMetrics);
-  if (path) {
-    const url = `file:///${path.replace(/\\/g, '/')}`;
-    window.open(url);
-    showMessage('Excel-Datei wurde generiert und sollte nun geöffnet werden.', 'success');
-  } else {
-    showMessage('Excel-Datei konnte nicht erstellt werden.', 'error');
+  try {
+    const path = await bridge.export_report_excel(locationId, startDate, endDate, selectedMetrics);
+    if (path) {
+      const url = `file:///${path.replace(/\\/g, '/')}`;
+      window.open(url);
+      showMessage('Excel-Datei wurde generiert und sollte nun geöffnet werden.', 'success');
+    } else {
+      showMessage('Excel-Datei konnte nicht erstellt werden.', 'error');
+    }
+  } catch (error) {
+    console.error(error);
+    showMessage('Fehler beim Excel-Export: ' + (error.message || error), 'error');
   }
 }
 
@@ -203,6 +241,9 @@ function wireEvents() {
   document.getElementById('refreshButton').addEventListener('click', loadReport);
   document.getElementById('exportPdfButton').addEventListener('click', exportPdf);
   document.getElementById('exportExcelButton').addEventListener('click', exportExcel);
+  document.getElementById('locationSelect').addEventListener('change', loadReport);
+  document.getElementById('startDateInput').addEventListener('change', loadReport);
+  document.getElementById('endDateInput').addEventListener('change', loadReport);
   REPORT_METRICS.forEach(metric => {
     const checkbox = document.getElementById(`metric-${metric.id}`);
     if (checkbox) {

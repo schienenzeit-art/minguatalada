@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Zeitraumreport</title>
-  <script type="module" src="https://unpkg.com/@vscode-elements/elements/vscode-element.js"></script>
   <script src="qrc:///qtwebchannel/qwebchannel.js"></script>
   <link rel="stylesheet" href="reports.css" />
 </head>
@@ -16,16 +15,16 @@
         <p>Erstellt Berichtszahlen für Anträge, Prüfungen, Entscheidungen und Kundenstamm pro Laden im gewählten Zeitraum.</p>
       </div>
       <div class="actions">
-        <vscode-button id="refreshButton" appearance="secondary">Aktualisieren</vscode-button>
-        <vscode-button id="exportPdfButton">PDF exportieren</vscode-button>
-        <vscode-button id="exportExcelButton" appearance="secondary">Excel exportieren</vscode-button>
+        <button id="refreshButton" type="button" class="secondary">Aktualisieren</button>
+        <button id="exportPdfButton" type="button" class="primary">PDF exportieren</button>
+        <button id="exportExcelButton" type="button" class="secondary">Excel exportieren</button>
       </div>
     </section>
 
     <section class="filters">
       <div class="filter-row">
         <label for="locationSelect">Standort</label>
-        <vscode-dropdown id="locationSelect"></vscode-dropdown>
+        <select id="locationSelect"></select>
       </div>
       <div class="filter-row">
         <label for="startDateInput">Startdatum</label>
@@ -40,12 +39,12 @@
     <section class="metrics">
       <h2>Report-Parameter</h2>
       <div class="metric-grid">
-        <div><vscode-checkbox id="metric-applications" checked>Anträge</vscode-checkbox></div>
-        <div><vscode-checkbox id="metric-evaluations" checked>Prüfungen</vscode-checkbox></div>
-        <div><vscode-checkbox id="metric-approved" checked>anspruchsberechtigte</vscode-checkbox></div>
-        <div><vscode-checkbox id="metric-rejected" checked>abgelehnte</vscode-checkbox></div>
-        <div><vscode-checkbox id="metric-hardship" checked>Härtefälle</vscode-checkbox></div>
-        <div><vscode-checkbox id="metric-cards" checked>Kundenstamm pro Laden</vscode-checkbox></div>
+        <div class="metric-item"><label><input id="metric-applications" type="checkbox" checked /> Anträge</label></div>
+        <div class="metric-item"><label><input id="metric-evaluations" type="checkbox" checked /> Prüfungen</label></div>
+        <div class="metric-item"><label><input id="metric-approved" type="checkbox" checked /> anspruchsberechtigte</label></div>
+        <div class="metric-item"><label><input id="metric-rejected" type="checkbox" checked /> abgelehnte</label></div>
+        <div class="metric-item"><label><input id="metric-hardship" type="checkbox" checked /> Härtefälle</label></div>
+        <div class="metric-item"><label><input id="metric-cards" type="checkbox" checked /> Kundenstamm pro Laden</label></div>
       </div>
     </section>
 

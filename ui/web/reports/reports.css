@@ -37,6 +37,55 @@ main {
   gap: 10px;
 }
 
+button {
+  border: 1px solid #0f172a;
+  background: #ffffff;
+  color: #0f172a;
+  padding: 0.75rem 1.25rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+button.primary {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: white;
+}
+
+button.secondary {
+  background: #f8fafc;
+}
+
+button:hover {
+  opacity: 0.95;
+}
+
+button:active {
+  transform: translateY(1px);
+}
+
+.metric-item {
+  padding: 14px 12px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+}
+
+.metric-item label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.metric-item input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+}
+
 .filters {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
