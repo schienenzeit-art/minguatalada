@@ -14,11 +14,13 @@ from services.case_service import CaseService
 from services.category_service import CategoryService
 from services.claim_service import ClaimService
 from services.document_service import DocumentService
+from services.filter_preset_service import FilterPresetService
 from services.location_service import LocationService
 from services.person_service import PersonService
 from services.role_service import RoleService
 from services.report_service import ReportService
 from services.pdf_service import PDFService
+from services.search_service import SearchService
 from services.user_service import UserService
 from services.pruefung_service import PruefungService
 from services.settings_service import SettingsService
@@ -43,6 +45,8 @@ class ServiceContainer:
     person_service: PersonService
     dashboard_service: DashboardService
     document_service: DocumentService
+    search_service: SearchService
+    filter_preset_service: FilterPresetService
 
 
 def build_service_container() -> ServiceContainer:
@@ -60,13 +64,14 @@ def build_service_container() -> ServiceContainer:
     category_service = CategoryService(category_repository=category_repository)
     location_service = LocationService()
     card_service = CardService()
+    settings_service = SettingsService()
     case_service = CaseService(
         person_repo=person_repository,
         case_repo=case_repository,
         location_repo=location_repository,
         category_repo=category_repository,
+        settings_service=settings_service,
     )
-    settings_service = SettingsService()
     claim_service = ClaimService(
         claim_repository=claim_repository,
         income_repository=income_repository,
@@ -98,6 +103,8 @@ def build_service_container() -> ServiceContainer:
     )
 
     document_service = DocumentService()
+    search_service = SearchService()
+    filter_preset_service = FilterPresetService()
 
     return ServiceContainer(
         auth_service=auth_service,
@@ -115,4 +122,6 @@ def build_service_container() -> ServiceContainer:
         pdf_service=pdf_service,
         dashboard_service=dashboard_service,
         document_service=document_service,
+        search_service=search_service,
+        filter_preset_service=filter_preset_service,
     )

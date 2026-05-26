@@ -121,6 +121,7 @@ class DocumentService:
         person_id: int | None = None,
         card_id: int | None = None,
         location_id: int | None = None,
+        expiry_date: str | None = None,
     ) -> Dict[str, object]:
         if Session.get_user_id() is None:
             raise PermissionError("Zum Hochladen von Dokumenten müssen Sie angemeldet sein.")
@@ -160,6 +161,7 @@ class DocumentService:
             uploaded_by=Session.get_user_id(),
             uploaded_at=now,
             updated_at=now,
+            expiry_date=expiry_date,
         )
 
         self._record_audit_log(

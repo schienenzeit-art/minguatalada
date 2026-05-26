@@ -24,7 +24,6 @@ from services.claim_service import ClaimService
 from services.document_service import DocumentService
 from services.pdf_service import PDFService
 from database.repositories.person_repository import PersonRepository
-from ui.pages.claim_detail_page import ClaimDetailPage
 
 
 class PersonDossierDialog(QDialog):
@@ -235,6 +234,7 @@ class PersonDossierDialog(QDialog):
             return
         claim_id = item.data(Qt.ItemDataRole.UserRole)
         if claim_id:
+            from ui.pages.claim_detail_page import ClaimDetailPage
             dialog = ClaimDetailPage(claim_id=claim_id, claim_service=self.claim_service)
             dialog.exec()
 

@@ -179,9 +179,13 @@ class CardService:
             search_text=search_text,
         )
 
-    def lock_card(self, card_id: int) -> bool:
-        """Sperrt eine Karte."""
-        return self.card_repository.update_card_status(card_id, CardStatus.GESPERRT)
+    def lock_card(self, card_id: int, block_reason: str | None = None) -> bool:
+        """Sperrt eine Karte (optional mit Sperrgrund)."""
+        return self.card_repository.update_card_status_with_reason(card_id, CardStatus.GESPERRT, block_reason)
+
+    def get_card_stats(self, location_id: int | None = None) -> dict:
+        """Gibt Karten-Statistiken pro Standort zurück."""
+        return self.card_repository.get_card_stats_by_location(location_id)
 
     def archive_card(self, card_id: int) -> bool:
         """Archiviert eine Karte."""

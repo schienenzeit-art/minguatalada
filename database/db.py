@@ -245,6 +245,25 @@ def initialize_database() -> None:
                 details TEXT,
                 FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
             );
+
+            CREATE TABLE IF NOT EXISTS claim_notes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                claim_id INTEGER NOT NULL,
+                user_id INTEGER,
+                note_text TEXT NOT NULL,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (claim_id) REFERENCES claims(id) ON DELETE CASCADE,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS filter_presets (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER,
+                name TEXT NOT NULL,
+                filter_json TEXT NOT NULL,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            );
             """
         )
 
@@ -486,6 +505,47 @@ def initialize_database() -> None:
                     note TEXT,
                     FOREIGN KEY (claim_id) REFERENCES claims(id) ON DELETE CASCADE,
                     FOREIGN KEY (changed_by) REFERENCES users(id) ON DELETE SET NULL
+                )
+            """)
+            connection.commit()
+        except Exception:
+            pass
+
+        # Roadmap items 6-10 migrations
+        try:
+            if not has_column('claims', 'widerspruch_frist'):
+                connection.execute("ALTER TABLE claims ADD COLUMN widerspruch_frist TEXT")
+        except Exception:
+            pass
+        try:
+            if not has_column('cards', 'block_reason'):
+                connection.execute("ALTER TABLE cards ADD COLUMN block_reason TEXT")
+        except Exception:
+            pass
+        try:
+            connection.execute("""
+                CREATE TABLE IF NOT EXISTS claim_notes (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    claim_id INTEGER NOT NULL,
+                    user_id INTEGER,
+                    note_text TEXT NOT NULL,
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (claim_id) REFERENCES claims(id) ON DELETE CASCADE,
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+                )
+            """)
+            connection.commit()
+        except Exception:
+            pass
+        try:
+            connection.execute("""
+                CREATE TABLE IF NOT EXISTS filter_presets (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER,
+                    name TEXT NOT NULL,
+                    filter_json TEXT NOT NULL,
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
                 )
             """)
             connection.commit()

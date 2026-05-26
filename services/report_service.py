@@ -1,5 +1,5 @@
 from collections import Counter
-from datetime import date
+from datetime import date, timedelta
 from typing import Optional
 import calendar
 
@@ -180,3 +180,63 @@ class ReportService:
     def get_claim_counts_by_status(self, location_id: Optional[int] = None) -> list[dict]:
         report = self.get_location_report(location_id)
         return report["claim_status_counts"]
+
+    def get_period_comparison(
+        self,
+        start_date: str,
+        end_date: str,
+        location_id: Optional[int] = None,
+    ) -> dict:
+        """Vergleicht Berichtsperiode mit derselben Periode im Vorjahr."""
+        current = self.get_period_report(start_date, end_date, location_id)
+
+        try:
+            s = date.fromisoformat(start_date)
+            e = date.fromisoformat(end_date)
+            prev_start = date(s.year - 1, s.month, s.day).isoformat()
+            prev_end = date(e.year - 1, e.month, e.day).isoformat()
+        except Exception:
+            return {"current": current, "previous": None}
+
+        previous = self.get_period_report(prev_start, prev_end, location_id)
+
+        def _delta(curr_val: int, prev_val: int) -> dict:
+            diff = curr_val - prev_val
+            pct = round((diff / prev_val * 100) if prev_val else 0, 1)
+            return {"current": curr_val, "previous": prev_val, "diff": diff, "pct": pct}
+
+        return {
+            "location_name": current["location_name"],
+            "period": f"{start_date} – {end_date}",
+            "prev_period": f"{prev_start} – {prev_end}",
+            "total_applications": _delta(current["total_applications"], previous["total_applications"]),
+            "approved_claims": _delta(current["approved_claims"], previous["approved_claims"]),
+            "rejected_claims": _delta(current["rejected_claims"], previous["rejected_claims"]),
+            "hardship_claims": _delta(current["hardship_claims"], previous["hardship_claims"]),
+        }
+
+    def get_waitlist_report(self, location_id: Optional[int] = None) -> list[dict]:
+        """Offene Fälle (IN_PRUEFUNG) sortiert nach Wartezeit."""
+        from core.claim_status import ClaimStatus
+        claims = self.claim_repository.get_claims(
+            status=ClaimStatus.IN_PRUEFUNG,
+            location_id=location_id,
+        )
+        today = date.today()
+        result = []
+        for c in claims:
+            try:
+                created = date.fromisoformat(c["created_at"][:10])
+                wait_days = (today - created).days
+            except Exception:
+                wait_days = 0
+            result.append({
+                "id": c["id"],
+                "case_number": c.get("case_number", "-"),
+                "person": c.get("person_display_name") or c.get("user_name", "-"),
+                "location": c.get("location_name", "-"),
+                "created_at": c.get("created_at", "")[:10],
+                "wait_days": wait_days,
+            })
+        result.sort(key=lambda r: r["wait_days"], reverse=True)
+        return result

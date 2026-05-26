@@ -333,10 +333,7 @@ class CardRepository:
         try:
             with get_connection() as connection:
                 cursor = connection.execute(
-                    """
-                    UPDATE cards SET status = ?, updated_at = CURRENT_TIMESTAMP
-                    WHERE id = ?
-                    """,
+                    "UPDATE cards SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
                     (status, card_id),
                 )
                 connection.commit()
@@ -344,6 +341,37 @@ class CardRepository:
         except Exception as e:
             print(f"Fehler beim Aktualisieren des Kartenstatus: {e}")
             return False
+
+    def update_card_status_with_reason(self, card_id: int, status: str, block_reason: str | None = None) -> bool:
+        if not CardStatus.is_valid_status(status):
+            return False
+        try:
+            with get_connection() as connection:
+                cursor = connection.execute(
+                    "UPDATE cards SET status = ?, block_reason = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                    (status, block_reason, card_id),
+                )
+                connection.commit()
+                return cursor.rowcount > 0
+        except Exception as e:
+            print(f"Fehler beim Aktualisieren des Kartenstatus: {e}")
+            return False
+
+    def get_card_stats_by_location(self, location_id: int | None = None) -> dict:
+        params: list = []
+        where = "WHERE 1=1"
+        if location_id is not None:
+            where += " AND c.location_id = ?"
+            params.append(location_id)
+        with get_connection() as connection:
+            rows = connection.execute(
+                f"SELECT c.status, COUNT(*) AS cnt FROM cards c {where} GROUP BY c.status",
+                params,
+            ).fetchall()
+        stats: dict = {}
+        for r in rows:
+            stats[r["status"]] = r["cnt"]
+        return stats
 
     def get_next_card_number(self) -> str:
         """

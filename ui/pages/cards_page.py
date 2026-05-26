@@ -10,6 +10,7 @@ from PyQt6.QtWidgets import (
     QGroupBox,
     QFormLayout,
     QMessageBox,
+    QInputDialog,
 )
 from ui.components.table_widget import TableWidget
 from PyQt6.QtCore import Qt
@@ -18,6 +19,7 @@ from PyQt6.QtGui import QColor
 from services.card_service import CardService
 from services.claim_service import ClaimService
 from services.location_service import LocationService
+from services.pdf_service import PDFService
 from ui.pages.claim_detail_page import ClaimDetailPage
 from core.card_status import CardStatus
 
@@ -33,11 +35,13 @@ class CardsPage(QWidget):
         card_service: CardService | None = None,
         location_service: LocationService | None = None,
         claim_service: ClaimService | None = None,
+        pdf_service: PDFService | None = None,
     ):
         super().__init__()
         self.card_service = card_service or CardService()
         self.location_service = location_service or LocationService()
         self.claim_service = claim_service or ClaimService()
+        self.pdf_service = pdf_service or PDFService()
         self.cards = []
         self.active_filters = {}  # KPI-Filter speichern
         self.setup_ui()
@@ -82,6 +86,11 @@ class CardsPage(QWidget):
         filter_group.setLayout(filter_layout)
         layout.addWidget(filter_group)
 
+        # Statistiken
+        self.stats_label = QLabel()
+        self.stats_label.setStyleSheet("color: #374151; font-size: 12px; padding: 2px 0;")
+        layout.addWidget(self.stats_label)
+
         # Buttons-Bereich
         buttons_layout = QHBoxLayout()
         buttons_layout.addStretch()
@@ -95,6 +104,11 @@ class CardsPage(QWidget):
         self.lock_button.setObjectName("SecondaryButton")
         self.lock_button.clicked.connect(self.on_lock_selected_card)
         buttons_layout.addWidget(self.lock_button)
+
+        self.print_card_button = QPushButton("Karte drucken")
+        self.print_card_button.setObjectName("SecondaryButton")
+        self.print_card_button.clicked.connect(self.on_print_selected_card)
+        buttons_layout.addWidget(self.print_card_button)
 
         layout.addLayout(buttons_layout)
 
@@ -157,6 +171,7 @@ class CardsPage(QWidget):
         )
 
         self.render_table()
+        self._refresh_stats()
 
     def render_table(self):
         """Rendert die Kartentabelle."""
@@ -221,6 +236,17 @@ class CardsPage(QWidget):
                     f"Kartennummer: {card.get('card_number', '-')}"
                 )
 
+    def _refresh_stats(self) -> None:
+        location_id = self.location_combo.currentData()
+        stats = self.card_service.get_card_stats(location_id)
+        aktiv = stats.get(CardStatus.AKTIV, 0)
+        ablaufend = stats.get(CardStatus.BALD_ABLAUFEND, 0)
+        abgelaufen = stats.get(CardStatus.ABGELAUFEN, 0)
+        gesperrt = stats.get(CardStatus.GESPERRT, 0)
+        self.stats_label.setText(
+            f"Aktiv: {aktiv}  |  Bald ablaufend: {ablaufend}  |  Abgelaufen: {abgelaufen}  |  Gesperrt: {gesperrt}"
+        )
+
     def on_lock_selected_card(self):
         row = self.table.currentRow()
         if row < 0 or row >= len(self.cards):
@@ -233,12 +259,35 @@ class CardsPage(QWidget):
             QMessageBox.information(self, "Bereits gesperrt", "Die ausgewählte Karte ist bereits gesperrt.")
             return
 
-        success = self.card_service.lock_card(card_id)
+        reason, ok = QInputDialog.getText(
+            self, "Sperrgrund",
+            "Sperrgrund (z.B. Verlust, Diebstahl, Ablauf):",
+        )
+        if not ok:
+            return
+
+        success = self.card_service.lock_card(card_id, block_reason=reason.strip() or None)
         if success:
             QMessageBox.information(self, "Karte gesperrt", "Die Karte wurde erfolgreich gesperrt.")
             self.load_cards()
         else:
             QMessageBox.warning(self, "Fehler", "Die Karte konnte nicht gesperrt werden.")
+
+    def on_print_selected_card(self) -> None:
+        row = self.table.currentRow()
+        if row < 0 or row >= len(self.cards):
+            QMessageBox.information(self, "Keine Karte ausgewählt", "Bitte wählen Sie zuerst eine Karte aus.")
+            return
+        card = self.cards[row]
+        card_id = card.get("id")
+        try:
+            pdf_path = self.pdf_service.generate_card_print_pdf(card_id)
+            from PyQt6.QtGui import QDesktopServices
+            from PyQt6.QtCore import QUrl
+            QDesktopServices.openUrl(QUrl.fromLocalFile(pdf_path))
+            QMessageBox.information(self, "Kartenausdruck", f"PDF gespeichert:\n{pdf_path}")
+        except Exception as exc:
+            QMessageBox.warning(self, "Fehler", str(exc))
 
     def apply_filters(
         self,

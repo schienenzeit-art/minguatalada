@@ -13,6 +13,8 @@ from PyQt6.QtWidgets import (
     QScrollArea,
     QSizePolicy,
     QDateEdit,
+    QTextEdit,
+    QLineEdit,
 )
 from PyQt6.QtCore import Qt, QDate
 
@@ -288,17 +290,60 @@ class ClaimDetailPage(QDialog):
         cards_layout.addStretch()
         self.cards_group.setLayout(cards_layout)
 
+        # Interne Notizen
+        self.notes_group = QGroupBox("Interne Notizen")
+        self.notes_group.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+        notes_layout = QVBoxLayout()
+        notes_layout.setContentsMargins(10, 12, 10, 12)
+        notes_layout.setSpacing(6)
+        self.notes_input = QTextEdit()
+        self.notes_input.setPlaceholderText("Neue Notiz eingeben…")
+        self.notes_input.setFixedHeight(70)
+        notes_add_btn = QPushButton("Notiz hinzufügen")
+        notes_add_btn.setFixedWidth(150)
+        notes_add_btn.clicked.connect(self._add_note)
+        notes_top = QHBoxLayout()
+        notes_top.addWidget(self.notes_input)
+        notes_top.addWidget(notes_add_btn, alignment=Qt.AlignmentFlag.AlignTop)
+        notes_layout.addLayout(notes_top)
+        self.notes_container = QWidget()
+        self.notes_container.setStyleSheet("background: transparent;")
+        self.notes_inner = QVBoxLayout(self.notes_container)
+        self.notes_inner.setContentsMargins(0, 0, 0, 0)
+        self.notes_inner.setSpacing(4)
+        notes_layout.addWidget(self.notes_container)
+        self.notes_group.setLayout(notes_layout)
+
+        # Aktivitäts-Feed
+        self.activity_group = QGroupBox("Aktivitäten")
+        self.activity_group.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+        activity_layout = QVBoxLayout()
+        activity_layout.setContentsMargins(10, 12, 10, 12)
+        activity_layout.setSpacing(0)
+        self.activity_container = QWidget()
+        self.activity_container.setStyleSheet("background: transparent;")
+        self.activity_inner = QVBoxLayout(self.activity_container)
+        self.activity_inner.setContentsMargins(0, 0, 0, 0)
+        self.activity_inner.setSpacing(4)
+        activity_layout.addWidget(self.activity_container)
+        activity_layout.addStretch()
+        self.activity_group.setLayout(activity_layout)
+
         action_layout = QHBoxLayout()
         action_layout.addStretch()
         self.clone_button = QPushButton("Fall klonen")
         self.clone_button.setToolTip("Erstellt einen neuen Antrag mit denselben Stammdaten")
         self.clone_button.clicked.connect(self.on_clone_claim)
+        self.widerspruch_button = QPushButton("Widerspruch einlegen")
+        self.widerspruch_button.setToolTip("Widerspruchsverfahren starten und Frist setzen")
+        self.widerspruch_button.clicked.connect(self.on_widerspruch)
         self.create_card_button = QPushButton("Neue Karte erstellen")
         self.create_card_button.clicked.connect(self.on_create_card)
         self.evaluation_button = QPushButton("Prüfung durchführen")
         self.evaluation_button.setObjectName("primaryButton")
         self.evaluation_button.clicked.connect(self.open_evaluation_dialog)
         action_layout.addWidget(self.clone_button)
+        action_layout.addWidget(self.widerspruch_button)
         action_layout.addWidget(self.create_card_button)
         action_layout.addWidget(self.evaluation_button)
 
@@ -313,6 +358,8 @@ class ClaimDetailPage(QDialog):
         content_layout.addWidget(self.evaluation_group)
         content_layout.addWidget(review_group)
         content_layout.addWidget(self.history_group)
+        content_layout.addWidget(self.notes_group)
+        content_layout.addWidget(self.activity_group)
         content_layout.addWidget(self.cards_group)
         content_layout.addLayout(action_layout)
         content_layout.addWidget(buttons)
@@ -430,6 +477,8 @@ class ClaimDetailPage(QDialog):
             self.expense_inner.addWidget(lbl)
 
         self.evaluation_button.setEnabled(True)
+        wfrist = claim.get("widerspruch_frist")
+        self.widerspruch_button.setEnabled(claim.get("status") == "ABGELEHNT" or bool(wfrist))
 
         review_date = claim.get("review_date")
         if review_date:
@@ -443,6 +492,8 @@ class ClaimDetailPage(QDialog):
             self.review_date_label.setText("–")
 
         self.load_history()
+        self.load_notes()
+        self.load_activity_feed()
         self.load_cards()
 
     def open_person_dossier(self):
@@ -535,6 +586,65 @@ class ClaimDetailPage(QDialog):
             sub = f"{by} · {at}" + (f" · {note}" if note else "")
             arrow = f"{old} → {new}"
             self.history_inner.addWidget(self._make_finance_row(arrow, "", sub))
+
+    def load_notes(self) -> None:
+        self._clear_layout(self.notes_inner)
+        notes = self.claim_service.get_claim_notes(self.claim_id)
+        if not notes:
+            lbl = QLabel("Noch keine Notizen.")
+            lbl.setStyleSheet("color: #9ca3af; font-size: 13px;")
+            self.notes_inner.addWidget(lbl)
+            return
+        for note in notes:
+            author = note.get("author_name") or "–"
+            at = (note.get("created_at") or "")[:16].replace("T", " ")
+            text = note.get("note_text", "")
+            self.notes_inner.addWidget(
+                self._make_finance_row(text, "", f"{author} · {at}")
+            )
+
+    def _add_note(self) -> None:
+        text = self.notes_input.toPlainText().strip()
+        if not text:
+            return
+        self.claim_service.add_claim_note(self.claim_id, text)
+        self.notes_input.clear()
+        self.load_notes()
+        self.load_activity_feed()
+
+    def load_activity_feed(self) -> None:
+        self._clear_layout(self.activity_inner)
+        events = self.claim_service.get_activity_feed(self.claim_id)
+        if not events:
+            lbl = QLabel("Noch keine Aktivitäten.")
+            lbl.setStyleSheet("color: #9ca3af; font-size: 13px;")
+            self.activity_inner.addWidget(lbl)
+            return
+        icon_map = {"status": "◎", "note": "✏"}
+        for ev in events:
+            icon = icon_map.get(ev["type"], "·")
+            ts = (ev.get("timestamp") or "")[:16].replace("T", " ")
+            label = f"{icon} {ev.get('text', '')}"
+            sub = f"{ev.get('author', '–')} · {ts}"
+            if ev.get("detail"):
+                sub += f" · {ev['detail']}"
+            self.activity_inner.addWidget(self._make_finance_row(label, "", sub))
+
+    def on_widerspruch(self) -> None:
+        if not self.claim:
+            return
+        frist, ok = __import__("PyQt6.QtWidgets", fromlist=["QInputDialog"]).QInputDialog.getText(
+            self, "Widerspruch einlegen",
+            "Frist (YYYY-MM-DD):",
+            text=QDate.currentDate().addDays(30).toString("yyyy-MM-dd"),
+        )
+        if not ok:
+            return
+        if self.claim_service.set_widerspruch(self.claim_id, frist.strip() or None):
+            QMessageBox.information(self, "Widerspruch", f"Widerspruch eingelegt, Frist: {frist}.")
+            self.load_claim()
+        else:
+            QMessageBox.warning(self, "Fehler", "Widerspruch konnte nicht gesetzt werden.")
 
     def _save_review_date(self) -> None:
         if not self.claim:

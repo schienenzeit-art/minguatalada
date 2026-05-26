@@ -339,6 +339,40 @@ class ClaimRepository:
 
         return int(row["total"] if row else 0)
 
+    def set_widerspruch_frist(self, claim_id: int, frist: str | None) -> bool:
+        with get_connection() as connection:
+            tbl = self._table_name(connection)
+            cursor = connection.execute(
+                f"UPDATE {tbl} SET widerspruch_frist = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                (frist, claim_id),
+            )
+            connection.commit()
+        return cursor.rowcount > 0
+
+    def get_waitlist_claims(self, location_id: int | None = None) -> list[dict]:
+        with get_connection() as connection:
+            tbl = self._table_name(connection)
+            params: list = [ClaimStatus.IN_PRUEFUNG]
+            where = "WHERE c.status = ?"
+            if location_id is not None:
+                where += " AND c.location_id = ?"
+                params.append(location_id)
+            rows = connection.execute(
+                f"""
+                SELECT c.id, c.case_number, c.status, c.created_at,
+                       p.first_name AS person_first_name, p.last_name AS person_last_name,
+                       l.name AS location_name,
+                       CAST(julianday('now') - julianday(c.created_at) AS INTEGER) AS wait_days
+                FROM {tbl} c
+                LEFT JOIN persons p ON c.person_id = p.id
+                LEFT JOIN locations l ON c.location_id = l.id
+                {where}
+                ORDER BY c.created_at ASC
+                """,
+                params,
+            ).fetchall()
+        return [dict(r) for r in rows]
+
     def _row_to_dict(self, row: Row) -> dict:
         person_first = row["person_first_name"] if "person_first_name" in row.keys() else None
         person_last = row["person_last_name"] if "person_last_name" in row.keys() else None
@@ -365,6 +399,7 @@ class ClaimRepository:
             "start_date": row["start_date"],
             "end_date": row["end_date"],
             "review_date": row["review_date"] if "review_date" in row.keys() else None,
+            "widerspruch_frist": row["widerspruch_frist"] if "widerspruch_frist" in row.keys() else None,
             "created_at": row["created_at"],
             "updated_at": row["updated_at"],
             "user_id": row["user_id"],

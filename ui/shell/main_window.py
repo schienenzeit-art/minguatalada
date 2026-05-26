@@ -147,6 +147,7 @@ class MainWindow(QMainWindow):
                 claim_service=self.services.claim_service,
                 case_service=self.services.case_service,
                 card_service=self.services.card_service,
+                filter_preset_service=self.services.filter_preset_service,
             ),
             title="Anträge",
             parent_app="anspruchspruefung",
@@ -157,6 +158,7 @@ class MainWindow(QMainWindow):
                 card_service=self.services.card_service,
                 location_service=self.services.location_service,
                 claim_service=self.services.claim_service,
+                pdf_service=self.services.pdf_service,
             ),
             title="Karten",
             parent_app="anspruchspruefung",
@@ -245,6 +247,10 @@ class MainWindow(QMainWindow):
         self.route_to("dashboard")
 
     def on_search_requested(self, search_text: str) -> None:
-        """Handle global search from topbar."""
-        # Route to dashboard with search filter
-        self.route_to("dashboard", {"search_text": search_text})
+        from ui.dialogs.search_result_dialog import SearchResultDialog
+        dlg = SearchResultDialog(
+            query=search_text,
+            search_service=self.services.search_service,
+            parent=self,
+        )
+        dlg.exec()

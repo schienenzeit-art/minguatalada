@@ -5,6 +5,7 @@ from app.ports import ClaimRepositoryPort, ExpenseRepositoryPort, IncomeReposito
 from core.claim_status import ClaimStatus
 from core.session import Session
 from database.repositories.claim_repository import ClaimRepository
+from database.repositories.claim_note_repository import ClaimNoteRepository
 from database.repositories.income_repository import IncomeRepository
 from database.repositories.expense_repository import ExpenseRepository
 from services.pruefung_service import PruefungService
@@ -26,6 +27,7 @@ class ClaimService:
         self.pruefung_service = evaluation_service
         self.income_repo = income_repository or IncomeRepository()
         self.expense_repo = expense_repository or ExpenseRepository()
+        self.note_repo = ClaimNoteRepository()
 
     def _default_pruefung_service(self) -> PruefungService:
         return PruefungService(
@@ -203,6 +205,50 @@ class ClaimService:
         except Exception:
             pass
         return {"id": new_id, "case_number": new_case_number}
+
+    # ── Interne Notizen ──────────────────────────────────────────────────────
+    def add_claim_note(self, claim_id: int, text: str) -> int | None:
+        return self.note_repo.add_note(claim_id, Session.get_user_id(), text)
+
+    def get_claim_notes(self, claim_id: int) -> List[dict]:
+        return self.note_repo.get_notes(claim_id)
+
+    def delete_claim_note(self, note_id: int) -> bool:
+        return self.note_repo.delete_note(note_id)
+
+    # ── Aktivitäts-Feed ──────────────────────────────────────────────────────
+    def get_activity_feed(self, claim_id: int) -> List[dict]:
+        events: List[dict] = []
+        for entry in self.claim_repository.get_claim_history(claim_id):
+            events.append({
+                "type": "status",
+                "timestamp": entry.get("changed_at", ""),
+                "author": entry.get("changed_by_name") or "System",
+                "text": f"{entry.get('old_status') or '–'} → {entry.get('new_status', '?')}",
+                "detail": entry.get("note") or "",
+            })
+        for note in self.note_repo.get_notes(claim_id):
+            events.append({
+                "type": "note",
+                "timestamp": note.get("created_at", ""),
+                "author": note.get("author_name") or "–",
+                "text": note.get("note_text", ""),
+                "detail": "",
+            })
+        events.sort(key=lambda e: e["timestamp"])
+        return events
+
+    # ── Widerspruch ───────────────────────────────────────────────────────────
+    def set_widerspruch(self, claim_id: int, frist: str | None) -> bool:
+        ok = self.claim_repository.set_widerspruch_frist(claim_id, frist)
+        if ok:
+            self.update_claim_status(claim_id, ClaimStatus.WIDERSPRUCH,
+                                     note=f"Widerspruch eingelegt, Frist: {frist or '–'}")
+        return ok
+
+    # ── Warteliste ────────────────────────────────────────────────────────────
+    def get_waitlist(self, location_id: int | None = None) -> List[dict]:
+        return self.claim_repository.get_waitlist_claims(location_id)
 
     def get_claim_statuses(self) -> list[str]:
         return ClaimStatus.ALL_STATUSES
