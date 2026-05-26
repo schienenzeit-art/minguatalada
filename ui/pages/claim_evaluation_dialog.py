@@ -18,7 +18,9 @@ from PyQt6.QtWidgets import (
     QCheckBox,
     QScrollArea,
 )
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QUrl
+from PyQt6.QtGui import QDesktopServices
+from pathlib import Path
 
 from core.session import Session
 from services.claim_service import ClaimService
@@ -36,6 +38,12 @@ class ClaimEvaluationDialog(QDialog):
 
         self.setWindowTitle("Anspruchsprüfung")
         self.setMinimumWidth(1000)
+        # make dialog a top-level window with minimize/maximize buttons
+        flags = self.windowFlags()
+        flags |= Qt.WindowType.Window
+        flags |= Qt.WindowType.WindowMinimizeButtonHint
+        flags |= Qt.WindowType.WindowMaximizeButtonHint
+        self.setWindowFlags(flags)
 
         self.setup_ui()
 
@@ -404,12 +412,37 @@ class ClaimEvaluationDialog(QDialog):
                     person_id=self.claim.get("person_id") if self.claim else None,
                     location_id=self.claim.get("location_id") if self.claim else None,
                 )
+                # offer to open the created PDF for the user
+                try:
+                    if Path(pdf_path).exists():
+                        QDesktopServices.openUrl(QUrl.fromLocalFile(str(pdf_path)))
+                except Exception:
+                    # fall back to a simple success dialog offering open actions
+                    pass
         except Exception as e:
             QMessageBox.critical(self, "Fehler", f"Fehler beim Speichern der Daten: {e}")
             return
 
         QMessageBox.information(self, "Status aktualisiert", f"Der Anspruchsstatus wurde auf '{evaluation['status']}' gesetzt.")
         self.accept()
+
+    def _offer_open_pdf(self, pdf_path: str) -> None:
+        """Zeigt nach erfolgreicher PDF-Erzeugung einen Dialog mit Öffnen/Ordner-Öffnen-Optionen."""
+        try:
+            msg = QMessageBox(self)
+            msg.setWindowTitle("PDF erzeugt")
+            msg.setText(f"PDF gespeichert unter:\n{pdf_path}")
+            open_btn = msg.addButton("Öffnen", QMessageBox.ButtonRole.AcceptRole)
+            open_folder_btn = msg.addButton("Ordner öffnen", QMessageBox.ButtonRole.ActionRole)
+            msg.addButton(QMessageBox.StandardButton.Close)
+            msg.exec()
+            clicked = msg.clickedButton()
+            if clicked == open_btn:
+                QDesktopServices.openUrl(QUrl.fromLocalFile(str(pdf_path)))
+            elif clicked == open_folder_btn:
+                QDesktopServices.openUrl(QUrl.fromLocalFile(str(Path(pdf_path).parent)))
+        except Exception:
+            return
 
     def load_claim(self) -> None:
         claim = self.claim_service.get_claim_by_id(self.claim_id)

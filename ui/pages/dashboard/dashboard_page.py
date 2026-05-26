@@ -11,11 +11,13 @@ from PyQt6.QtWidgets import (
     QPushButton,
     QFrame,
     QSizePolicy,
+    QDialog,
 )
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QBrush, QColor, QFont
 
 from services.dashboard_service import DashboardService
+from ui.pages.case_create_page import CaseCreateDialog
 from ui.components.page_header import PageHeader
 from ui.components.table_widget import TableWidget
 from core.claim_status import ClaimStatus
@@ -83,17 +85,26 @@ class DashboardPage(QWidget):
         search_input.setFixedWidth(320)
         search_input.setMinimumHeight(44)
 
-        location_select = QComboBox()
-        location_select.addItems(["Alle Standorte", "Bern-Mitte", "Wien", "Zürich"])
-        location_select.setFixedWidth(200)
-        location_select.setMinimumHeight(44)
+        # populate location select from service (avoid hardcoded demo locations)
+        self.location_select = QComboBox()
+        self.location_select.setFixedWidth(200)
+        self.location_select.setMinimumHeight(44)
+        self.location_select.addItem("Alle Standorte", None)
+        try:
+            locations = self.dashboard_service.location_service.list_active_locations()
+            for loc in locations:
+                self.location_select.addItem(loc.get("name", "?"), loc.get("id"))
+        except Exception:
+            # fallback for older demo setups
+            self.location_select.addItems(["Bern-Mitte", "Wien", "Zürich"])
 
         primary_button = QPushButton("Neuer Antrag")
         primary_button.setObjectName("PrimaryButton")
         primary_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        primary_button.clicked.connect(self.open_new_case)
 
         actions.addWidget(search_input)
-        actions.addWidget(location_select)
+        actions.addWidget(self.location_select)
         actions.addWidget(primary_button)
 
         topbar_layout.addLayout(title_column, 1)
@@ -194,6 +205,12 @@ class DashboardPage(QWidget):
 
         for i in range(len(items)):
             self.kpi_grid.setColumnStretch(i, 1)
+
+    def open_new_case(self):
+        dialog = CaseCreateDialog(self)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            # if case created, refresh dashboard
+            self.load_dashboard()
 
     def build_kpi_card(
         self,

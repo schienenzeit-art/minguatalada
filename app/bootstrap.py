@@ -54,13 +54,14 @@ def run_app() -> None:
     main_window = MainWindow(service_container)
 
     main_window.setWindowTitle(APP_TITLE)
-    main_window.resize(WINDOW_WIDTH, WINDOW_HEIGHT)
 
     print("LOGIN RESULT:", result)
 
     print("STEP 6")
 
-    main_window.show()
+    main_window.resize(WINDOW_WIDTH, WINDOW_HEIGHT)
+    # start application maximized so it adapts to the current screen
+    main_window.showMaximized()
 
     print("STEP 7")
 

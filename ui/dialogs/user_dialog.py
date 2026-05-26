@@ -16,6 +16,12 @@ from PyQt6.QtWidgets import (
 class AddUserDialog(QDialog):
     def __init__(self, roles: list[dict], locations: list[dict], user: dict | None = None):
         super().__init__()
+        # allow minimize / maximize on opened dialogs
+        flags = self.windowFlags()
+        flags |= Qt.WindowType.Window
+        flags |= Qt.WindowType.WindowMinimizeButtonHint
+        flags |= Qt.WindowType.WindowMaximizeButtonHint
+        self.setWindowFlags(flags)
         self.roles = roles
         self.locations = locations
         self.user = user

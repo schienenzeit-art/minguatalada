@@ -44,6 +44,12 @@ class PersonDossierDialog(QDialog):
 
         self.setWindowTitle("Personendossier")
         self.setMinimumSize(960, 700)
+        # allow minimize / maximize on opened dialogs
+        flags = self.windowFlags()
+        flags |= Qt.WindowType.Window
+        flags |= Qt.WindowType.WindowMinimizeButtonHint
+        flags |= Qt.WindowType.WindowMaximizeButtonHint
+        self.setWindowFlags(flags)
 
         self.setup_ui()
         self.load_person()

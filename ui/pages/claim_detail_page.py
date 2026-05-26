@@ -30,6 +30,12 @@ class ClaimDetailPage(QDialog):
         card_service: CardService | None = None,
     ):
         super().__init__()
+        # allow minimize / maximize on opened dialogs
+        flags = self.windowFlags()
+        flags |= Qt.WindowType.Window
+        flags |= Qt.WindowType.WindowMinimizeButtonHint
+        flags |= Qt.WindowType.WindowMaximizeButtonHint
+        self.setWindowFlags(flags)
         self.claim_id = claim_id
         self.claim_service = claim_service or ClaimService()
         self.card_service = card_service or CardService()
