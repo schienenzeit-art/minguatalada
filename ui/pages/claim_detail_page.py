@@ -20,6 +20,7 @@ from PyQt6.QtCore import Qt, QDate
 
 from services.card_service import CardService
 from services.claim_service import ClaimService
+from core.claim_status import ClaimStatus
 from core.session import Session
 from ui.pages.claim_evaluation_dialog import ClaimEvaluationDialog
 from ui.pages.person_dossier_dialog import PersonDossierDialog
@@ -76,6 +77,8 @@ class ClaimDetailPage(QDialog):
         header_layout = QGridLayout()
         header_layout.setHorizontalSpacing(24)
         header_layout.setVerticalSpacing(12)
+        header_layout.setColumnStretch(1, 1)
+        header_layout.setColumnStretch(3, 1)
 
         self.case_number_label = QLabel("-")
         self.person_label = QPushButton("-")
@@ -124,6 +127,8 @@ class ClaimDetailPage(QDialog):
         person_layout = QGridLayout()
         person_layout.setHorizontalSpacing(24)
         person_layout.setVerticalSpacing(12)
+        person_layout.setColumnStretch(1, 1)
+        person_layout.setColumnStretch(3, 1)
 
         self.address_label = QLabel("-")
         self.city_label = QLabel("-")
@@ -379,7 +384,7 @@ class ClaimDetailPage(QDialog):
         self.person_label.setText(claim.get("person_display_name") or "-")
         self.category_label.setText(claim.get("category_name") or "-")
         self.user_label.setText(claim["user_name"] or "-")
-        self.status_label.setText(claim["status"] or "-")
+        self.status_label.setText(ClaimStatus.get_display(claim["status"] or "") or "-")
         self.location_label.setText(claim["location_name"] or "-")
         self.period_label.setText(
             f"{claim['start_date'] or '-'} bis {claim['end_date'] or '-'}"
@@ -421,9 +426,9 @@ class ClaimDetailPage(QDialog):
         )
         self.disability_label.setText(disability_text)
 
-        status_text = claim["status"] or "-"
-        self.eval_status_label.setText(status_text)
-        self._apply_status_style(status_text)
+        raw_status = claim["status"] or ""
+        self.eval_status_label.setText(ClaimStatus.get_display(raw_status) or "-")
+        self._apply_status_style(raw_status)
         self.eval_reason_label.setText(claim.get("evaluation_reason") or "-")
         self.free_income_label.setText(
             f"{claim.get('free_income', '-'):.2f} €" if claim.get("free_income") is not None else "-"
@@ -578,8 +583,8 @@ class ClaimDetailPage(QDialog):
             self.history_inner.addWidget(lbl)
             return
         for entry in history:
-            old = entry.get("old_status") or "–"
-            new = entry.get("new_status", "?")
+            old = ClaimStatus.get_display(entry.get("old_status") or "") or "–"
+            new = ClaimStatus.get_display(entry.get("new_status") or "") or "?"
             by = entry.get("changed_by_name") or "System"
             at = (entry.get("changed_at") or "")[:16].replace("T", " ")
             note = entry.get("note") or ""
@@ -676,11 +681,19 @@ class ClaimDetailPage(QDialog):
             return
         result = self.claim_service.clone_claim(self.claim_id)
         if result:
-            QMessageBox.information(
+            reply = QMessageBox.question(
                 self,
                 "Fall geklont",
-                f"Neuer Fall {result['case_number']} wurde erstellt.",
+                f"Neuer Fall {result['case_number']} wurde erstellt.\nMöchten Sie den neuen Fall jetzt öffnen?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             )
+            if reply == QMessageBox.StandardButton.Yes:
+                new_dialog = ClaimDetailPage(
+                    claim_id=result["id"],
+                    claim_service=self.claim_service,
+                    card_service=self.card_service,
+                )
+                new_dialog.exec()
         else:
             QMessageBox.warning(self, "Fehler", "Fall konnte nicht geklont werden.")
 

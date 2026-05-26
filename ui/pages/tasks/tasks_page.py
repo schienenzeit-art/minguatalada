@@ -209,7 +209,7 @@ class TasksPage(QWidget):
         for row_index, task in enumerate(self.tasks):
             self.table.setItem(row_index, 0, QTableWidgetItem(TaskStatus.get_display(task["status"])))
             self.table.setItem(row_index, 1, QTableWidgetItem(task["title"]))
-            self.table.setItem(row_index, 2, QTableWidgetItem(task.get("task_type", "")))
+            self.table.setItem(row_index, 2, QTableWidgetItem(TaskType.get_display(task.get("task_type", ""))))
             self.table.setItem(row_index, 3, QTableWidgetItem(TaskPriority.get_display(task.get("priority", ""))))
 
             due_date = task.get("due_date") or ""
@@ -226,7 +226,7 @@ class TasksPage(QWidget):
                     # re-set non-due cells
                     self.table.setItem(row_index, 0, QTableWidgetItem(TaskStatus.get_display(task["status"])))
                     self.table.setItem(row_index, 1, QTableWidgetItem(task["title"]))
-                    self.table.setItem(row_index, 2, QTableWidgetItem(task.get("task_type", "")))
+                    self.table.setItem(row_index, 2, QTableWidgetItem(TaskType.get_display(task.get("task_type", ""))))
                     self.table.setItem(row_index, 3, QTableWidgetItem(TaskPriority.get_display(task.get("priority", ""))))
                     for col in range(9):
                         item = self.table.item(row_index, col)

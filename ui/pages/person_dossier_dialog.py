@@ -15,11 +15,16 @@ from PyQt6.QtWidgets import (
     QListWidget,
     QMessageBox,
     QFileDialog,
+    QScrollArea,
+    QSizePolicy,
     QTableWidgetItem,
     QHeaderView,
+    QWidget,
 )
 
 from ui.components.table_widget import TableWidget
+from core.claim_status import ClaimStatus
+from core.document_status import DocumentStatus
 from services.claim_service import ClaimService
 from services.document_service import DocumentService
 from services.pdf_service import PDFService
@@ -57,23 +62,30 @@ class PersonDossierDialog(QDialog):
         self.refresh_documents()
 
     def setup_ui(self):
-        main_layout = QVBoxLayout()
+        outer_layout = QVBoxLayout(self)
+        outer_layout.setContentsMargins(12, 12, 12, 12)
+        outer_layout.setSpacing(0)
+
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+
+        content_widget = QWidget()
+        main_layout = QVBoxLayout(content_widget)
         main_layout.setSpacing(16)
-        main_layout.setContentsMargins(20, 20, 20, 20)
+        main_layout.setContentsMargins(12, 12, 12, 12)
 
         title = QLabel("Personendossier")
         title.setObjectName("pageTitle")
         subtitle = QLabel("Persönliche Daten, Fälle, Dokumente und Dossierdruck")
         subtitle.setWordWrap(True)
         subtitle.setStyleSheet("color: #52606d;")
-
-        header_box = QGroupBox()
-        header_layout = QVBoxLayout()
-        header_layout.addWidget(title)
-        header_layout.addWidget(subtitle)
-        header_box.setLayout(header_layout)
+        main_layout.addWidget(title)
+        main_layout.addWidget(subtitle)
 
         person_box = QGroupBox("Personendaten")
+        person_box.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         person_form = QFormLayout()
         person_form.setLabelAlignment(Qt.AlignmentFlag.AlignLeft)
         person_form.setFormAlignment(Qt.AlignmentFlag.AlignLeft)
@@ -97,15 +109,20 @@ class PersonDossierDialog(QDialog):
         person_box.setLayout(person_form)
 
         claims_box = QGroupBox("Verknüpfte Fälle")
+        claims_box.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         claims_layout = QVBoxLayout()
         claims_layout.setSpacing(8)
+        claims_layout.setContentsMargins(10, 12, 10, 12)
         self.claims_search = QLineEdit()
         self.claims_search.setPlaceholderText("Nach Fallnummer, Status oder Kategorie suchen…")
         self.claims_search.textChanged.connect(self._filter_claims_table)
         self.claims_table = TableWidget(5)
         self.claims_table.setHorizontalHeaderLabels(["Fallnummer", "Status", "Kategorie", "Standort", "Erstellt"])
         self.claims_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
-        self.claims_table.setFixedHeight(180)
+        self.claims_table.setMinimumHeight(160)
+        self.claims_table.verticalHeader().hide()
+        self.claims_table.setEditTriggers(TableWidget.EditTrigger.NoEditTriggers)
+        self.claims_table.setSelectionBehavior(TableWidget.SelectionBehavior.SelectRows)
         self.claims_table.cellDoubleClicked.connect(self._open_claim_from_table)
         self._all_claims: list[dict] = []
         claims_layout.addWidget(self.claims_search)
@@ -113,14 +130,16 @@ class PersonDossierDialog(QDialog):
         claims_box.setLayout(claims_layout)
 
         document_card = QGroupBox("Dokumente")
+        document_card.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         document_layout = QVBoxLayout()
         document_layout.setSpacing(12)
+        document_layout.setContentsMargins(10, 12, 10, 12)
 
         upload_form = QFormLayout()
         upload_form.setLabelAlignment(Qt.AlignmentFlag.AlignLeft)
         upload_form.setFormAlignment(Qt.AlignmentFlag.AlignLeft)
         upload_form.setHorizontalSpacing(20)
-        upload_form.setVerticalSpacing(12)
+        upload_form.setVerticalSpacing(8)
 
         self.document_type_combo = QComboBox()
         self.document_description_input = QLineEdit()
@@ -130,9 +149,6 @@ class PersonDossierDialog(QDialog):
 
         upload_form.addRow("Dokumenttyp:", self.document_type_combo)
         upload_form.addRow("Beschreibung:", self.document_description_input)
-
-        self.file_list_widget = QListWidget()
-        self.file_list_widget.setFixedHeight(120)
 
         upload_buttons = QHBoxLayout()
         self.choose_files_button = QPushButton("Dateien auswählen")
@@ -147,6 +163,9 @@ class PersonDossierDialog(QDialog):
         upload_buttons.addWidget(self.upload_files_button)
         upload_buttons.addStretch()
 
+        self.file_list_widget = QListWidget()
+        self.file_list_widget.setFixedHeight(80)
+
         self.documents_table = TableWidget(7)
         self.documents_table.setHorizontalHeaderLabels([
             "Titel",
@@ -158,8 +177,10 @@ class PersonDossierDialog(QDialog):
             "Löschen",
         ])
         self.documents_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.documents_table.verticalHeader().hide()
         self.documents_table.setSelectionBehavior(self.documents_table.SelectionBehavior.SelectRows)
         self.documents_table.setEditTriggers(self.documents_table.EditTrigger.NoEditTriggers)
+        self.documents_table.setMinimumHeight(160)
 
         document_layout.addLayout(upload_form)
         document_layout.addLayout(upload_buttons)
@@ -177,12 +198,14 @@ class PersonDossierDialog(QDialog):
         action_layout.addWidget(self.print_button)
         action_layout.addWidget(close_button)
 
-        main_layout.addWidget(header_box)
         main_layout.addWidget(person_box)
         main_layout.addWidget(claims_box)
         main_layout.addWidget(document_card)
         main_layout.addLayout(action_layout)
-        self.setLayout(main_layout)
+        main_layout.addStretch()
+
+        scroll.setWidget(content_widget)
+        outer_layout.addWidget(scroll)
 
     def load_person(self) -> None:
         person = self.person_repository.get_person_by_id(self.person_id)
@@ -209,7 +232,7 @@ class PersonDossierDialog(QDialog):
             row = self.claims_table.rowCount()
             self.claims_table.insertRow(row)
             self.claims_table.setItem(row, 0, QTableWidgetItem(claim.get("case_number") or "-"))
-            self.claims_table.setItem(row, 1, QTableWidgetItem(claim.get("status") or "-"))
+            self.claims_table.setItem(row, 1, QTableWidgetItem(ClaimStatus.get_display(claim.get("status") or "") or "-"))
             self.claims_table.setItem(row, 2, QTableWidgetItem(claim.get("category_name") or "-"))
             self.claims_table.setItem(row, 3, QTableWidgetItem(claim.get("location_name") or "-"))
             self.claims_table.setItem(row, 4, QTableWidgetItem((claim.get("created_at") or "")[:10]))
@@ -223,7 +246,7 @@ class PersonDossierDialog(QDialog):
         filtered = [
             c for c in self._all_claims
             if q in (c.get("case_number") or "").lower()
-            or q in (c.get("status") or "").lower()
+            or q in ClaimStatus.get_display(c.get("status") or "").lower()
             or q in (c.get("category_name") or "").lower()
         ]
         self._render_claims_table(filtered)
@@ -248,7 +271,7 @@ class PersonDossierDialog(QDialog):
             self.documents_table.setItem(row_index, 1, QTableWidgetItem(document.get("document_type_name", "-")))
             self.documents_table.setItem(row_index, 2, QTableWidgetItem(document.get("claim_case_number", "-")))
             self.documents_table.setItem(row_index, 3, QTableWidgetItem(document.get("uploaded_at", "-")))
-            self.documents_table.setItem(row_index, 4, QTableWidgetItem(document.get("status", "-")))
+            self.documents_table.setItem(row_index, 4, QTableWidgetItem(DocumentStatus.get_display(document.get("status") or "") or "-"))
 
             open_button = QPushButton("Öffnen")
             open_button.clicked.connect(lambda _, doc_id=document["id"]: self.open_document(doc_id))

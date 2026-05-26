@@ -224,7 +224,7 @@ class ClaimService:
                 "type": "status",
                 "timestamp": entry.get("changed_at", ""),
                 "author": entry.get("changed_by_name") or "System",
-                "text": f"{entry.get('old_status') or '–'} → {entry.get('new_status', '?')}",
+                "text": f"{ClaimStatus.get_display(entry.get('old_status') or '') or '–'} → {ClaimStatus.get_display(entry.get('new_status') or '') or '?'}",
                 "detail": entry.get("note") or "",
             })
         for note in self.note_repo.get_notes(claim_id):

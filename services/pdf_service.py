@@ -15,6 +15,8 @@ from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table
 from reportlab.platypus.tables import TableStyle
 
+from core.claim_status import ClaimStatus
+from core.card_status import CardStatus
 from services.claim_service import ClaimService
 from services.card_service import CardService
 from services.document_service import DocumentService
@@ -100,7 +102,7 @@ class PDFService:
         story.append(Paragraph(f"Person: {claim.get('person_display_name', '-')}", self.normal_style))
         story.append(Paragraph(f"Standort: {claim.get('location_name', '-')}", self.normal_style))
         story.append(Paragraph(f"Kategorie: {claim.get('category_name', '-')}", self.normal_style))
-        story.append(Paragraph(f"Status: {claim.get('status', '-')}", self.normal_style))
+        story.append(Paragraph(f"Status: {ClaimStatus.get_display(claim.get('status') or '')  or '-'}", self.normal_style))
         story.append(Paragraph(f"Prüfer: {claim.get('examiner_name', '-')}", self.normal_style))
         story.append(Paragraph(f"Prüfdatum: {claim.get('evaluation_date', '-')}", self.normal_style))
         story.append(Spacer(1, 12))
@@ -129,8 +131,8 @@ class PDFService:
         entitlement_limit = claim.get('entitlement_limit')
         hardship_limit = claim.get('hardship_limit')
 
-        story.append(Paragraph(f"Status: {claim.get('status', '-')}", self.normal_style))
-        story.append(Paragraph(f"Begründung: {claim.get('evaluation_reason', '-')}", self.normal_style))
+        story.append(Paragraph(f"Status: {ClaimStatus.get_display(claim.get('status') or '') or '-'}", self.normal_style))
+        story.append(Paragraph(f"Begründung: {claim.get('evaluation_reason') or '-'}", self.normal_style))
         if free_income is not None:
             story.append(Paragraph(f"Frei verfügbar: {free_income:.2f} €", self.normal_style))
         if entitlement_limit is not None:
@@ -174,7 +176,7 @@ class PDFService:
             for claim in claims:
                 claim_rows.append([
                     claim.get("case_number", "-"),
-                    claim.get("status", "-"),
+                    ClaimStatus.get_display(claim.get("status") or "") or "-",
                     claim.get("category_name", "-"),
                     claim.get("location_name", "-"),
                 ])
@@ -217,8 +219,8 @@ class PDFService:
         story.append(Paragraph(f"Fallnummer: {claim.get('case_number', '-')}", self.normal_style))
         story.append(Paragraph(f"Person: {claim.get('person_display_name', '-')}", self.normal_style))
         story.append(Paragraph(f"Standort: {claim.get('location_name', '-')}", self.normal_style))
-        story.append(Paragraph(f"Status: {claim.get('status', '-')}", self.normal_style))
-        story.append(Paragraph(f"Begründung: {claim.get('evaluation_reason', '-')}", self.normal_style))
+        story.append(Paragraph(f"Status: {ClaimStatus.get_display(claim.get('status') or '') or '-'}", self.normal_style))
+        story.append(Paragraph(f"Begründung: {claim.get('evaluation_reason') or '-'}", self.normal_style))
 
         return self._build_document(Path(file_path), story)
 
@@ -335,11 +337,11 @@ class PDFService:
             f"Ablauf: {card.get('expiry_date', '-')}", self.normal_style
         ))
         story.append(Paragraph(
-            f"Status: {card.get('status', '-')}", self.normal_style
+            f"Status: {CardStatus.get_status_display_name(card.get('status') or '') or '-'}", self.normal_style
         ))
         story.append(Spacer(1, 12))
         story.append(Paragraph("Hinweise", self.section_style))
-        story.append(Paragraph(card.get("note", "-"), self.normal_style))
+        story.append(Paragraph(card.get("note") or "-", self.normal_style))
 
         return self._build_document(Path(file_path), story)
 
@@ -367,12 +369,12 @@ class PDFService:
         story.append(Spacer(1, 12))
 
         story.append(Paragraph("Anspruchsstatus", self.section_style))
-        claim_rows = [["Status", "Anzahl"]] + [[item["status"], str(item["count"])] for item in report["claim_status_counts"]]
+        claim_rows = [["Status", "Anzahl"]] + [[ClaimStatus.get_display(item["status"]) or item["status"], str(item["count"])] for item in report["claim_status_counts"]]
         story.append(self._format_table(claim_rows))
         story.append(Spacer(1, 12))
 
         story.append(Paragraph("Kartenstatus", self.section_style))
-        card_rows = [["Status", "Anzahl"]] + [[item["status"], str(item["count"])] for item in report["card_status_counts"]]
+        card_rows = [["Status", "Anzahl"]] + [[CardStatus.get_status_display_name(item["status"]) or item["status"], str(item["count"])] for item in report["card_status_counts"]]
         story.append(self._format_table(card_rows))
 
         return self._build_document(Path(file_path), story)
