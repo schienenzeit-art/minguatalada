@@ -16,9 +16,10 @@ class TopBar(QWidget):
 
     def setup_ui(self):
         self.setObjectName("topBar")
+        self.setMinimumHeight(58)
         layout = QHBoxLayout()
-        layout.setContentsMargins(24, 12, 24, 12)
-        layout.setSpacing(14)
+        layout.setContentsMargins(24, 10, 20, 10)
+        layout.setSpacing(10)
 
         self.page_title = QLabel(self.title)
         self.page_title.setObjectName("pageTitle")

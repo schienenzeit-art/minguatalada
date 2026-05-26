@@ -22,13 +22,14 @@ class PageHeader(QWidget):
     def setup_ui(self):
         self.setObjectName("pageHeader")
         layout = QHBoxLayout()
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(12)
+        layout.setContentsMargins(0, 0, 0, 8)
+        layout.setSpacing(16)
 
         title_box = QWidget()
+        title_box.setStyleSheet("background: transparent;")
         title_layout = QVBoxLayout()
         title_layout.setContentsMargins(0, 0, 0, 0)
-        title_layout.setSpacing(4)
+        title_layout.setSpacing(3)
 
         self.title_label = QLabel(self.title)
         self.title_label.setObjectName("pageHeaderTitle")
@@ -49,6 +50,7 @@ class PageHeader(QWidget):
             self.action_button = QPushButton(self.action_text)
             self.action_button.setObjectName("pageHeaderAction")
             self.action_button.setCursor(Qt.CursorShape.PointingHandCursor)
+            self.action_button.setMinimumHeight(40)
             if self.action_callback:
                 self.action_button.clicked.connect(self.action_callback)
             layout.addWidget(self.action_button)

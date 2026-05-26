@@ -15,12 +15,12 @@ class AppNavigation(QWidget):
 
     def setup_ui(self):
         self.setObjectName("appNavigation")
-        self.setMinimumWidth(260)
-        self.setMaximumWidth(280)
+        self.setMinimumWidth(248)
+        self.setMaximumWidth(270)
 
         layout = QVBoxLayout()
-        layout.setContentsMargins(24, 24, 24, 24)
-        layout.setSpacing(20)
+        layout.setContentsMargins(16, 24, 16, 20)
+        layout.setSpacing(2)
 
         title = QLabel("Anspruchs-Plattform")
         title.setObjectName("appNavTitle")
@@ -31,11 +31,14 @@ class AppNavigation(QWidget):
         subtitle.setWordWrap(True)
         layout.addWidget(subtitle)
 
+        layout.addSpacing(10)
         self.add_nav_item(layout, "Startcockpit", "dashboard")
+        layout.addSpacing(8)
 
         section_label = QLabel("Applikationen")
         section_label.setObjectName("appNavSection")
         layout.addWidget(section_label)
+        layout.addSpacing(2)
 
         for app in AppRegistry.get_visible_apps():
             self.add_nav_item(layout, app.title, app.page_key)

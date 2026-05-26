@@ -12,6 +12,7 @@ from PyQt6.QtWidgets import (
     QFrame,
     QSizePolicy,
     QDialog,
+    QGraphicsDropShadowEffect,
 )
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QBrush, QColor, QFont
@@ -200,6 +201,7 @@ class DashboardPage(QWidget):
                 page=kpi.get("page"),
                 filters=kpi.get("filters"),
                 accent=bool(index == 0),
+                accent_color=kpi.get("accent", "#2383e2"),
             )
             self.kpi_grid.addWidget(card, 0, index)
 
@@ -220,29 +222,56 @@ class DashboardPage(QWidget):
         page: str | None = None,
         filters: dict | None = None,
         accent: bool = False,
+        accent_color: str = "#2383e2",
     ) -> QFrame:
         card = ClickableCard()
         card.setObjectName("Card")
-        if accent:
-            card.setProperty("accent", True)
         card.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         card.setCursor(Qt.CursorShape.PointingHandCursor)
         if page:
             card.clicked.connect(
-                lambda page=page, filters=filters: self.navigate_callback(page, filters)
+                lambda p=page, f=filters: self.navigate_callback(p, f)
                 if self.navigate_callback
                 else None
             )
 
-        layout = QVBoxLayout(card)
-        layout.setContentsMargins(20, 20, 20, 20)
-        layout.setSpacing(10)
+        # Subtiler Schatten
+        shadow = QGraphicsDropShadowEffect(card)
+        shadow.setBlurRadius(16)
+        shadow.setXOffset(0)
+        shadow.setYOffset(2)
+        shadow.setColor(QColor(0, 0, 0, 16))
+        card.setGraphicsEffect(shadow)
+
+        outer = QVBoxLayout(card)
+        outer.setContentsMargins(0, 0, 0, 0)
+        outer.setSpacing(0)
+
+        # Farbiger Akzent-Strip oben
+        strip = QFrame()
+        strip.setFixedHeight(4)
+        strip.setStyleSheet(
+            f"background-color: {accent_color}; border: none; "
+            f"border-radius: 16px 16px 0 0;"
+        )
+        outer.addWidget(strip)
+
+        # Inhalt
+        inner = QWidget()
+        inner.setStyleSheet("background: transparent;")
+        layout = QVBoxLayout(inner)
+        layout.setContentsMargins(20, 16, 20, 18)
+        layout.setSpacing(6)
 
         label = QLabel(title)
         label.setObjectName("KpiLabel")
 
         value_label = QLabel(value)
         value_label.setObjectName("KpiValue")
+        value_label.setStyleSheet(
+            f"color: {accent_color}; font-size: 34px; font-weight: 800; "
+            f"letter-spacing: -0.05em; background: transparent;"
+        )
 
         subtitle_label = QLabel(subtitle)
         subtitle_label.setObjectName("KpiSubtitle")
@@ -251,6 +280,7 @@ class DashboardPage(QWidget):
         layout.addWidget(label)
         layout.addWidget(value_label)
         layout.addWidget(subtitle_label)
+        outer.addWidget(inner)
         return card
 
     def _refresh_table_rows(self):

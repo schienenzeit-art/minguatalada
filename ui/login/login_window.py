@@ -76,22 +76,19 @@ class LoginWindow(QDialog):
         self.setLayout(root_layout)
 
     def on_login_clicked(self):
-        username = self.username_input.text()
+        username = self.username_input.text().strip()
         password = self.password_input.text()
+
+        if not username or not password:
+            QMessageBox.warning(self, "Eingabe fehlt", "Bitte Benutzername und Passwort eingeben.")
+            return
 
         result = self.auth_service.login(username, password)
 
-        print("LOGIN DEBUG RESULT:", result)   # 👈 WICHTIG
-
         if not result["success"]:
-            QMessageBox.warning(self, "Login fehlgeschlagen", result["message"])
+            QMessageBox.warning(self, "Anmeldung fehlgeschlagen", result["message"])
             return
-
-        print("LOGIN SUCCESS - ACCEPT")
 
         self.current_user = result["user"]
         Session.set_user(result["user"])
-       
-
-        QMessageBox.information(self, "Erfolg", result["message"])
         self.accept()
