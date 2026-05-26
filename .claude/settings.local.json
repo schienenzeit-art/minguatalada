@@ -3,7 +3,11 @@
     "allow": [
       "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\Projektleiter\\\\Desktop\\\\anspruchssystem\" -Recurse -Force)",
       "Bash(Select-Object FullName, PSIsContainer)",
-      "Bash(ConvertTo-Csv -NoTypeInformation)"
+      "Bash(ConvertTo-Csv -NoTypeInformation)",
+      "Bash(python -c \"import py_compile; py_compile.compile\\('ui/pages/claim_detail_page.py', doraise=True\\); print\\('OK'\\)\")",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\Projektleiter\\\\Desktop\\\\anspruchssystem\" -Recurse -Directory)",
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "Bash(Sort-Object)"
     ]
   }
 }

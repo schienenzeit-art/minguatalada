@@ -165,19 +165,31 @@ class ClaimDetailPage(QDialog):
         finance_row.setSpacing(18)
 
         self.income_group = QGroupBox("Einnahmen")
-        self.income_group.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
-        self.income_list = QLabel("-")
-        self.income_list.setWordWrap(True)
+        self.income_group.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
         income_layout = QVBoxLayout()
-        income_layout.addWidget(self.income_list)
+        income_layout.setContentsMargins(10, 12, 10, 12)
+        income_layout.setSpacing(0)
+        self.income_container = QWidget()
+        self.income_container.setStyleSheet("background: transparent;")
+        self.income_inner = QVBoxLayout(self.income_container)
+        self.income_inner.setContentsMargins(0, 0, 0, 0)
+        self.income_inner.setSpacing(4)
+        income_layout.addWidget(self.income_container)
+        income_layout.addStretch()
         self.income_group.setLayout(income_layout)
 
         self.expense_group = QGroupBox("Ausgaben")
-        self.expense_group.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
-        self.expense_list = QLabel("-")
-        self.expense_list.setWordWrap(True)
+        self.expense_group.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
         expense_layout = QVBoxLayout()
-        expense_layout.addWidget(self.expense_list)
+        expense_layout.setContentsMargins(10, 12, 10, 12)
+        expense_layout.setSpacing(0)
+        self.expense_container = QWidget()
+        self.expense_container.setStyleSheet("background: transparent;")
+        self.expense_inner = QVBoxLayout(self.expense_container)
+        self.expense_inner.setContentsMargins(0, 0, 0, 0)
+        self.expense_inner.setSpacing(4)
+        expense_layout.addWidget(self.expense_container)
+        expense_layout.addStretch()
         self.expense_group.setLayout(expense_layout)
 
         finance_row.addWidget(self.income_group)
@@ -215,10 +227,17 @@ class ClaimDetailPage(QDialog):
         self.evaluation_group.setLayout(evaluation_layout)
 
         self.cards_group = QGroupBox("Karten")
+        self.cards_group.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
         cards_layout = QVBoxLayout()
-        self.cards_list_label = QLabel("-")
-        self.cards_list_label.setWordWrap(True)
-        cards_layout.addWidget(self.cards_list_label)
+        cards_layout.setContentsMargins(10, 12, 10, 12)
+        cards_layout.setSpacing(0)
+        self.cards_container = QWidget()
+        self.cards_container.setStyleSheet("background: transparent;")
+        self.cards_inner = QVBoxLayout(self.cards_container)
+        self.cards_inner.setContentsMargins(0, 0, 0, 0)
+        self.cards_inner.setSpacing(4)
+        cards_layout.addWidget(self.cards_container)
+        cards_layout.addStretch()
         self.cards_group.setLayout(cards_layout)
 
         action_layout = QHBoxLayout()
@@ -330,23 +349,31 @@ class ClaimDetailPage(QDialog):
             self.calc_details_label.setText(str(details) if details is not None else "-")
 
         incomes = claim.get("incomes") or []
+        self._clear_layout(self.income_inner)
         if incomes:
-            self.income_list.setText("\n".join([f"{item['type']}: {item['amount']:.2f} €" for item in incomes]))
+            for item in incomes:
+                self.income_inner.addWidget(
+                    self._make_finance_row(item["type"], f"{item['amount']:.2f} €")
+                )
         else:
-            self.income_list.setText("-")
+            lbl = QLabel("-")
+            lbl.setStyleSheet("color: #9ca3af; font-size: 13px;")
+            self.income_inner.addWidget(lbl)
 
         expenses = claim.get("expenses") or []
+        self._clear_layout(self.expense_inner)
         if expenses:
-            expense_lines = []
             for item in expenses:
-                proof = "Ja" if item.get("has_proof") else "Nein"
+                proof_badge = "Nachweis ✓" if item.get("has_proof") else "kein Nachweis"
                 note = item.get("note") or ""
-                expense_lines.append(
-                    f"{item['type']}: {item['amount']:.2f} € / Nachweis: {proof}" + (f" / {note}" if note else "")
+                sub = proof_badge + (f" · {note}" if note else "")
+                self.expense_inner.addWidget(
+                    self._make_finance_row(item["type"], f"{item['amount']:.2f} €", sub)
                 )
-            self.expense_list.setText("\n".join(expense_lines))
         else:
-            self.expense_list.setText("-")
+            lbl = QLabel("-")
+            lbl.setStyleSheet("color: #9ca3af; font-size: 13px;")
+            self.expense_inner.addWidget(lbl)
 
         self.evaluation_button.setEnabled(True)
 
@@ -365,18 +392,20 @@ class ClaimDetailPage(QDialog):
         """Lädt und zeigt Karten für den Fall an."""
         cards = self.card_service.get_cards_for_claim(self.claim_id)
         
+        self._clear_layout(self.cards_inner)
         if cards:
-            card_lines = []
             for card in cards:
                 card_number = card.get("card_number", "?")
                 status = card.get("status", "?")
                 expiry = card.get("expiry_date", "-")
                 status_display = self.card_service.get_card_status_display(status)
-                card_lines.append(f"{card_number} – {status_display} – Ablauf: {expiry}")
-            
-            self.cards_list_label.setText("\n".join(card_lines))
+                self.cards_inner.addWidget(
+                    self._make_finance_row(card_number, status_display, f"Ablauf: {expiry}")
+                )
         else:
-            self.cards_list_label.setText("Keine Karten für diesen Fall.")
+            lbl = QLabel("Keine Karten für diesen Fall.")
+            lbl.setStyleSheet("color: #9ca3af; font-size: 13px;")
+            self.cards_inner.addWidget(lbl)
         
         # Button Aktivierung basierend auf Fallstatus
         can_create, reason = self.card_service.can_create_card_for_claim(self.claim_id)
@@ -423,6 +452,42 @@ class ClaimDetailPage(QDialog):
                 "Fehler",
                 "Kartenerstellung ist fehlgeschlagen.",
             )
+
+    @staticmethod
+    def _clear_layout(layout) -> None:
+        while layout.count():
+            child = layout.takeAt(0)
+            if child.widget():
+                child.widget().deleteLater()
+
+    def _make_finance_row(self, label: str, value: str, sub: str = "") -> QWidget:
+        row = QWidget()
+        row.setStyleSheet("background: transparent;")
+        outer = QVBoxLayout(row)
+        outer.setContentsMargins(0, 2, 0, 2)
+        outer.setSpacing(1)
+
+        top_row = QHBoxLayout()
+        top_row.setContentsMargins(0, 0, 0, 0)
+        top_row.setSpacing(8)
+
+        lbl = QLabel(label)
+        lbl.setStyleSheet("color: #4b5563; font-size: 13px;")
+        val = QLabel(value)
+        val.setStyleSheet("font-size: 13px; font-weight: 600; color: #1a1917;")
+        val.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        top_row.addWidget(lbl)
+        top_row.addStretch()
+        top_row.addWidget(val)
+        outer.addLayout(top_row)
+
+        if sub:
+            sub_lbl = QLabel(sub)
+            sub_lbl.setStyleSheet("color: #9ca3af; font-size: 11px;")
+            sub_lbl.setWordWrap(True)
+            outer.addWidget(sub_lbl)
+
+        return row
 
     def _apply_status_style(self, status: str) -> None:
         if status == "ANSPRUCHSBERECHTIGT":
