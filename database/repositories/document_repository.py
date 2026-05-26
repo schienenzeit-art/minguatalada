@@ -22,6 +22,7 @@ class DocumentRepository:
         uploaded_by: int,
         uploaded_at: str,
         updated_at: str,
+        expiry_date: str | None = None,
     ) -> int:
         with get_connection() as connection:
             cursor = connection.execute(
@@ -43,8 +44,9 @@ class DocumentRepository:
                     uploaded_by,
                     uploaded_at,
                     updated_at,
+                    expiry_date,
                     is_deleted
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
                 """,
                 (
                     title,
@@ -63,6 +65,7 @@ class DocumentRepository:
                     uploaded_by,
                     uploaded_at,
                     updated_at,
+                    expiry_date,
                 ),
             )
             connection.commit()

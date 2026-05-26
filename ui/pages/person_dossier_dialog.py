@@ -24,6 +24,7 @@ from services.claim_service import ClaimService
 from services.document_service import DocumentService
 from services.pdf_service import PDFService
 from database.repositories.person_repository import PersonRepository
+from ui.pages.claim_detail_page import ClaimDetailPage
 
 
 class PersonDossierDialog(QDialog):
@@ -98,9 +99,18 @@ class PersonDossierDialog(QDialog):
 
         claims_box = QGroupBox("Verknüpfte Fälle")
         claims_layout = QVBoxLayout()
-        self.claims_label = QLabel("-")
-        self.claims_label.setWordWrap(True)
-        claims_layout.addWidget(self.claims_label)
+        claims_layout.setSpacing(8)
+        self.claims_search = QLineEdit()
+        self.claims_search.setPlaceholderText("Nach Fallnummer, Status oder Kategorie suchen…")
+        self.claims_search.textChanged.connect(self._filter_claims_table)
+        self.claims_table = TableWidget(5)
+        self.claims_table.setHorizontalHeaderLabels(["Fallnummer", "Status", "Kategorie", "Standort", "Erstellt"])
+        self.claims_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.claims_table.setFixedHeight(180)
+        self.claims_table.cellDoubleClicked.connect(self._open_claim_from_table)
+        self._all_claims: list[dict] = []
+        claims_layout.addWidget(self.claims_search)
+        claims_layout.addWidget(self.claims_table)
         claims_box.setLayout(claims_layout)
 
         document_card = QGroupBox("Dokumente")
@@ -191,17 +201,42 @@ class PersonDossierDialog(QDialog):
         self.birthdate_label.setText(person.get("birthdate") or "-")
 
     def load_claims(self) -> None:
-        claims = self.claim_service.list_claims(person_id=self.person_id)
-        if not claims:
-            self.claims_label.setText("Keine verknüpften Fälle gefunden.")
-            return
+        self._all_claims = self.claim_service.list_claims(person_id=self.person_id)
+        self._render_claims_table(self._all_claims)
 
-        lines = []
+    def _render_claims_table(self, claims: list[dict]) -> None:
+        self.claims_table.setRowCount(0)
         for claim in claims:
-            lines.append(
-                f"{claim.get('case_number', '-')} – {claim.get('status', '-')} – {claim.get('category_name', '-') or '-'} – {claim.get('location_name', '-') or '-'}"
-            )
-        self.claims_label.setText("\n".join(lines))
+            row = self.claims_table.rowCount()
+            self.claims_table.insertRow(row)
+            self.claims_table.setItem(row, 0, QTableWidgetItem(claim.get("case_number") or "-"))
+            self.claims_table.setItem(row, 1, QTableWidgetItem(claim.get("status") or "-"))
+            self.claims_table.setItem(row, 2, QTableWidgetItem(claim.get("category_name") or "-"))
+            self.claims_table.setItem(row, 3, QTableWidgetItem(claim.get("location_name") or "-"))
+            self.claims_table.setItem(row, 4, QTableWidgetItem((claim.get("created_at") or "")[:10]))
+            self.claims_table.item(row, 0).setData(Qt.ItemDataRole.UserRole, claim.get("id"))
+
+    def _filter_claims_table(self, text: str) -> None:
+        if not text.strip():
+            self._render_claims_table(self._all_claims)
+            return
+        q = text.strip().lower()
+        filtered = [
+            c for c in self._all_claims
+            if q in (c.get("case_number") or "").lower()
+            or q in (c.get("status") or "").lower()
+            or q in (c.get("category_name") or "").lower()
+        ]
+        self._render_claims_table(filtered)
+
+    def _open_claim_from_table(self, row: int, _col: int) -> None:
+        item = self.claims_table.item(row, 0)
+        if not item:
+            return
+        claim_id = item.data(Qt.ItemDataRole.UserRole)
+        if claim_id:
+            dialog = ClaimDetailPage(claim_id=claim_id, claim_service=self.claim_service)
+            dialog.exec()
 
     def refresh_documents(self) -> None:
         documents = self.document_service.list_documents(person_id=self.person_id)

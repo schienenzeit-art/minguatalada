@@ -15,15 +15,26 @@ class CaseService:
         case_repo: CaseRepositoryPort | None = None,
         location_repo: LocationRepositoryPort | None = None,
         category_repo: CategoryRepositoryPort | None = None,
+        settings_service=None,
     ) -> None:
         self.person_repo = person_repo or PersonRepository()
         self.case_repo = case_repo or CaseRepository()
         self.location_repo = location_repo or LocationRepository()
         self.category_repo = category_repo or CategoryRepository()
+        self._settings_service = settings_service
+
+    def _get_prefix(self) -> str:
+        if self._settings_service is not None:
+            try:
+                return str(self._settings_service.get("CASE_NUMBER_PREFIX", "AS") or "AS")
+            except Exception:
+                pass
+        return "AS"
 
     def generate_case_number(self) -> str:
+        prefix = self._get_prefix()
         year = datetime.utcnow().year
-        last_case_number = self.case_repo.get_last_case_number_for_year(year)
+        last_case_number = self.case_repo.get_last_case_number_for_year(year, prefix)
 
         if last_case_number:
             try:
@@ -34,7 +45,7 @@ class CaseService:
             last_seq = 0
 
         next_seq = last_seq + 1
-        return f"AS-{year}-{next_seq:06d}"
+        return f"{prefix}-{year}-{next_seq:06d}"
 
     def list_categories(self) -> list[dict]:
         return self.category_repo.list_categories()

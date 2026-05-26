@@ -18,6 +18,7 @@ class UserRepository:
                     u.is_active,
                     u.failed_attempts,
                     u.locked_until,
+                    u.must_change_password,
                     r.name AS role_name,
                     l.id AS location_id,
                     l.name AS location_name
@@ -46,6 +47,7 @@ class UserRepository:
                     u.is_active,
                     u.failed_attempts,
                     u.locked_until,
+                    u.must_change_password,
                     r.name AS role_name,
                     l.id AS location_id,
                     l.name AS location_name
@@ -81,6 +83,7 @@ class UserRepository:
                         u.is_active,
                         u.failed_attempts,
                         u.locked_until,
+                        u.must_change_password,
                         r.name AS role_name,
                         l.id AS location_id,
                         l.name AS location_name
@@ -101,6 +104,7 @@ class UserRepository:
                         u.is_active,
                         u.failed_attempts,
                         u.locked_until,
+                        u.must_change_password,
                         r.name AS role_name,
                         l.id AS location_id,
                         l.name AS location_name
@@ -193,6 +197,7 @@ class UserRepository:
                     u.is_active,
                     u.failed_attempts,
                     u.locked_until,
+                    u.must_change_password,
                     u.role_id,
                     u.location_id,
                     r.name AS role_name,
@@ -286,7 +291,19 @@ class UserRepository:
             )
             connection.commit()
 
+    def set_must_change_password(self, user_id: int, flag: bool) -> None:
+        with get_connection() as connection:
+            connection.execute(
+                "UPDATE users SET must_change_password = ? WHERE id = ?",
+                (int(flag), user_id),
+            )
+            connection.commit()
+
+    def get_users_by_location_id_with_password_flag(self, location_id):
+        pass  # kept for interface compatibility
+
     def _row_to_dict(self, row: Row) -> dict:
+        keys = row.keys() if hasattr(row, "keys") else []
         return {
             "id": row["id"],
             "full_name": row["full_name"],
@@ -295,6 +312,7 @@ class UserRepository:
             "is_active": bool(row["is_active"]),
             "failed_attempts": row["failed_attempts"],
             "locked_until": row["locked_until"],
+            "must_change_password": bool(row["must_change_password"]) if "must_change_password" in keys else False,
             "role_name": row["role_name"],
             "location_id": row["location_id"],
             "location_name": row["location_name"],

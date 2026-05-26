@@ -12,8 +12,9 @@ from PyQt6.QtWidgets import (
     QMessageBox,
     QScrollArea,
     QSizePolicy,
+    QDateEdit,
 )
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QDate
 
 from services.card_service import CardService
 from services.claim_service import ClaimService
@@ -226,6 +227,53 @@ class ClaimDetailPage(QDialog):
         evaluation_layout.addLayout(summary_layout)
         self.evaluation_group.setLayout(evaluation_layout)
 
+        # Wiedervorlage
+        review_group = QGroupBox("Wiedervorlage")
+        review_group.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        review_layout = QHBoxLayout()
+        review_layout.setContentsMargins(10, 12, 10, 12)
+        review_layout.setSpacing(12)
+        review_date_label = QLabel("Wiedervorlage am:")
+        review_date_label.setStyleSheet("color: #4b5563; font-size: 13px;")
+        self.review_date_edit = QDateEdit()
+        self.review_date_edit.setCalendarPopup(True)
+        self.review_date_edit.setDisplayFormat("dd.MM.yyyy")
+        self.review_date_edit.setDate(QDate.currentDate())
+        self.review_date_edit.setSpecialValueText("Nicht gesetzt")
+        self.review_date_edit.setMinimumDate(QDate(2000, 1, 1))
+        save_review_btn = QPushButton("Speichern")
+        save_review_btn.setFixedWidth(100)
+        save_review_btn.clicked.connect(self._save_review_date)
+        clear_review_btn = QPushButton("Löschen")
+        clear_review_btn.setFixedWidth(80)
+        clear_review_btn.clicked.connect(self._clear_review_date)
+        self.review_date_label = QLabel("–")
+        self.review_date_label.setStyleSheet("font-size: 13px; font-weight: 600; color: #1a1917;")
+        review_layout.addWidget(review_date_label)
+        review_layout.addWidget(self.review_date_edit)
+        review_layout.addWidget(save_review_btn)
+        review_layout.addWidget(clear_review_btn)
+        review_layout.addSpacing(24)
+        review_layout.addWidget(QLabel("Aktuell:"))
+        review_layout.addWidget(self.review_date_label)
+        review_layout.addStretch()
+        review_group.setLayout(review_layout)
+
+        # Fallhistorie
+        self.history_group = QGroupBox("Fallhistorie")
+        self.history_group.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+        history_layout = QVBoxLayout()
+        history_layout.setContentsMargins(10, 12, 10, 12)
+        history_layout.setSpacing(0)
+        self.history_container = QWidget()
+        self.history_container.setStyleSheet("background: transparent;")
+        self.history_inner = QVBoxLayout(self.history_container)
+        self.history_inner.setContentsMargins(0, 0, 0, 0)
+        self.history_inner.setSpacing(4)
+        history_layout.addWidget(self.history_container)
+        history_layout.addStretch()
+        self.history_group.setLayout(history_layout)
+
         self.cards_group = QGroupBox("Karten")
         self.cards_group.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
         cards_layout = QVBoxLayout()
@@ -242,11 +290,15 @@ class ClaimDetailPage(QDialog):
 
         action_layout = QHBoxLayout()
         action_layout.addStretch()
+        self.clone_button = QPushButton("Fall klonen")
+        self.clone_button.setToolTip("Erstellt einen neuen Antrag mit denselben Stammdaten")
+        self.clone_button.clicked.connect(self.on_clone_claim)
         self.create_card_button = QPushButton("Neue Karte erstellen")
         self.create_card_button.clicked.connect(self.on_create_card)
         self.evaluation_button = QPushButton("Prüfung durchführen")
         self.evaluation_button.setObjectName("primaryButton")
         self.evaluation_button.clicked.connect(self.open_evaluation_dialog)
+        action_layout.addWidget(self.clone_button)
         action_layout.addWidget(self.create_card_button)
         action_layout.addWidget(self.evaluation_button)
 
@@ -259,6 +311,8 @@ class ClaimDetailPage(QDialog):
         content_layout.addWidget(self.person_group)
         content_layout.addLayout(finance_row)
         content_layout.addWidget(self.evaluation_group)
+        content_layout.addWidget(review_group)
+        content_layout.addWidget(self.history_group)
         content_layout.addWidget(self.cards_group)
         content_layout.addLayout(action_layout)
         content_layout.addWidget(buttons)
@@ -377,7 +431,18 @@ class ClaimDetailPage(QDialog):
 
         self.evaluation_button.setEnabled(True)
 
-        # Karten laden und anzeigen
+        review_date = claim.get("review_date")
+        if review_date:
+            self.review_date_label.setText(review_date)
+            try:
+                parts = review_date.split("-")
+                self.review_date_edit.setDate(QDate(int(parts[0]), int(parts[1]), int(parts[2])))
+            except Exception:
+                pass
+        else:
+            self.review_date_label.setText("–")
+
+        self.load_history()
         self.load_cards()
 
     def open_person_dossier(self):
@@ -452,6 +517,62 @@ class ClaimDetailPage(QDialog):
                 "Fehler",
                 "Kartenerstellung ist fehlgeschlagen.",
             )
+
+    def load_history(self) -> None:
+        self._clear_layout(self.history_inner)
+        history = self.claim_service.get_claim_history(self.claim_id)
+        if not history:
+            lbl = QLabel("Noch keine Statusänderungen aufgezeichnet.")
+            lbl.setStyleSheet("color: #9ca3af; font-size: 13px;")
+            self.history_inner.addWidget(lbl)
+            return
+        for entry in history:
+            old = entry.get("old_status") or "–"
+            new = entry.get("new_status", "?")
+            by = entry.get("changed_by_name") or "System"
+            at = (entry.get("changed_at") or "")[:16].replace("T", " ")
+            note = entry.get("note") or ""
+            sub = f"{by} · {at}" + (f" · {note}" if note else "")
+            arrow = f"{old} → {new}"
+            self.history_inner.addWidget(self._make_finance_row(arrow, "", sub))
+
+    def _save_review_date(self) -> None:
+        if not self.claim:
+            return
+        date_val = self.review_date_edit.date().toString("yyyy-MM-dd")
+        if self.claim_service.set_review_date(self.claim_id, date_val):
+            self.review_date_label.setText(date_val)
+            QMessageBox.information(self, "Wiedervorlage", f"Wiedervorlage gesetzt auf {date_val}.")
+        else:
+            QMessageBox.warning(self, "Fehler", "Wiedervorlage konnte nicht gespeichert werden.")
+
+    def _clear_review_date(self) -> None:
+        if not self.claim:
+            return
+        if self.claim_service.set_review_date(self.claim_id, None):
+            self.review_date_label.setText("–")
+            self.review_date_edit.setDate(QDate.currentDate())
+
+    def on_clone_claim(self) -> None:
+        if not self.claim:
+            return
+        reply = QMessageBox.question(
+            self,
+            "Fall klonen",
+            f"Möchten Sie einen neuen Antrag auf Basis von {self.claim.get('case_number', '')} erstellen?\n"
+            "Alle Stamm- und Haushaltsdaten werden übernommen.",
+        )
+        if reply != QMessageBox.StandardButton.Yes:
+            return
+        result = self.claim_service.clone_claim(self.claim_id)
+        if result:
+            QMessageBox.information(
+                self,
+                "Fall geklont",
+                f"Neuer Fall {result['case_number']} wurde erstellt.",
+            )
+        else:
+            QMessageBox.warning(self, "Fehler", "Fall konnte nicht geklont werden.")
 
     @staticmethod
     def _clear_layout(layout) -> None:

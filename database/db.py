@@ -50,6 +50,7 @@ def initialize_database() -> None:
                 role_id INTEGER NOT NULL,
                 location_id INTEGER,
                 is_active INTEGER NOT NULL DEFAULT 1,
+                must_change_password INTEGER NOT NULL DEFAULT 0,
                 created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (role_id) REFERENCES roles(id),
                 FOREIGN KEY (location_id) REFERENCES locations(id)
@@ -100,6 +101,7 @@ def initialize_database() -> None:
                 description TEXT NOT NULL,
                 start_date TEXT,
                 end_date TEXT,
+                review_date TEXT,
                 created_by INTEGER,
                 examiner_id INTEGER,
                 evaluation_date TEXT,
@@ -121,6 +123,18 @@ def initialize_database() -> None:
                 FOREIGN KEY (category_id) REFERENCES categories(id),
                 FOREIGN KEY (created_by) REFERENCES users(id),
                 FOREIGN KEY (examiner_id) REFERENCES users(id)
+            );
+
+            CREATE TABLE IF NOT EXISTS claim_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                claim_id INTEGER NOT NULL,
+                changed_by INTEGER,
+                changed_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                old_status TEXT,
+                new_status TEXT NOT NULL,
+                note TEXT,
+                FOREIGN KEY (claim_id) REFERENCES claims(id) ON DELETE CASCADE,
+                FOREIGN KEY (changed_by) REFERENCES users(id) ON DELETE SET NULL
             );
 
             CREATE TABLE IF NOT EXISTS incomes (
@@ -187,6 +201,7 @@ def initialize_database() -> None:
                 uploaded_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 archived_at TEXT,
+                expiry_date TEXT,
                 is_deleted INTEGER NOT NULL DEFAULT 0,
                 FOREIGN KEY (document_type_id) REFERENCES document_types(id),
                 FOREIGN KEY (claim_id) REFERENCES claims(id),
@@ -441,6 +456,42 @@ def initialize_database() -> None:
         except Exception:
             pass
 
+        # New columns for roadmap items 1-5
+        try:
+            if not has_column('claims', 'review_date'):
+                connection.execute("ALTER TABLE claims ADD COLUMN review_date TEXT")
+        except Exception:
+            pass
+        try:
+            if not has_column('documents', 'expiry_date'):
+                connection.execute("ALTER TABLE documents ADD COLUMN expiry_date TEXT")
+        except Exception:
+            pass
+        try:
+            if not has_column('users', 'must_change_password'):
+                connection.execute("ALTER TABLE users ADD COLUMN must_change_password INTEGER NOT NULL DEFAULT 0")
+        except Exception:
+            pass
+
+        # claim_history table (idempotent via IF NOT EXISTS in the main executescript)
+        try:
+            connection.execute("""
+                CREATE TABLE IF NOT EXISTS claim_history (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    claim_id INTEGER NOT NULL,
+                    changed_by INTEGER,
+                    changed_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    old_status TEXT,
+                    new_status TEXT NOT NULL,
+                    note TEXT,
+                    FOREIGN KEY (claim_id) REFERENCES claims(id) ON DELETE CASCADE,
+                    FOREIGN KEY (changed_by) REFERENCES users(id) ON DELETE SET NULL
+                )
+            """)
+            connection.commit()
+        except Exception:
+            pass
+
 
 def seed_basic_data(connection: sqlite3.Connection) -> None:
     locations = [
@@ -584,6 +635,14 @@ def seed_settings(connection: sqlite3.Connection) -> None:
             "number",
             "Härtefall",
             "Multiplikator zur Berechnung der Härtefallgrenze.",
+            1,
+        ),
+        (
+            "CASE_NUMBER_PREFIX",
+            "AS",
+            "string",
+            "Fallnummern",
+            "Präfix für generierte Fallnummern (z.B. AS → AS-2026-000001).",
             1,
         ),
     ]

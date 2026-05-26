@@ -1,8 +1,9 @@
 from datetime import datetime
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 
 from app.ports import ClaimRepositoryPort, ExpenseRepositoryPort, IncomeRepositoryPort
 from core.claim_status import ClaimStatus
+from core.session import Session
 from database.repositories.claim_repository import ClaimRepository
 from database.repositories.income_repository import IncomeRepository
 from database.repositories.expense_repository import ExpenseRepository
@@ -136,11 +137,72 @@ class ClaimService:
 
         return evaluation.to_dict()
 
-    def update_claim_status(self, claim_id: int, status: str) -> bool:
+    def update_claim_status(self, claim_id: int, status: str, note: str | None = None) -> bool:
         if not ClaimStatus.is_valid_status(status):
             return False
 
-        return self.claim_repository.update_claim_status(claim_id, status)
+        old = self.claim_repository.get_claim_by_id(claim_id)
+        old_status = old["status"] if old else None
+
+        result = self.claim_repository.update_claim_status(claim_id, status)
+        if result:
+            try:
+                self.claim_repository.record_claim_history(
+                    claim_id=claim_id,
+                    new_status=status,
+                    old_status=old_status,
+                    changed_by=Session.get_user_id(),
+                    note=note,
+                )
+            except Exception:
+                pass
+        return result
+
+    def set_review_date(self, claim_id: int, review_date: Optional[str]) -> bool:
+        return self.claim_repository.update_review_date(claim_id, review_date)
+
+    def get_claim_history(self, claim_id: int) -> List[dict]:
+        return self.claim_repository.get_claim_history(claim_id)
+
+    def clone_claim(self, claim_id: int, created_by: Optional[int] = None) -> Optional[dict]:
+        source = self.claim_repository.get_claim_by_id(claim_id)
+        if not source:
+            return None
+
+        created_by = created_by or Session.get_user_id() or source.get("user_id", 1)
+        year = datetime.utcnow().year
+        prefix = "AS"
+        try:
+            prefix = str(self.settings_service.get("CASE_NUMBER_PREFIX", "AS") or "AS")
+        except Exception:
+            pass
+
+        new_case_number = self.claim_repository.generate_next_case_number(year, prefix)
+        new_id = self.claim_repository.create_claim(
+            case_number=new_case_number,
+            person_id=source.get("person_id"),
+            user_id=created_by,
+            location_id=source["location_id"],
+            category_id=source.get("category_id"),
+            description=source["description"],
+            start_date=source.get("start_date"),
+            end_date=source.get("end_date"),
+            adult_count=source.get("adult_count") or 1,
+            child_count=source.get("child_count") or 0,
+            disability_degree=source.get("disability_degree"),
+            created_by=created_by,
+        )
+        try:
+            self.claim_repository.record_claim_history(
+                claim_id=new_id,
+                new_status=ClaimStatus.IN_PRUEFUNG,
+                old_status=None,
+                changed_by=created_by,
+                note=f"Klon von Fall {source.get('case_number', claim_id)}",
+            )
+        except Exception:
+            pass
+        return {"id": new_id, "case_number": new_case_number}
 
     def get_claim_statuses(self) -> list[str]:
         return ClaimStatus.ALL_STATUSES

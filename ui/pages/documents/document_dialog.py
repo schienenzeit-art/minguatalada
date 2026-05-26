@@ -1,4 +1,4 @@
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QDate
 from PyQt6.QtWidgets import (
     QDialog,
     QVBoxLayout,
@@ -12,6 +12,8 @@ from PyQt6.QtWidgets import (
     QDialogButtonBox,
     QFileDialog,
     QMessageBox,
+    QDateEdit,
+    QCheckBox,
 )
 
 from services.document_service import DocumentService
@@ -59,6 +61,14 @@ class DocumentDialog(QDialog):
         for location in self.location_service.list_active_locations():
             self.location_input.addItem(location["name"], location["id"])
 
+        self.expiry_date_check = QCheckBox("Ablaufdatum setzen")
+        self.expiry_date_check.stateChanged.connect(self._toggle_expiry)
+        self.expiry_date_edit = QDateEdit()
+        self.expiry_date_edit.setCalendarPopup(True)
+        self.expiry_date_edit.setDisplayFormat("dd.MM.yyyy")
+        self.expiry_date_edit.setDate(QDate.currentDate().addYears(1))
+        self.expiry_date_edit.setEnabled(False)
+
         form_layout.addRow("Datei:", self.file_label)
         form_layout.addRow("", choose_file_button)
         form_layout.addRow("Titel:", self.title_input)
@@ -67,6 +77,8 @@ class DocumentDialog(QDialog):
         form_layout.addRow("Personen-ID:", self.person_id_input)
         form_layout.addRow("Karten-ID:", self.card_id_input)
         form_layout.addRow("Standort:", self.location_input)
+        form_layout.addRow("Ablaufdatum:", self.expiry_date_check)
+        form_layout.addRow("", self.expiry_date_edit)
         form_layout.addRow("Beschreibung:", self.description_input)
 
         layout.addLayout(form_layout)
@@ -77,6 +89,9 @@ class DocumentDialog(QDialog):
         layout.addWidget(buttons)
 
         self.setLayout(layout)
+
+    def _toggle_expiry(self, state: int) -> None:
+        self.expiry_date_edit.setEnabled(bool(state))
 
     def choose_file(self):
         selected_file, _ = QFileDialog.getOpenFileName(

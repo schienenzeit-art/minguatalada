@@ -82,7 +82,5 @@ class AuthService:
             "success": True,
             "message": "Login erfolgreich.",
             "user": user,
+            "must_change_password": bool(user.get("must_change_password", False)),
         }
-
-
-print("AUTH SERVICE END")

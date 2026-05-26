@@ -28,6 +28,7 @@ class ClaimRepository:
                     c.status,
                     c.start_date,
                     c.end_date,
+                    c.review_date,
                     c.created_at,
                     c.updated_at,
                     u.id AS user_id,
@@ -41,6 +42,7 @@ class ClaimRepository:
                     p.postal_code AS person_postal_code,
                     p.city AS person_city,
                     p.email AS person_email,
+                    cat.id AS category_id,
                     cat.name AS category_name,
                     c.adult_count,
                     c.child_count,
@@ -70,6 +72,105 @@ class ClaimRepository:
             return None
 
         return self._row_to_dict(row)
+
+    def update_review_date(self, claim_id: int, review_date: Optional[str]) -> bool:
+        with get_connection() as connection:
+            tbl = self._table_name(connection)
+            cursor = connection.execute(
+                f"UPDATE {tbl} SET review_date = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                (review_date, claim_id),
+            )
+            connection.commit()
+        return cursor.rowcount > 0
+
+    def record_claim_history(
+        self,
+        claim_id: int,
+        new_status: str,
+        old_status: Optional[str] = None,
+        changed_by: Optional[int] = None,
+        note: Optional[str] = None,
+    ) -> None:
+        with get_connection() as connection:
+            connection.execute(
+                """
+                INSERT INTO claim_history (claim_id, changed_by, old_status, new_status, note)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (claim_id, changed_by, old_status, new_status, note),
+            )
+            connection.commit()
+
+    def get_claim_history(self, claim_id: int) -> list[dict]:
+        with get_connection() as connection:
+            rows = connection.execute(
+                """
+                SELECT
+                    h.id,
+                    h.claim_id,
+                    h.changed_at,
+                    h.old_status,
+                    h.new_status,
+                    h.note,
+                    u.full_name AS changed_by_name
+                FROM claim_history h
+                LEFT JOIN users u ON h.changed_by = u.id
+                WHERE h.claim_id = ?
+                ORDER BY h.changed_at ASC
+                """,
+                (claim_id,),
+            ).fetchall()
+        return [dict(row) for row in rows]
+
+    def generate_next_case_number(self, year: int, prefix: str = "AS") -> str:
+        with get_connection() as connection:
+            tbl = self._table_name(connection)
+            row = connection.execute(
+                f"SELECT case_number FROM {tbl} WHERE case_number LIKE ? ORDER BY case_number DESC LIMIT 1",
+                (f"{prefix}-{year}-%",),
+            ).fetchone()
+        if row:
+            try:
+                seq = int(row["case_number"].split("-")[-1]) + 1
+            except Exception:
+                seq = 1
+        else:
+            seq = 1
+        return f"{prefix}-{year}-{seq:06d}"
+
+    def create_claim(
+        self,
+        case_number: str,
+        person_id: Optional[int],
+        user_id: int,
+        location_id: int,
+        category_id: Optional[int],
+        description: str,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
+        adult_count: int = 1,
+        child_count: int = 0,
+        disability_degree: Optional[int] = None,
+        created_by: Optional[int] = None,
+    ) -> int:
+        with get_connection() as connection:
+            tbl = self._table_name(connection)
+            cursor = connection.execute(
+                f"""
+                INSERT INTO {tbl} (
+                    case_number, person_id, user_id, location_id, category_id,
+                    status, description, start_date, end_date,
+                    adult_count, child_count, disability_degree, created_by
+                ) VALUES (?, ?, ?, ?, ?, 'IN_PRUEFUNG', ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    case_number, person_id, user_id, location_id, category_id,
+                    description, start_date, end_date,
+                    adult_count, child_count, disability_degree, created_by,
+                ),
+            )
+            connection.commit()
+        return cursor.lastrowid
 
     def update_claim_status(self, claim_id: int, status: str) -> bool:
         if not ClaimStatus.is_valid_status(status):
@@ -263,6 +364,7 @@ class ClaimRepository:
             "status": row["status"],
             "start_date": row["start_date"],
             "end_date": row["end_date"],
+            "review_date": row["review_date"] if "review_date" in row.keys() else None,
             "created_at": row["created_at"],
             "updated_at": row["updated_at"],
             "user_id": row["user_id"],

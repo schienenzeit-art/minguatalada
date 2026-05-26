@@ -89,7 +89,7 @@ class CaseRepository:
 
         return [dict(r) for r in rows]
 
-    def get_last_case_number_for_year(self, year: int) -> Optional[str]:
+    def get_last_case_number_for_year(self, year: int, prefix: str = "AS") -> Optional[str]:
         with get_connection() as connection:
             tbl = 'claims'
             row = connection.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='claims' LIMIT 1").fetchone()
@@ -99,6 +99,6 @@ class CaseRepository:
                     tbl = 'claim'
 
             sql = f"SELECT case_number FROM {tbl} WHERE case_number LIKE ? ORDER BY case_number DESC LIMIT 1"
-            row = connection.execute(sql, (f"AS-{year}-%",)).fetchone()
+            row = connection.execute(sql, (f"{prefix}-{year}-%",)).fetchone()
 
         return row["case_number"] if row else None

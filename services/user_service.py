@@ -37,6 +37,7 @@ class UserService:
         role_id: int,
         location_id: Optional[int],
         is_active: bool = True,
+        must_change_password: bool = True,
     ) -> Dict[str, Any]:
         full_name = full_name.strip()
         username = username.strip()
@@ -63,10 +64,11 @@ class UserService:
             location_id,
             is_active,
         )
-        # audit
         try:
             created = self.user_repository.get_by_username(username)
             if created:
+                if must_change_password:
+                    self.user_repository.set_must_change_password(created["id"], True)
                 self.user_repository.log_audit(created.get("id"), "create_user", "user", created.get("id"), f"User {username} created")
         except Exception:
             pass
@@ -163,6 +165,20 @@ class UserService:
             pass
 
         return {"success": updated, "message": "Passwort geändert." if updated else "Passwort konnte nicht geändert werden."}
+
+    def set_must_change_password(self, user_id: int, flag: bool) -> None:
+        self.user_repository.set_must_change_password(user_id, flag)
+        try:
+            self.user_repository.log_audit(None, "set_must_change_password", "user", user_id, f"flag={flag}")
+        except Exception:
+            pass
+
+    def manual_lock_user(self, user_id: int, locked_until_iso: str | None) -> None:
+        self.user_repository.set_locked_until(user_id, locked_until_iso)
+        try:
+            self.user_repository.log_audit(None, "manual_lock_user", "user", user_id, f"locked_until={locked_until_iso}")
+        except Exception:
+            pass
 
     def admin_reset_password(self, admin_user_id: int, target_user_id: int, new_password: str) -> Dict[str, object]:
         # minimal check: admin_user_id must belong to Admin role
