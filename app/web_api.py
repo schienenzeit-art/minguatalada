@@ -3,6 +3,7 @@ from typing import Optional
 
 import jwt
 from fastapi import FastAPI, HTTPException, Depends, status
+from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2PasswordBearer
 
 from app.config import SECRET_KEY, JWT_ALGORITHM, JWT_EXPIRY
@@ -50,6 +51,11 @@ def api_login(username: str, password: str):
         raise HTTPException(status_code=401, detail=result["message"])
     token = create_token(result["user"])
     return {"access_token": token, "token_type": "bearer"}
+
+
+@app.get("/")
+def root():
+    return RedirectResponse(url="/docs")
 
 
 @app.get("/api/me")
