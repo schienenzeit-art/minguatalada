@@ -7,9 +7,7 @@ from database.db import get_connection
 class UserRepository:
 
     def get_by_username(self, username: str) -> Optional[dict]:
-
         with get_connection() as connection:
-
             row = connection.execute(
                 """
                 SELECT
@@ -18,6 +16,8 @@ class UserRepository:
                     u.username,
                     u.password_hash,
                     u.is_active,
+                    u.failed_attempts,
+                    u.locked_until,
                     r.name AS role_name,
                     l.id AS location_id,
                     l.name AS location_name
@@ -44,6 +44,8 @@ class UserRepository:
                     u.username,
                     u.password_hash,
                     u.is_active,
+                    u.failed_attempts,
+                    u.locked_until,
                     r.name AS role_name,
                     l.id AS location_id,
                     l.name AS location_name
@@ -77,6 +79,8 @@ class UserRepository:
                         u.username,
                         u.password_hash,
                         u.is_active,
+                        u.failed_attempts,
+                        u.locked_until,
                         r.name AS role_name,
                         l.id AS location_id,
                         l.name AS location_name
@@ -95,6 +99,8 @@ class UserRepository:
                         u.username,
                         u.password_hash,
                         u.is_active,
+                        u.failed_attempts,
+                        u.locked_until,
                         r.name AS role_name,
                         l.id AS location_id,
                         l.name AS location_name
@@ -185,6 +191,8 @@ class UserRepository:
                     u.username,
                     u.password_hash,
                     u.is_active,
+                    u.failed_attempts,
+                    u.locked_until,
                     u.role_id,
                     u.location_id,
                     r.name AS role_name,
@@ -198,6 +206,30 @@ class UserRepository:
             ).fetchone()
 
         return self._row_to_dict(row) if row else None
+
+    def increment_failed_attempts(self, user_id: int) -> None:
+        with get_connection() as connection:
+            connection.execute(
+                "UPDATE users SET failed_attempts = COALESCE(failed_attempts,0) + 1 WHERE id = ?",
+                (user_id,),
+            )
+            connection.commit()
+
+    def reset_failed_attempts(self, user_id: int) -> None:
+        with get_connection() as connection:
+            connection.execute(
+                "UPDATE users SET failed_attempts = 0, locked_until = NULL WHERE id = ?",
+                (user_id,),
+            )
+            connection.commit()
+
+    def set_locked_until(self, user_id: int, locked_until: str | None) -> None:
+        with get_connection() as connection:
+            connection.execute(
+                "UPDATE users SET locked_until = ? WHERE id = ?",
+                (locked_until, user_id),
+            )
+            connection.commit()
 
     def update_user(
         self,
@@ -246,14 +278,23 @@ class UserRepository:
             connection.commit()
             return cursor.rowcount > 0
 
-    def _row_to_dict(self, row: Row) -> dict:
+    def log_audit(self, user_id: int | None, action: str, object_type: str, object_id: int | None, details: str | None = None) -> None:
+        with get_connection() as connection:
+            connection.execute(
+                "INSERT INTO audit_logs (user_id, action, object_type, object_id, details) VALUES (?, ?, ?, ?, ?)",
+                (user_id, action, object_type, object_id, details),
+            )
+            connection.commit()
 
+    def _row_to_dict(self, row: Row) -> dict:
         return {
             "id": row["id"],
             "full_name": row["full_name"],
             "username": row["username"],
             "password_hash": row["password_hash"],
             "is_active": bool(row["is_active"]),
+            "failed_attempts": row["failed_attempts"],
+            "locked_until": row["locked_until"],
             "role_name": row["role_name"],
             "location_id": row["location_id"],
             "location_name": row["location_name"],

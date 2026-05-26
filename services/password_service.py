@@ -1,40 +1,32 @@
-import hashlib
+import bcrypt
 import secrets
+import string
 
 
 class PasswordService:
-    ALGORITHM = "pbkdf2_sha256"
-    ITERATIONS = 150000
-    SALT_LENGTH = 16
+    """Password hashing and verification using bcrypt.
+
+    This replaces PBKDF2-based hashing with bcrypt, suitable for password storage.
+    """
+    BCRYPT_ROUNDS = 12
 
     @classmethod
     def hash_password(cls, password: str) -> str:
-        salt = secrets.token_hex(cls.SALT_LENGTH)
-        digest = hashlib.pbkdf2_hmac(
-            "sha256",
-            password.encode("utf-8"),
-            salt.encode("utf-8"),
-            cls.ITERATIONS,
-        )
-        return f"{cls.ALGORITHM}${cls.ITERATIONS}${salt}${digest.hex()}"
+        pw = password.encode("utf-8")
+        salt = bcrypt.gensalt(rounds=cls.BCRYPT_ROUNDS)
+        hashed = bcrypt.hashpw(pw, salt)
+        return hashed.decode("utf-8")
 
     @classmethod
     def verify_password(cls, password: str, stored_hash: str) -> bool:
         if not stored_hash:
             return False
-
-        parts = stored_hash.split("$")
-        if len(parts) != 4:
-            return password == stored_hash
-
-        algorithm, iterations, salt, digest = parts
-        if algorithm != cls.ALGORITHM:
+        try:
+            return bcrypt.checkpw(password.encode("utf-8"), stored_hash.encode("utf-8"))
+        except Exception:
             return False
 
-        new_digest = hashlib.pbkdf2_hmac(
-            "sha256",
-            password.encode("utf-8"),
-            salt.encode("utf-8"),
-            int(iterations),
-        ).hex()
-        return secrets.compare_digest(new_digest, digest)
+    @classmethod
+    def generate_random_password(cls, length: int = 16) -> str:
+        alphabet = string.ascii_letters + string.digits
+        return ''.join(secrets.choice(alphabet) for _ in range(length))

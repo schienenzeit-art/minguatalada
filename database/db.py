@@ -426,6 +426,16 @@ def initialize_database() -> None:
         except Exception:
             pass
         try:
+            if not has_column('users', 'failed_attempts'):
+                connection.execute("ALTER TABLE users ADD COLUMN failed_attempts INTEGER NOT NULL DEFAULT 0")
+        except Exception:
+            pass
+        try:
+            if not has_column('users', 'locked_until'):
+                connection.execute("ALTER TABLE users ADD COLUMN locked_until TEXT")
+        except Exception:
+            pass
+        try:
             if not has_column('roles', 'is_active'):
                 connection.execute("ALTER TABLE roles ADD COLUMN is_active INTEGER NOT NULL DEFAULT 1")
         except Exception:
@@ -464,8 +474,11 @@ def seed_basic_data(connection: sqlite3.Connection) -> None:
 
     seed_settings(connection)
 
-    admin_password_hash = PasswordService.hash_password("admin123")
-    employee_password_hash = PasswordService.hash_password("test123")
+    # Create initial users securely: generate random passwords and mark users inactive by default
+    admin_pw = PasswordService.generate_random_password(16)
+    employee_pw = PasswordService.generate_random_password(14)
+    admin_password_hash = PasswordService.hash_password(admin_pw)
+    employee_password_hash = PasswordService.hash_password(employee_pw)
 
     connection.execute(
         """
@@ -482,7 +495,7 @@ def seed_basic_data(connection: sqlite3.Connection) -> None:
             ?,
             (SELECT id FROM roles WHERE name = ?),
             (SELECT id FROM locations WHERE name = ?),
-            1
+            0
         )
         """,
         (
@@ -509,7 +522,7 @@ def seed_basic_data(connection: sqlite3.Connection) -> None:
             ?,
             (SELECT id FROM roles WHERE name = ?),
             (SELECT id FROM locations WHERE name = ?),
-            1
+            0
         )
         """,
         (
@@ -524,6 +537,14 @@ def seed_basic_data(connection: sqlite3.Connection) -> None:
     connection.commit()
     seed_document_types(connection)
     seed_claims(connection)
+    # SECURITY: Print one-time initial passwords for administrator setup and advise to change them
+    try:
+        print("INITIAL ADMIN CREDENTIALS:")
+        print(f"  username: admin")
+        print(f"  password (one-time): {admin_pw}")
+        print("The initial accounts are created but should be activated and passwords changed immediately.")
+    except Exception:
+        pass
 
 
 def seed_settings(connection: sqlite3.Connection) -> None:

@@ -95,8 +95,8 @@ class DashboardPage(QWidget):
             for loc in locations:
                 self.location_select.addItem(loc.get("name", "?"), loc.get("id"))
         except Exception:
-            # fallback for older demo setups
-            self.location_select.addItems(["Bern-Mitte", "Wien", "Zürich"])
+            # if location service fails, leave only 'Alle Standorte' to avoid hardcoded demo values
+            pass
 
         primary_button = QPushButton("Neuer Antrag")
         primary_button.setObjectName("PrimaryButton")
