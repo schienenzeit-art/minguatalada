@@ -14,7 +14,8 @@ from ui.shell.main_window import MainWindow
 
 
 def load_theme() -> str:
-    theme_path = Path(__file__).resolve().parent.parent / "ui" / "styles" / "theme.qss"
+    from app.config import RESOURCE_DIR
+    theme_path = RESOURCE_DIR / "ui" / "styles" / "theme.qss"
     if theme_path.exists():
         return theme_path.read_text(encoding="utf-8")
     return ""

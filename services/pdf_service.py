@@ -15,6 +15,7 @@ from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table
 from reportlab.platypus.tables import TableStyle
 
+from app.config import DATA_DIR
 from core.claim_status import ClaimStatus
 from core.card_status import CardStatus
 from services.claim_service import ClaimService
@@ -24,7 +25,7 @@ from services.report_service import ReportService
 from database.repositories.person_repository import PersonRepository
 
 
-PDF_ROOT = Path("data") / "pdfs"
+PDF_ROOT = DATA_DIR / "pdfs"
 
 
 class PDFService:
