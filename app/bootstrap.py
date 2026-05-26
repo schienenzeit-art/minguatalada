@@ -21,48 +21,27 @@ def load_theme() -> str:
 
 
 def run_app() -> None:
-    print("STEP 1")
-
     initialize_database()
-
-    print("STEP 2")
 
     app = QApplication(sys.argv)
     app.setApplicationName(APP_TITLE)
     app.setStyleSheet(load_theme())
 
-    print("STEP 3")
-
     service_container = build_service_container()
     login_window = LoginWindow(auth_service=service_container.auth_service)
-
-    print("STEP 4")
 
     result = login_window.exec()
 
     if result != QDialog.DialogCode.Accepted:
-        print("LOGIN NOT ACCEPTED")
         sys.exit(0)
 
     user = Session.get_user()
     if user is None:
-        print("NO AUTHENTICATED USER")
         sys.exit(0)
 
-    print("STEP 5")
-
     main_window = MainWindow(service_container)
-
     main_window.setWindowTitle(APP_TITLE)
-
-    print("LOGIN RESULT:", result)
-
-    print("STEP 6")
-
     main_window.resize(WINDOW_WIDTH, WINDOW_HEIGHT)
-    # start application maximized so it adapts to the current screen
     main_window.showMaximized()
-
-    print("STEP 7")
 
     sys.exit(app.exec())

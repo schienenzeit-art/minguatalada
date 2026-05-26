@@ -22,11 +22,11 @@ class ClaimStatus:
 
     DISPLAY_NAMES: ClassVar[Dict[str, str]] = {
         IN_PRUEFUNG: "In Prüfung",
-        ANSPRUCHSBERECHTIGT: "anspruchsberechtigt",
+        ANSPRUCHSBERECHTIGT: "Anspruchsberechtigt",
         HAERTEFALL: "Härtefall",
-        ABGELEHNT: "abgelehnt",
-        ABGELAUFEN: "abgelaufen",
-        ARCHIVIERT: "archiviert",
+        ABGELEHNT: "Abgelehnt",
+        ABGELAUFEN: "Abgelaufen",
+        ARCHIVIERT: "Archiviert",
     }
 
     ROLE_TRANSITIONS: ClassVar[Dict[str, Dict[str, List[str]]]] = {

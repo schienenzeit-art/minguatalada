@@ -2,6 +2,7 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QTableWidgetItem, QHeaderView, QScrollArea, QMessageBox
 from ui.components.table_widget import TableWidget
 
+from core.claim_status import ClaimStatus
 from services.card_service import CardService
 from services.case_service import CaseService
 from services.claim_service import ClaimService
@@ -22,6 +23,7 @@ class ClaimsPage(QWidget):
         self.claim_service = claim_service or ClaimService()
         self.case_service = case_service or CaseService()
         self.card_service = card_service or CardService()
+        self.active_filters = {}  # KPI-Filter speichern
         self.setup_ui()
 
     def setup_ui(self):
@@ -76,7 +78,13 @@ class ClaimsPage(QWidget):
 
     def load_claims(self) -> None:
         search_text = self.search_input.text().strip() or None
-        claims = self.claim_service.list_claims(search_text=search_text)
+        status_filter = self.active_filters.get("status")
+        statuses_filter = self.active_filters.get("statuses")
+        claims = self.claim_service.list_claims(
+            search_text=search_text,
+            status=status_filter,
+            statuses=statuses_filter,
+        )
 
         self.table.setRowCount(0)
         if not claims:
@@ -90,7 +98,7 @@ class ClaimsPage(QWidget):
             self.table.insertRow(row)
             self.table.setItem(row, 0, QTableWidgetItem(claim.get("case_number", "-")))
             self.table.setItem(row, 1, QTableWidgetItem(claim.get("person_display_name", "-")))
-            self.table.setItem(row, 2, QTableWidgetItem(claim.get("status", "-")))
+            self.table.setItem(row, 2, QTableWidgetItem(ClaimStatus.get_display(claim.get("status", "-"))))
             self.table.setItem(row, 3, QTableWidgetItem(claim.get("location_name", "-")))
             self.table.setItem(row, 4, QTableWidgetItem(claim.get("examiner_name", "-")))
             self.table.setItem(row, 5, QTableWidgetItem(claim.get("created_at", "-")))
@@ -103,6 +111,15 @@ class ClaimsPage(QWidget):
             claim_service=self.claim_service,
         )
         dialog.exec()
+        self.load_claims()
+
+    def set_filters(self, filters: dict | None = None) -> None:
+        if filters:
+            self.active_filters = filters
+        self.load_claims()
+
+    def apply_filters(self, status: str | None = None, statuses: list | None = None, **kwargs) -> None:
+        self.active_filters = {"status": status, "statuses": statuses}
         self.load_claims()
 
     def on_claim_row_activated(self, row: int, column: int) -> None:

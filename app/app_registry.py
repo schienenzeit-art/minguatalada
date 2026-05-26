@@ -23,6 +23,12 @@ class AppRegistry:
             page_key="anspruchspruefung",
         ),
         AppMetadata(
+            id="personendossier",
+            title="Personendossier",
+            description="Personen, Status und Dossierübersicht",
+            page_key="person_dossier",
+        ),
+        AppMetadata(
             id="aufgaben",
             title="Actionboard",
             description="Operative Aufgaben und Fristensteuerung",

@@ -113,7 +113,7 @@ class DocumentsPage(QWidget):
         filter_layout_bottom.addWidget(self.date_to_input)
         filter_layout_bottom.addWidget(self.refresh_button)
 
-        self.table = TableWidget(10)
+        self.table = TableWidget(11)
         self.table.setHorizontalHeaderLabels([
             "Titel",
             "Typ",
@@ -124,7 +124,8 @@ class DocumentsPage(QWidget):
             "Dateiname",
             "Größe",
             "Ersteller",
-            "Aktion",
+            "Öffnen",
+            "Archivieren",
         ])
         self.table.setSelectionBehavior(TableWidget.SelectionBehavior.SelectRows)
         self.table.setEditTriggers(TableWidget.EditTrigger.NoEditTriggers)
@@ -191,6 +192,16 @@ class DocumentsPage(QWidget):
             open_button.clicked.connect(lambda _, d=document: self.open_document(d))
             self.table.setCellWidget(row_index, 9, open_button)
 
+            # Archive button (skip if already archived)
+            if document.get("status") != "ARCHIVIERT":
+                archive_button = QPushButton("Archivieren")
+                archive_button.clicked.connect(lambda _, d=document: self.on_archive_document(d))
+                self.table.setCellWidget(row_index, 10, archive_button)
+            else:
+                # Show disabled button or label if already archived
+                archived_label = QTableWidgetItem("Archiviert")
+                self.table.setItem(row_index, 10, archived_label)
+
     def open_upload_dialog(self):
         dialog = DocumentDialog(self.document_service, self.location_service)
         if dialog.exec() != QDialog.DialogCode.Accepted:
@@ -213,6 +224,24 @@ class DocumentsPage(QWidget):
             QMessageBox.critical(self, "Fehler", str(e))
         except Exception as e:
             QMessageBox.critical(self, "Fehler", f"Dokument konnte nicht geöffnet werden: {e}")
+
+    def on_archive_document(self, document: dict) -> None:
+        """Archive a document manually."""
+        reply = QMessageBox.question(
+            self,
+            "Archivieren bestätigen",
+            f"Möchten Sie das Dokument '{document.get('title', '-')}' archivieren?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+        )
+        if reply != QMessageBox.StandardButton.Yes:
+            return
+
+        try:
+            self.document_service.archive_document(document["id"])
+            QMessageBox.information(self, "Erfolg", "Dokument wurde archiviert.")
+            self.refresh_documents()
+        except Exception as e:
+            QMessageBox.critical(self, "Fehler", f"Dokument konnte nicht archiviert werden: {e}")
 
     def on_row_double_clicked(self, row: int, column: int) -> None:
         document = self.documents[row]

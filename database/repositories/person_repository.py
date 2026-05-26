@@ -38,6 +38,54 @@ class PersonRepository:
 
         return dict(row)
 
+    def list_persons(
+        self,
+        last_name: str | None = None,
+        first_name: str | None = None,
+        location_id: int | None = None,
+        latest_claim_status: str | None = None,
+    ) -> list[dict]:
+        with get_connection() as connection:
+            query = [
+                "SELECT p.id, p.first_name, p.last_name, p.address, p.postal_code, p.city, p.email, p.created_at,",
+                "c.name AS category_name, l.name AS location_name,",
+                "(SELECT status FROM claims WHERE person_id = p.id ORDER BY created_at DESC LIMIT 1) AS latest_claim_status,",
+                "(SELECT COUNT(*) FROM claims WHERE person_id = p.id) AS claim_count",
+                "FROM persons p",
+                "LEFT JOIN categories c ON p.category_id = c.id",
+                "LEFT JOIN locations l ON p.location_id = l.id",
+            ]
+            params: list[object] = []
+            filters: list[str] = []
+
+            if last_name:
+                filters.append("LOWER(p.last_name) LIKE ?")
+                params.append(f"%{last_name.strip().lower()}%")
+
+            if first_name:
+                filters.append("LOWER(p.first_name) LIKE ?")
+                params.append(f"%{first_name.strip().lower()}%")
+
+            if location_id is not None:
+                filters.append("p.location_id = ?")
+                params.append(location_id)
+
+            if latest_claim_status is not None:
+                if latest_claim_status == "KEIN_FALL":
+                    filters.append("(SELECT status FROM claims WHERE person_id = p.id ORDER BY created_at DESC LIMIT 1) IS NULL")
+                else:
+                    filters.append("(SELECT status FROM claims WHERE person_id = p.id ORDER BY created_at DESC LIMIT 1) = ?")
+                    params.append(latest_claim_status)
+
+            if filters:
+                query.append("WHERE " + " AND ".join(filters))
+
+            query.append("ORDER BY p.last_name, p.first_name")
+            sql = " ".join(query)
+            rows = connection.execute(sql, tuple(params)).fetchall()
+
+        return [dict(row) for row in rows]
+
     def count_persons(
         self,
         location_id: int | None = None,

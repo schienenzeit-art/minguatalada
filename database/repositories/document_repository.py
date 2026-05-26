@@ -99,6 +99,21 @@ class DocumentRepository:
             connection.commit()
             return cursor.rowcount > 0
 
+    def update_document_status(self, document_id: int, status: str) -> bool:
+        """Update document status (e.g., to ARCHIVIERT)."""
+        with get_connection() as connection:
+            archived_at = None
+            if status == "ARCHIVIERT":
+                from datetime import datetime
+                archived_at = datetime.utcnow().isoformat()
+            
+            cursor = connection.execute(
+                "UPDATE documents SET status = ?, archived_at = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                (status, archived_at, document_id),
+            )
+            connection.commit()
+            return cursor.rowcount > 0
+
     def list_documents(
         self,
         search_text: str | None = None,

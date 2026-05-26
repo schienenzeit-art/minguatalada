@@ -12,7 +12,7 @@ from typing import Dict, List, Optional
 from app.config import DOCUMENTS_DIR
 from core.document_status import DocumentStatus
 from core.session import Session
-from database.db import get_connection, initialize_database
+from database.db import get_connection
 from database.repositories.document_repository import DocumentRepository
 from database.repositories.document_type_repository import DocumentTypeRepository
 
@@ -24,7 +24,7 @@ DEFAULT_DOCUMENT_TYPES = [
     "Antrag",
     "Prüfprotokoll",
     "Bescheid",
-    "Kartosche Unterlage",
+    "Kartenunterlage",
     "Sonstiges",
 ]
 
@@ -35,7 +35,6 @@ class DocumentService:
         repository: DocumentRepository | None = None,
         type_repository: DocumentTypeRepository | None = None,
     ):
-        initialize_database()
         DOCUMENTS_DIR.mkdir(parents=True, exist_ok=True)
         self.repository = repository or DocumentRepository()
         self.type_repository = type_repository or DocumentTypeRepository()
@@ -86,6 +85,19 @@ class DocumentService:
 
     def update_document_title(self, document_id: int, title: str) -> bool:
         return self.repository.update_document_title(document_id, title)
+
+    def archive_document(self, document_id: int) -> bool:
+        """Archive a document manually (sets status to ARCHIVIERT)."""
+        archived = self.repository.update_document_status(document_id, "ARCHIVIERT")
+        if archived:
+            self._record_audit_log(
+                user_id=Session.get_user_id(),
+                action="archive_document",
+                object_type="document",
+                object_id=document_id,
+                details={"document_id": document_id},
+            )
+        return archived
 
     def delete_document(self, document_id: int) -> bool:
         deleted = self.repository.delete_document(document_id)

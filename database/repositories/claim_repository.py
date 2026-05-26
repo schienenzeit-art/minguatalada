@@ -87,6 +87,7 @@ class ClaimRepository:
         self,
         location_id: int | None = None,
         status: str | None = None,
+        statuses: list[str] | None = None,
         category_id: int | None = None,
         examiner_id: int | None = None,
         search_text: str | None = None,
@@ -132,6 +133,10 @@ class ClaimRepository:
             if status:
                 filters.append("c.status = ?")
                 params.append(status)
+            elif statuses:
+                placeholders = ",".join("?" * len(statuses))
+                filters.append(f"c.status IN ({placeholders})")
+                params.extend(statuses)
 
             if category_id is not None:
                 filters.append("c.category_id = ?")

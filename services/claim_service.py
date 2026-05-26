@@ -53,6 +53,7 @@ class ClaimService:
         self,
         location_id: int | None = None,
         status: str | None = None,
+        statuses: list[str] | None = None,
         category_id: int | None = None,
         examiner_id: int | None = None,
         search_text: str | None = None,
@@ -61,6 +62,7 @@ class ClaimService:
         return self.claim_repository.get_claims(
             location_id=location_id,
             status=status,
+            statuses=statuses,
             category_id=category_id,
             examiner_id=examiner_id,
             search_text=search_text,

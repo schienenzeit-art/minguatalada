@@ -61,7 +61,7 @@ class DashboardService:
                 ),
                 "subtitle": "Fälle mit positivem Bescheid",
                 "page": "claims",
-                "filters": {"status": ClaimStatus.ANSPRUCHSBERECHTIGT},
+                "filters": {"statuses": [ClaimStatus.ANSPRUCHSBERECHTIGT, ClaimStatus.HAERTEFALL]},
                 "accent": "#2383e2",
             },
             {
@@ -75,6 +75,9 @@ class DashboardService:
         ]
 
     def get_recent_claims(self, status: str | None = None, limit: int = 5) -> list[dict]:
+        # If no status specified, default to IN_PRUEFUNG (open cases)
+        if status is None:
+            status = ClaimStatus.IN_PRUEFUNG
         claims = self.claim_service.list_claims(status=status)
         return claims[:limit]
 

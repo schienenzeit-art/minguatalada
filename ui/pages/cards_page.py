@@ -39,6 +39,7 @@ class CardsPage(QWidget):
         self.location_service = location_service or LocationService()
         self.claim_service = claim_service or ClaimService()
         self.cards = []
+        self.active_filters = {}  # KPI-Filter speichern
         self.setup_ui()
         self.load_cards()
 
@@ -139,6 +140,15 @@ class CardsPage(QWidget):
         location_id = self.location_combo.currentData()
         status = self.status_combo.currentData()
         search_text = self.search_input.text().strip() or None
+
+        # Respektiere KPI-Filter, falls gesetzt (KPI verwendet "status" für CardStatus)
+        if self.active_filters.get("status"):
+            status = self.active_filters["status"]
+            self.status_combo.blockSignals(True)
+            index = self.status_combo.findData(status)
+            if index >= 0:
+                self.status_combo.setCurrentIndex(index)
+            self.status_combo.blockSignals(False)
 
         self.cards = self.card_service.list_cards(
             location_id=location_id,

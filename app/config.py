@@ -1,5 +1,3 @@
-print("CONFIG FILE LOADED")
-print(__file__)
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent

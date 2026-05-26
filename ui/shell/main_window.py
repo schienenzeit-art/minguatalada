@@ -1,5 +1,5 @@
 ﻿from PyQt6.QtGui import QAction
-from PyQt6.QtWidgets import QMainWindow, QWidget, QHBoxLayout, QVBoxLayout, QMessageBox
+from PyQt6.QtWidgets import QInputDialog, QLineEdit, QMainWindow, QMessageBox, QWidget, QHBoxLayout, QVBoxLayout
 
 from app.container import ServiceContainer
 from core.session import Session
@@ -14,6 +14,7 @@ from ui.pages.locations.locations_page import LocationsPage
 from ui.pages.reports_web_page import ReportsWebPage
 from ui.pages.settings.settings_page import SettingsPage
 from ui.pages.cards_page import CardsPage
+from ui.pages.person_dossier_page import PersonDossierPage
 from ui.pages.apps.anspruchspruefung_app_page import AnspruchspruefungAppPage
 from ui.pages.apps.administration_app_page import AdministrationAppPage
 from ui.navigation.navigation_controller import NavigationController
@@ -37,7 +38,19 @@ class MainWindow(QMainWindow):
         root_layout.setContentsMargins(0, 0, 0, 0)
         root_layout.setSpacing(0)
 
-        self.topbar = TopBar("Startcockpit")
+        self.topbar = TopBar("Startcockpit", current_user=self.current_user)
+        
+        # Load available users for switching
+        try:
+            available_users = self.services.user_service.get_all_users()
+            self.topbar.set_available_users(available_users)
+        except Exception:
+            pass  # If loading users fails, continue without switching capability
+        
+        # Connect topbar signals
+        self.topbar.user_changed.connect(self.on_user_changed)
+        self.topbar.search_requested.connect(self.on_search_requested)
+        
         root_layout.addWidget(self.topbar)
 
         body_layout = QHBoxLayout()
@@ -148,6 +161,15 @@ class MainWindow(QMainWindow):
             title="Karten",
             parent_app="anspruchspruefung",
         )
+        self.register_route(
+            "person_dossier",
+            PersonDossierPage(
+                person_service=self.services.person_service,
+                location_service=self.services.location_service,
+            ),
+            title="Personendossier",
+            parent_app="person_dossier",
+        )
 
         self.workspace_host.set_current_page("dashboard")
         body_layout.addWidget(self.workspace_host, 1)
@@ -190,3 +212,39 @@ class MainWindow(QMainWindow):
     def on_route_changed(self, page: str) -> None:
         self.topbar.set_title(self.navigation_controller.get_page_title(page))
         self.navigation.set_active(self.navigation_controller.get_parent_app(page))
+
+    def on_user_changed(self, user: dict) -> None:
+        if user.get("logout"):
+            self.close()
+            return
+
+        target_username = user.get("username", "")
+        if target_username == (self.current_user or {}).get("username"):
+            return
+
+        password, ok = QInputDialog.getText(
+            self,
+            "Benutzer wechseln",
+            f"Passwort für «{user.get('full_name', target_username)}»:",
+            QLineEdit.EchoMode.Password,
+        )
+        if not ok or not password:
+            self.topbar.set_current_user(self.current_user)
+            return
+
+        result = self.services.auth_service.login(target_username, password)
+        if not result.get("success"):
+            QMessageBox.warning(self, "Fehler", result.get("message", "Anmeldung fehlgeschlagen."))
+            self.topbar.set_current_user(self.current_user)
+            return
+
+        authenticated_user = result["user"]
+        self.current_user = authenticated_user
+        Session.set_user(authenticated_user)
+        self.topbar.set_current_user(authenticated_user)
+        self.route_to("dashboard")
+
+    def on_search_requested(self, search_text: str) -> None:
+        """Handle global search from topbar."""
+        # Route to dashboard with search filter
+        self.route_to("dashboard", {"search_text": search_text})
