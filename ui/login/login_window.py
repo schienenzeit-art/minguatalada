@@ -11,13 +11,15 @@ from PyQt6.QtWidgets import (
 )
 
 from services.auth_service import AuthService
+from services.user_service import UserService
 from core.session import Session
 
 
 class LoginWindow(QDialog):
-    def __init__(self, auth_service: AuthService | None = None):
+    def __init__(self, auth_service: AuthService | None = None, user_service: UserService | None = None):
         super().__init__()
         self.auth_service = auth_service or AuthService()
+        self.user_service = user_service or UserService()
         self.current_user = None
         self.setup_ui()
 
@@ -91,4 +93,10 @@ class LoginWindow(QDialog):
 
         self.current_user = result["user"]
         Session.set_user(result["user"])
+
+        if result.get("must_change_password"):
+            from ui.dialogs.force_password_dialog import ForcePasswordDialog
+            dlg = ForcePasswordDialog(user_id=result["user"]["id"], user_service=self.user_service)
+            dlg.exec()
+
         self.accept()

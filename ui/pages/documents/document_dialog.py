@@ -121,6 +121,9 @@ class DocumentDialog(QDialog):
 
     def get_data(self) -> dict:
         location_id = self.location_input.currentData()
+        expiry_date = None
+        if self.expiry_date_check.isChecked():
+            expiry_date = self.expiry_date_edit.date().toString("yyyy-MM-dd")
         return {
             "source_file_path": self.selected_file or "",
             "title": self.title_input.text().strip() or "",
@@ -130,4 +133,5 @@ class DocumentDialog(QDialog):
             "person_id": int(self.person_id_input.text().strip()) if self.person_id_input.text().strip().isdigit() else None,
             "card_id": int(self.card_id_input.text().strip()) if self.card_id_input.text().strip().isdigit() else None,
             "location_id": location_id,
+            "expiry_date": expiry_date,
         }

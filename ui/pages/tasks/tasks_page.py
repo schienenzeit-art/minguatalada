@@ -1,4 +1,7 @@
+from datetime import date as _date
+
 from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QColor
 from PyQt6.QtWidgets import (
     QDialog,
     QWidget,
@@ -150,10 +153,14 @@ class TasksPage(QWidget):
         button_layout.addStretch()
         refresh_button = QPushButton("Aktualisieren")
         refresh_button.clicked.connect(self.refresh_tasks)
+        self.delegate_button = QPushButton("Delegieren…")
+        self.delegate_button.clicked.connect(self.delegate_selected_task)
+        self.delegate_button.setEnabled(False)
         self.complete_button = QPushButton("Als erledigt markieren")
         self.complete_button.clicked.connect(self.mark_selected_task_done)
         self.complete_button.setEnabled(False)
         button_layout.addWidget(refresh_button)
+        button_layout.addWidget(self.delegate_button)
         button_layout.addWidget(self.complete_button)
         layout.addLayout(button_layout)
 
@@ -197,32 +204,82 @@ class TasksPage(QWidget):
 
     def render_table(self):
         self.table.setRowCount(len(self.tasks))
+        today = _date.today().isoformat()
 
         for row_index, task in enumerate(self.tasks):
             self.table.setItem(row_index, 0, QTableWidgetItem(TaskStatus.get_display(task["status"])))
             self.table.setItem(row_index, 1, QTableWidgetItem(task["title"]))
             self.table.setItem(row_index, 2, QTableWidgetItem(task.get("task_type", "")))
             self.table.setItem(row_index, 3, QTableWidgetItem(TaskPriority.get_display(task.get("priority", ""))))
-            self.table.setItem(row_index, 4, QTableWidgetItem(task.get("due_date") or "-"))
+
+            due_date = task.get("due_date") or ""
+            due_item = QTableWidgetItem(due_date or "-")
+            if due_date and task.get("status") != TaskStatus.ERLEDIGT:
+                row_color = self._due_color(due_date, today)
+                if row_color:
+                    for col in range(9):
+                        cell = QTableWidgetItem()
+                        cell.setBackground(QColor(row_color))
+                        self.table.setItem(row_index, col, cell)
+                    self.table.setItem(row_index, 4, due_item)
+                    self.table.item(row_index, 4).setBackground(QColor(row_color))
+                    # re-set non-due cells
+                    self.table.setItem(row_index, 0, QTableWidgetItem(TaskStatus.get_display(task["status"])))
+                    self.table.setItem(row_index, 1, QTableWidgetItem(task["title"]))
+                    self.table.setItem(row_index, 2, QTableWidgetItem(task.get("task_type", "")))
+                    self.table.setItem(row_index, 3, QTableWidgetItem(TaskPriority.get_display(task.get("priority", ""))))
+                    for col in range(9):
+                        item = self.table.item(row_index, col)
+                        if item:
+                            item.setBackground(QColor(row_color))
+                else:
+                    self.table.setItem(row_index, 4, due_item)
+            else:
+                self.table.setItem(row_index, 4, due_item)
+
             self.table.setItem(row_index, 5, QTableWidgetItem(task.get("assigned_user_name", "-")))
             self.table.setItem(row_index, 6, QTableWidgetItem(task.get("location_name", "-")))
             source_text = task.get("source_description") or task.get("source_ref_type", "-")
             self.table.setItem(row_index, 7, QTableWidgetItem(source_text))
             self.table.setItem(row_index, 8, QTableWidgetItem("Ja" if task.get("is_system_task") else "Nein"))
 
+            if due_date and task.get("status") != TaskStatus.ERLEDIGT:
+                row_color = self._due_color(due_date, today)
+                if row_color:
+                    for col in range(9):
+                        item = self.table.item(row_index, col)
+                        if item:
+                            item.setBackground(QColor(row_color))
+
         self.complete_button.setEnabled(False)
+        self.delegate_button.setEnabled(False)
+
+    @staticmethod
+    def _due_color(due_date: str, today: str) -> str | None:
+        try:
+            days = (_date.fromisoformat(due_date) - _date.fromisoformat(today)).days
+        except Exception:
+            return None
+        if days < 0:
+            return "#fde8e8"  # overdue – light red
+        if days == 0:
+            return "#fff3cd"  # today – amber
+        if days <= 3:
+            return "#fff9e6"  # within 3 days – light yellow
+        return None
 
     def on_selection_changed(self):
         selected = self.table.selectionModel().selectedRows()
         if not selected:
             self.complete_button.setEnabled(False)
+            self.delegate_button.setEnabled(False)
             return
 
         row = selected[0].row()
         task = self.tasks[row]
-        self.complete_button.setEnabled(
-            not task.get("is_system_task") and task.get("status") != TaskStatus.ERLEDIGT
-        )
+        modifiable = not task.get("is_system_task") and task.get("status") != TaskStatus.ERLEDIGT
+        self.complete_button.setEnabled(modifiable)
+        self.delegate_button.setEnabled(modifiable)
 
     def on_row_double_clicked(self, row: int, column: int):
         task = self.tasks[row]
@@ -267,6 +324,51 @@ class TasksPage(QWidget):
                 return
 
         QMessageBox.information(self, "Quelle öffnen", "Die Aufgabe kann nicht direkt geöffnet werden.")
+
+    def delegate_selected_task(self):
+        selected = self.table.selectionModel().selectedRows()
+        if not selected:
+            return
+        task = self.tasks[selected[0].row()]
+        if task.get("is_system_task"):
+            return
+
+        users = self.user_service.get_all_users()
+        if not users:
+            QMessageBox.information(self, "Delegieren", "Keine Benutzer verfügbar.")
+            return
+
+        from PyQt6.QtWidgets import QInputDialog
+        names = [u["full_name"] for u in users]
+        current_name = task.get("assigned_user_name") or ""
+        start_idx = names.index(current_name) if current_name in names else 0
+        chosen, ok = QInputDialog.getItem(self, "Aufgabe delegieren", "Neuer Verantwortlicher:", names, start_idx, False)
+        if not ok:
+            return
+
+        user = next((u for u in users if u["full_name"] == chosen), None)
+        if user is None:
+            return
+
+        data = {
+            "title": task.get("title", ""),
+            "description": task.get("description", ""),
+            "task_type": task.get("task_type", "Allgemein"),
+            "status": task.get("status"),
+            "priority": task.get("priority"),
+            "due_date": task.get("due_date"),
+            "assigned_user_id": user["id"],
+            "location_id": task.get("location_id"),
+            "source_type": task.get("source_type"),
+            "source_ref_type": task.get("source_ref_type"),
+            "source_ref_id": task.get("source_ref_id"),
+            "source_description": task.get("source_description"),
+        }
+        try:
+            self.task_service.update_task(task_id=task["id"], **data)
+            self.refresh_tasks()
+        except Exception as exc:
+            QMessageBox.warning(self, "Fehler", str(exc))
 
     def complete_task(self, task: dict):
         if task.get("is_system_task"):

@@ -1,7 +1,14 @@
-from PyQt6.QtCore import Qt
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QTableWidgetItem, QHeaderView, QScrollArea, QMessageBox
-from ui.components.table_widget import TableWidget
+from datetime import datetime, timedelta
 
+from PyQt6.QtCore import Qt
+from PyQt6.QtWidgets import (
+    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton,
+    QTableWidgetItem, QHeaderView, QScrollArea, QMessageBox, QDialog,
+    QFormLayout, QDateTimeEdit, QDialogButtonBox,
+)
+from PyQt6.QtCore import QDateTime
+
+from ui.components.table_widget import TableWidget
 from services.user_service import UserService
 from ui.components.page_header import PageHeader
 from ui.components.action_button import ActionButton
@@ -42,8 +49,8 @@ class UsersPage(QWidget):
         toolbar.addWidget(self.filter_button)
         layout.addLayout(toolbar)
 
-        self.table = TableWidget(5)
-        self.table.setHorizontalHeaderLabels(["Name", "Benutzername", "Rolle", "Standort", "Status"])
+        self.table = TableWidget(7)
+        self.table.setHorizontalHeaderLabels(["Name", "Benutzername", "Rolle", "Standort", "Status", "PW ändern", "Gesperrt bis"])
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.table.verticalHeader().hide()
         self.table.setEditTriggers(TableWidget.EditTrigger.NoEditTriggers)
@@ -62,7 +69,60 @@ class UsersPage(QWidget):
         scroll.setWidget(content_box)
         layout.addWidget(scroll)
 
+        action_bar = QHBoxLayout()
+        action_bar.addStretch()
+        self.lock_button = QPushButton("Sperren bis…")
+        self.lock_button.setEnabled(False)
+        self.lock_button.clicked.connect(self.lock_selected_user)
+        self.unlock_button = QPushButton("Entsperren")
+        self.unlock_button.setEnabled(False)
+        self.unlock_button.clicked.connect(self.unlock_selected_user)
+        action_bar.addWidget(self.lock_button)
+        action_bar.addWidget(self.unlock_button)
+        layout.addLayout(action_bar)
+
+        self.table.selectionModel().selectionChanged.connect(self._on_selection_changed)
         self.setLayout(layout)
+
+    def _current_user_id(self) -> int | None:
+        selected = self.table.selectionModel().selectedRows()
+        if not selected:
+            return None
+        item = self.table.item(selected[0].row(), 0)
+        return item.data(Qt.ItemDataRole.UserRole) if item else None
+
+    def _on_selection_changed(self) -> None:
+        has_sel = bool(self.table.selectionModel().selectedRows())
+        self.lock_button.setEnabled(has_sel)
+        self.unlock_button.setEnabled(has_sel)
+
+    def lock_selected_user(self) -> None:
+        user_id = self._current_user_id()
+        if not user_id:
+            return
+        dlg = QDialog(self)
+        dlg.setWindowTitle("Benutzer sperren bis…")
+        form = QFormLayout(dlg)
+        dt_edit = QDateTimeEdit(QDateTime.currentDateTime().addDays(1))
+        dt_edit.setCalendarPopup(True)
+        dt_edit.setDisplayFormat("dd.MM.yyyy HH:mm")
+        form.addRow("Gesperrt bis:", dt_edit)
+        btns = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
+        btns.accepted.connect(dlg.accept)
+        btns.rejected.connect(dlg.reject)
+        form.addRow(btns)
+        if dlg.exec() != QDialog.DialogCode.Accepted:
+            return
+        iso = dt_edit.dateTime().toString("yyyy-MM-ddTHH:mm:ss")
+        self.user_service.manual_lock_user(user_id, iso)
+        self.load_users()
+
+    def unlock_selected_user(self) -> None:
+        user_id = self._current_user_id()
+        if not user_id:
+            return
+        self.user_service.manual_lock_user(user_id, None)
+        self.load_users()
 
     def load_users(self) -> None:
         search_text = self.search_input.text().strip().lower()
@@ -75,6 +135,8 @@ class UsersPage(QWidget):
             role = user.get("role_name", "-")
             location = user.get("location_name", "-") or "-"
             status = "Aktiv" if user.get("is_active") else "Inaktiv"
+            pw_flag = "Ja" if user.get("must_change_password") else "Nein"
+            locked_until = (user.get("locked_until") or "")[:16].replace("T", " ") or "–"
             row = self.table.rowCount()
             self.table.insertRow(row)
             self.table.setItem(row, 0, QTableWidgetItem(display_name))
@@ -82,6 +144,8 @@ class UsersPage(QWidget):
             self.table.setItem(row, 2, QTableWidgetItem(role))
             self.table.setItem(row, 3, QTableWidgetItem(location))
             self.table.setItem(row, 4, QTableWidgetItem(status))
+            self.table.setItem(row, 5, QTableWidgetItem(pw_flag))
+            self.table.setItem(row, 6, QTableWidgetItem(locked_until))
             self.table.item(row, 0).setData(Qt.ItemDataRole.UserRole, user.get("id"))
 
     def open_add_user_dialog(self) -> None:
