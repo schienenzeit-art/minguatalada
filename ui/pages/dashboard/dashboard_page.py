@@ -226,7 +226,8 @@ class DashboardPage(QWidget):
     ) -> QFrame:
         card = ClickableCard()
         card.setObjectName("Card")
-        card.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        card.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.MinimumExpanding)
+        card.setMinimumHeight(138)
         card.setCursor(Qt.CursorShape.PointingHandCursor)
         if page:
             card.clicked.connect(
@@ -235,12 +236,11 @@ class DashboardPage(QWidget):
                 else None
             )
 
-        # Subtiler Schatten
         shadow = QGraphicsDropShadowEffect(card)
-        shadow.setBlurRadius(16)
+        shadow.setBlurRadius(18)
         shadow.setXOffset(0)
-        shadow.setYOffset(2)
-        shadow.setColor(QColor(0, 0, 0, 16))
+        shadow.setYOffset(3)
+        shadow.setColor(QColor(0, 0, 0, 18))
         card.setGraphicsEffect(shadow)
 
         outer = QVBoxLayout(card)
@@ -249,7 +249,7 @@ class DashboardPage(QWidget):
 
         # Farbiger Akzent-Strip oben
         strip = QFrame()
-        strip.setFixedHeight(4)
+        strip.setFixedHeight(5)
         strip.setStyleSheet(
             f"background-color: {accent_color}; border: none; "
             f"border-radius: 16px 16px 0 0;"
@@ -260,26 +260,31 @@ class DashboardPage(QWidget):
         inner = QWidget()
         inner.setStyleSheet("background: transparent;")
         layout = QVBoxLayout(inner)
-        layout.setContentsMargins(20, 16, 20, 18)
-        layout.setSpacing(6)
+        layout.setContentsMargins(20, 18, 20, 20)
+        layout.setSpacing(4)
 
         label = QLabel(title)
         label.setObjectName("KpiLabel")
+        label.setMinimumHeight(18)
 
         value_label = QLabel(value)
         value_label.setObjectName("KpiValue")
+        value_label.setMinimumHeight(44)
         value_label.setStyleSheet(
-            f"color: {accent_color}; font-size: 34px; font-weight: 800; "
-            f"letter-spacing: -0.05em; background: transparent;"
+            f"color: {accent_color}; font-size: 32px; font-weight: 800; "
+            f"letter-spacing: -0.04em; background: transparent;"
         )
 
         subtitle_label = QLabel(subtitle)
         subtitle_label.setObjectName("KpiSubtitle")
         subtitle_label.setWordWrap(True)
+        subtitle_label.setMinimumHeight(18)
 
         layout.addWidget(label)
         layout.addWidget(value_label)
+        layout.addSpacing(2)
         layout.addWidget(subtitle_label)
+        layout.addStretch()
         outer.addWidget(inner)
         return card
 

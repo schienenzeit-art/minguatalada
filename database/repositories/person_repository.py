@@ -26,6 +26,26 @@ class PersonRepository:
             connection.commit()
             return cursor.lastrowid
 
+    def update_person(self, person_id: int, data: Dict[str, object]) -> None:
+        with get_connection() as connection:
+            connection.execute(
+                """
+                UPDATE persons
+                SET first_name = ?, last_name = ?, address = ?, postal_code = ?, city = ?, email = ?
+                WHERE id = ?
+                """,
+                (
+                    data.get("first_name"),
+                    data.get("last_name"),
+                    data.get("address"),
+                    data.get("postal_code"),
+                    data.get("city"),
+                    data.get("email"),
+                    person_id,
+                ),
+            )
+            connection.commit()
+
     def get_person_by_id(self, person_id: int) -> Optional[Dict[str, object]]:
         with get_connection() as connection:
             row = connection.execute(

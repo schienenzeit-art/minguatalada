@@ -21,11 +21,23 @@ def load_theme() -> str:
     return ""
 
 
+def _app_icon():
+    """Lädt das App-Icon aus assets/logo.ico (oder .png als Fallback)."""
+    from PyQt6.QtGui import QIcon
+    from app.config import RESOURCE_DIR
+    for name in ("logo.ico", "logo.png"):
+        path = RESOURCE_DIR / "assets" / name
+        if path.exists():
+            return QIcon(str(path))
+    return QIcon()
+
+
 def run_app() -> None:
     initialize_database()
 
     app = QApplication(sys.argv)
     app.setApplicationName(APP_TITLE)
+    app.setWindowIcon(_app_icon())
     app.setStyleSheet(load_theme())
 
     service_container = build_service_container()

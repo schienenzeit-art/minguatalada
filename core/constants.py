@@ -1,2 +1,2 @@
-APP_TITLE = "Anspruchssystem"
-APP_SUBTITLE = "Verwaltung für soziale Unterstützung"
+APP_TITLE = "Min Guata Lada"
+APP_SUBTITLE = "Tischlein Deck Dich Vorarlberg — Anspruchsverwaltung"

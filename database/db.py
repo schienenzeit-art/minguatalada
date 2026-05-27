@@ -552,6 +552,224 @@ def initialize_database() -> None:
         except Exception:
             pass
 
+        # ── S1: Mandantenfähigkeit ────────────────────────────────────────────
+        try:
+            connection.execute("""
+                CREATE TABLE IF NOT EXISTS mandants (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL UNIQUE,
+                    short_name TEXT,
+                    contact_email TEXT,
+                    contact_phone TEXT,
+                    address TEXT,
+                    is_active INTEGER NOT NULL DEFAULT 1,
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            connection.commit()
+        except Exception:
+            pass
+        try:
+            if not has_column('users', 'mandant_id'):
+                connection.execute("ALTER TABLE users ADD COLUMN mandant_id INTEGER REFERENCES mandants(id)")
+                connection.commit()
+        except Exception:
+            pass
+        # Seed default mandant
+        try:
+            exists = connection.execute("SELECT id FROM mandants WHERE name = 'Tischlein Deck Dich Vorarlberg'").fetchone()
+            if not exists:
+                connection.execute(
+                    "INSERT INTO mandants (name, short_name, is_active) VALUES (?, ?, 1)",
+                    ("Tischlein Deck Dich Vorarlberg", "TDV"),
+                )
+                connection.commit()
+        except Exception:
+            pass
+
+        # ── S4: Benachrichtigungen ────────────────────────────────────────────
+        try:
+            connection.execute("""
+                CREATE TABLE IF NOT EXISTS notifications (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER,
+                    type TEXT NOT NULL,
+                    title TEXT NOT NULL,
+                    message TEXT,
+                    reference_type TEXT,
+                    reference_id INTEGER,
+                    is_read INTEGER NOT NULL DEFAULT 0,
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                )
+            """)
+            connection.commit()
+        except Exception:
+            pass
+
+        # ── S5: Termine / Appointments ────────────────────────────────────────
+        try:
+            connection.execute("""
+                CREATE TABLE IF NOT EXISTS appointments (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    person_id INTEGER,
+                    claim_id INTEGER,
+                    user_id INTEGER,
+                    location_id INTEGER,
+                    title TEXT NOT NULL,
+                    appointment_date TEXT NOT NULL,
+                    appointment_time TEXT,
+                    duration_minutes INTEGER DEFAULT 30,
+                    note TEXT,
+                    status TEXT NOT NULL DEFAULT 'GEPLANT',
+                    created_by INTEGER,
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (person_id) REFERENCES persons(id) ON DELETE SET NULL,
+                    FOREIGN KEY (claim_id) REFERENCES claims(id) ON DELETE SET NULL,
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+                    FOREIGN KEY (location_id) REFERENCES locations(id) ON DELETE SET NULL,
+                    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+                )
+            """)
+            connection.commit()
+        except Exception:
+            pass
+
+        # ── S7: Archiv-Löschregeln ────────────────────────────────────────────
+        try:
+            connection.execute("""
+                CREATE TABLE IF NOT EXISTS archive_rules (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    entity_type TEXT NOT NULL UNIQUE,
+                    retention_days INTEGER NOT NULL DEFAULT 3650,
+                    action TEXT NOT NULL DEFAULT 'ARCHIVE',
+                    description TEXT,
+                    is_active INTEGER NOT NULL DEFAULT 1,
+                    last_run_at TEXT,
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            connection.commit()
+        except Exception:
+            pass
+        # Seed default archive rules
+        try:
+            default_rules = [
+                ("claims",     3650, "ARCHIVE", "Anträge nach 10 Jahren archivieren"),
+                ("persons",    3650, "ARCHIVE", "Personen nach 10 Jahren archivieren"),
+                ("documents",  1825, "ARCHIVE", "Dokumente nach 5 Jahren archivieren"),
+                ("cards",      1825, "ARCHIVE", "Karten nach 5 Jahren archivieren"),
+                ("audit_logs", 2555, "DELETE",  "Audit-Logs nach 7 Jahren löschen"),
+            ]
+            for (et, rd, ac, desc) in default_rules:
+                connection.execute(
+                    "INSERT OR IGNORE INTO archive_rules (entity_type, retention_days, action, description) VALUES (?,?,?,?)",
+                    (et, rd, ac, desc),
+                )
+            connection.commit()
+        except Exception:
+            pass
+
+        # ── S8: Personen-Notizen ──────────────────────────────────────────────
+        try:
+            connection.execute("""
+                CREATE TABLE IF NOT EXISTS person_notes (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    person_id INTEGER NOT NULL,
+                    user_id INTEGER,
+                    note_text TEXT NOT NULL,
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (person_id) REFERENCES persons(id) ON DELETE CASCADE,
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+                )
+            """)
+            connection.commit()
+        except Exception:
+            pass
+
+        # ── M8: Freigabe-Workflow ─────────────────────────────────────────────
+        try:
+            connection.execute("""
+                CREATE TABLE IF NOT EXISTS approval_requests (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    claim_id INTEGER NOT NULL,
+                    requested_by INTEGER,
+                    requested_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    reviewed_by INTEGER,
+                    reviewed_at TEXT,
+                    status TEXT NOT NULL DEFAULT 'PENDING',
+                    comment TEXT,
+                    FOREIGN KEY (claim_id) REFERENCES claims(id) ON DELETE CASCADE,
+                    FOREIGN KEY (requested_by) REFERENCES users(id) ON DELETE SET NULL,
+                    FOREIGN KEY (reviewed_by) REFERENCES users(id) ON DELETE SET NULL
+                )
+            """)
+            connection.commit()
+        except Exception:
+            pass
+
+        # ── M3: Dokument-Vorlagen ─────────────────────────────────────────────
+        try:
+            connection.execute("""
+                CREATE TABLE IF NOT EXISTS document_templates (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL,
+                    template_type TEXT NOT NULL DEFAULT 'BRIEF',
+                    description TEXT,
+                    body_text TEXT NOT NULL DEFAULT '',
+                    category_id INTEGER,
+                    is_active INTEGER NOT NULL DEFAULT 1,
+                    created_by INTEGER,
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL,
+                    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+                )
+            """)
+            connection.commit()
+        except Exception:
+            pass
+
+        # ── M9: Unterlagen-Checklisten ────────────────────────────────────────
+        try:
+            connection.execute("""
+                CREATE TABLE IF NOT EXISTS checklist_templates (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL,
+                    category_id INTEGER,
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL
+                )
+            """)
+            connection.execute("""
+                CREATE TABLE IF NOT EXISTS checklist_items (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    template_id INTEGER NOT NULL,
+                    label TEXT NOT NULL,
+                    is_required INTEGER NOT NULL DEFAULT 1,
+                    sort_order INTEGER NOT NULL DEFAULT 0,
+                    FOREIGN KEY (template_id) REFERENCES checklist_templates(id) ON DELETE CASCADE
+                )
+            """)
+            connection.execute("""
+                CREATE TABLE IF NOT EXISTS claim_checklist_items (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    claim_id INTEGER NOT NULL,
+                    label TEXT NOT NULL,
+                    is_required INTEGER NOT NULL DEFAULT 1,
+                    is_checked INTEGER NOT NULL DEFAULT 0,
+                    checked_by INTEGER,
+                    checked_at TEXT,
+                    sort_order INTEGER NOT NULL DEFAULT 0,
+                    FOREIGN KEY (claim_id) REFERENCES claims(id) ON DELETE CASCADE,
+                    FOREIGN KEY (checked_by) REFERENCES users(id) ON DELETE SET NULL
+                )
+            """)
+            connection.commit()
+        except Exception:
+            pass
+
 
 def seed_basic_data(connection: sqlite3.Connection) -> None:
     locations = [

@@ -1,4 +1,4 @@
-﻿from PyQt6.QtGui import QAction
+from PyQt6.QtGui import QAction
 from PyQt6.QtWidgets import QInputDialog, QLineEdit, QMainWindow, QMessageBox, QWidget, QHBoxLayout, QVBoxLayout
 
 from app.container import ServiceContainer
@@ -17,6 +17,15 @@ from ui.pages.cards_page import CardsPage
 from ui.pages.person_dossier_page import PersonDossierPage
 from ui.pages.apps.anspruchspruefung_app_page import AnspruchspruefungAppPage
 from ui.pages.apps.administration_app_page import AdministrationAppPage
+from ui.pages.mandants.mandants_page import MandantsPage
+from ui.pages.appointments.appointments_page import AppointmentsPage
+from ui.pages.archive_rules_page import ArchiveRulesPage
+from ui.pages.import_page import ImportPage
+from ui.pages.audit_log_page import AuditLogPage
+from ui.pages.approval_page import ApprovalPage
+from ui.pages.checklist_templates_page import ChecklistTemplatesPage
+from ui.pages.document_templates_page import DocumentTemplatesPage
+from ui.pages.role_management import RoleManagementPage
 from ui.navigation.navigation_controller import NavigationController
 from ui.shell.workspace_host import WorkspaceHost
 
@@ -38,19 +47,29 @@ class MainWindow(QMainWindow):
         root_layout.setContentsMargins(0, 0, 0, 0)
         root_layout.setSpacing(0)
 
-        self.topbar = TopBar("Startcockpit", current_user=self.current_user)
-        
+        from PyQt6.QtGui import QIcon
+        from app.config import RESOURCE_DIR
+        for name in ("logo.ico", "logo.png"):
+            icon_path = RESOURCE_DIR / "assets" / name
+            if icon_path.exists():
+                self.setWindowIcon(QIcon(str(icon_path)))
+                break
+
+        self.topbar = TopBar("Min Guata Lada", current_user=self.current_user)
+
+        # Wire notification service to TopBar bell
+        self.topbar.set_notification_service(self.services.notification_service)
+
         # Load available users for switching
         try:
             available_users = self.services.user_service.get_all_users()
             self.topbar.set_available_users(available_users)
         except Exception:
-            pass  # If loading users fails, continue without switching capability
-        
-        # Connect topbar signals
+            pass
+
         self.topbar.user_changed.connect(self.on_user_changed)
         self.topbar.search_requested.connect(self.on_search_requested)
-        
+
         root_layout.addWidget(self.topbar)
 
         body_layout = QHBoxLayout()
@@ -62,6 +81,7 @@ class MainWindow(QMainWindow):
 
         self.setup_menu()
 
+        # ── Core pages ────────────────────────────────────────────────────────
         self.register_route(
             "dashboard",
             DashboardPage(
@@ -173,6 +193,78 @@ class MainWindow(QMainWindow):
             parent_app="person_dossier",
         )
 
+        # ── New feature pages ─────────────────────────────────────────────────
+        self.register_route(
+            "mandants",
+            MandantsPage(mandant_service=self.services.mandant_service),
+            title="Mandanten",
+            parent_app="administration",
+        )
+        self.register_route(
+            "appointments",
+            AppointmentsPage(
+                appointment_service=self.services.appointment_service,
+                location_service=self.services.location_service,
+                user_service=self.services.user_service,
+            ),
+            title="Termine",
+            parent_app="tasks",
+        )
+        self.register_route(
+            "archive_rules",
+            ArchiveRulesPage(archive_service=self.services.archive_service),
+            title="Archiv-Regeln",
+            parent_app="administration",
+        )
+        self.register_route(
+            "import",
+            ImportPage(
+                location_service=self.services.location_service,
+                category_service=self.services.category_service,
+            ),
+            title="Daten-Import",
+            parent_app="administration",
+        )
+        self.register_route(
+            "audit_log",
+            AuditLogPage(
+                audit_service=self.services.audit_service,
+                user_service=self.services.user_service,
+            ),
+            title="Audit-Protokoll",
+            parent_app="administration",
+        )
+        self.register_route(
+            "approvals",
+            ApprovalPage(approval_service=self.services.approval_service),
+            title="Freigaben",
+            parent_app="tasks",
+        )
+        self.register_route(
+            "checklist_templates",
+            ChecklistTemplatesPage(
+                checklist_service=self.services.checklist_service,
+                category_service=self.services.category_service,
+            ),
+            title="Unterlagen-Checklisten",
+            parent_app="administration",
+        )
+        self.register_route(
+            "document_templates",
+            DocumentTemplatesPage(
+                template_service=self.services.document_template_service,
+                category_service=self.services.category_service,
+            ),
+            title="Dokumentvorlagen",
+            parent_app="documents",
+        )
+        self.register_route(
+            "roles",
+            RoleManagementPage(role_service=self.services.role_service),
+            title="Rollenverwaltung",
+            parent_app="administration",
+        )
+
         self.workspace_host.set_current_page("dashboard")
         body_layout.addWidget(self.workspace_host, 1)
 
@@ -198,8 +290,11 @@ class MainWindow(QMainWindow):
         if current_widget is not None and hasattr(current_widget, "on_print_dossier"):
             current_widget.on_print_dossier()
             return
-
-        QMessageBox.information(self, "Drucken", "Druckfunktion ist im aktuellen Bereich nicht verfügbar. Öffnen Sie das Personendossier, um es zu drucken.")
+        QMessageBox.information(
+            self, "Drucken",
+            "Druckfunktion ist im aktuellen Bereich nicht verfügbar. "
+            "Öffnen Sie das Personendossier, um es zu drucken.",
+        )
 
     def register_route(self, key: str, widget: QWidget, title: str, parent_app: str | None = None) -> None:
         self.navigation_controller.register_route(key, widget, title, parent_app)
@@ -208,7 +303,6 @@ class MainWindow(QMainWindow):
         if page == "logout":
             self.close()
             return
-
         self.navigation_controller.navigate(page, filter_context)
 
     def on_route_changed(self, page: str) -> None:

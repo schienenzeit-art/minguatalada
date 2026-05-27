@@ -1,6 +1,6 @@
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QColor
-from PyQt6.QtWidgets import QFrame, QGraphicsDropShadowEffect, QLabel, QVBoxLayout, QWidget
+from PyQt6.QtWidgets import QFrame, QGraphicsDropShadowEffect, QLabel, QSizePolicy, QVBoxLayout, QWidget
 
 
 class StatCard(QWidget):
@@ -18,6 +18,8 @@ class StatCard(QWidget):
     def setup_ui(self):
         self.setObjectName("statCard")
         self.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.setMinimumHeight(138)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.MinimumExpanding)
 
         outer = QVBoxLayout(self)
         outer.setContentsMargins(0, 0, 0, 0)
@@ -25,7 +27,7 @@ class StatCard(QWidget):
 
         # Farbiger Akzent-Strip oben
         accent_strip = QFrame()
-        accent_strip.setFixedHeight(4)
+        accent_strip.setFixedHeight(5)
         accent_strip.setStyleSheet(
             f"background-color: {self.accent}; border-radius: 16px 16px 0 0; border: none;"
         )
@@ -36,22 +38,28 @@ class StatCard(QWidget):
         content.setObjectName("statCardInner")
         content.setStyleSheet("background: transparent;")
         layout = QVBoxLayout(content)
-        layout.setContentsMargins(20, 16, 20, 18)
-        layout.setSpacing(6)
+        layout.setContentsMargins(20, 18, 20, 20)
+        layout.setSpacing(4)
 
         self.title_label = QLabel(self.title)
         self.title_label.setObjectName("statCardTitle")
+        self.title_label.setMinimumHeight(18)
 
         self.value_label = QLabel(self.value)
         self.value_label.setObjectName("statCardValue")
-        self.value_label.setStyleSheet(f"color: {self.accent}; font-size: 30px; font-weight: 800; letter-spacing: -0.04em;")
+        self.value_label.setMinimumHeight(44)
+        self.value_label.setStyleSheet(
+            f"color: {self.accent}; font-size: 32px; font-weight: 800; letter-spacing: -0.04em;"
+        )
 
         self.subtitle_label = QLabel(self.subtitle)
         self.subtitle_label.setObjectName("statCardSubtitle")
         self.subtitle_label.setWordWrap(True)
+        self.subtitle_label.setMinimumHeight(18)
 
         layout.addWidget(self.title_label)
         layout.addWidget(self.value_label)
+        layout.addSpacing(2)
         layout.addWidget(self.subtitle_label)
         layout.addStretch()
 

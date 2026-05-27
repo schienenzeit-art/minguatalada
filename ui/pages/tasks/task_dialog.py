@@ -21,12 +21,19 @@ from services.user_service import UserService
 
 
 class TaskDialog(QDialog):
-    def __init__(self, user_service: UserService, location_service: LocationService, task: dict | None = None):
+    def __init__(
+        self,
+        user_service: UserService,
+        location_service: LocationService,
+        task: dict | None = None,
+        preset_type: str | None = None,
+    ):
         super().__init__()
         self.user_service = user_service
         self.location_service = location_service
         self.task = task
-        self.setWindowTitle("Aufgabe")
+        self.preset_type = preset_type
+        self.setWindowTitle("Wiedervorlage" if preset_type == TaskType.WIEDERVORLAGE else "Aufgabe")
         self.setup_ui()
         self.load_task()
 
@@ -83,6 +90,11 @@ class TaskDialog(QDialog):
         self.setLayout(layout)
 
     def load_task(self):
+        if self.preset_type and not self.task:
+            index = self.type_input.findText(self.preset_type)
+            if index >= 0:
+                self.type_input.setCurrentIndex(index)
+            return
         if not self.task:
             return
 

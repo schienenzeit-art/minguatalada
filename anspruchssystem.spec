@@ -23,8 +23,10 @@ a = Analysis(
     pathex=[str(PROJECT_ROOT)],
     binaries=[] + bcrypt_binaries,
     datas=[
-        # QSS Stylesheet - wird zur Laufzeit ueber RESOURCE_DIR gefunden
+        # QSS Stylesheet
         ('ui/styles/theme.qss', 'ui/styles'),
+        # Logo und Icons
+        ('assets', 'assets'),
     ] + bcrypt_datas + openpyxl_datas,
     hiddenimports=[
         # PyQt6
@@ -90,17 +92,17 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name='Anspruchssystem',
+    name='MinGuataLada',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
-    console=False,          # Kein Konsolenfenster
+    console=False,
     disable_windowed_traceback=False,
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    # icon='icon.ico',      # .ico-Datei im Projektstamm ablegen fuer App-Icon
+    icon='assets/logo.ico',   # ICO erzeugen mit: python scripts/create_icon.py
 )
 
 coll = COLLECT(
