@@ -1,6 +1,6 @@
-; Inno Setup Script – Anspruchssystem Installer
-; Voraussetzung: PyInstaller-Build muss bereits durchgeführt worden sein
-; Build-Ausgabe erwartet unter: ..\dist\Anspruchssystem\
+; Inno Setup Script – Min Guata Lada Installer
+; Voraussetzung: build.bat muss zuerst ausgeführt worden sein
+; Build-Ausgabe erwartet unter: ..\dist\MinGuataLada\
 ;
 ; Inno Setup herunterladen: https://jrsoftware.org/isdl.php
 ; Dieses Skript mit dem Inno Setup Compiler kompilieren.
