@@ -7,7 +7,7 @@
 
 #define MyAppName      "Min Guata Lada"
 #define MyAppVersion   "1.0.0"
-#define MyAppPublisher "Tischlein Deck Dich Vorarlberg"
+#define MyAppPublisher "Dario Schär"
 #define MyAppExeName   "MinGuataLada.exe"
 #define MyAppID        "{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}"
 #define SourceDir      "..\dist\MinGuataLada"

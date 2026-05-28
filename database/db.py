@@ -807,17 +807,11 @@ def seed_basic_data(connection: sqlite3.Connection) -> None:
 
     in_pytest = any(k in os.environ for k in ("PYTEST_CURRENT_TEST", "PYTEST_ADDOPTS", "PYTEST_RUNNING")) or any("pytest" in a for a in sys.argv)
 
-    # Only create and print credentials if the admin user does not yet exist
+    # Standard-Admin: immer aktiv mit bekanntem Passwort (auf neuem System sofort verwendbar)
+    _ADMIN_DEFAULT_PW = "admin123" if in_pytest else "Admin2024!"
+
     admin_exists = connection.execute("SELECT id FROM users WHERE username = 'admin'").fetchone()
-
     if not admin_exists:
-        if in_pytest:
-            admin_pw = "admin123"
-        else:
-            admin_pw = PasswordService.generate_random_password(16)
-        admin_password_hash = PasswordService.hash_password(admin_pw)
-        admin_is_active = 1 if in_pytest else 0
-
         connection.execute(
             """
             INSERT INTO users (
@@ -826,27 +820,21 @@ def seed_basic_data(connection: sqlite3.Connection) -> None:
                 ?, ?, ?,
                 (SELECT id FROM roles WHERE name = ?),
                 (SELECT id FROM locations WHERE name = ?),
-                ?
+                1
             )
             """,
-            ("System Administrator", "admin", admin_password_hash, "Admin", "Bludenz", admin_is_active),
+            (
+                "System Administrator",
+                "admin",
+                PasswordService.hash_password(_ADMIN_DEFAULT_PW),
+                "Admin",
+                "Bludenz",
+            ),
         )
         connection.commit()
-        try:
-            print("ERSTANLAGE ADMIN-KONTO:")
-            print(f"  Benutzername: admin")
-            print(f"  Einmalpasswort: {admin_pw}")
-            print("  Bitte das Passwort nach dem ersten Login sofort ändern und das Konto aktivieren.")
-        except Exception:
-            pass
 
     employee_exists = connection.execute("SELECT id FROM users WHERE username = 'mitarbeiter1'").fetchone()
-
     if not employee_exists:
-        employee_pw = PasswordService.generate_random_password(14)
-        employee_password_hash = PasswordService.hash_password(employee_pw)
-        employee_is_active = 1 if in_pytest else 0
-
         connection.execute(
             """
             INSERT INTO users (
@@ -855,12 +843,33 @@ def seed_basic_data(connection: sqlite3.Connection) -> None:
                 ?, ?, ?,
                 (SELECT id FROM roles WHERE name = ?),
                 (SELECT id FROM locations WHERE name = ?),
-                ?
+                1
             )
             """,
-            ("Max Mitarbeiter", "mitarbeiter1", employee_password_hash, "Mitarbeiter", "Feldkirch", employee_is_active),
+            (
+                "Max Mitarbeiter",
+                "mitarbeiter1",
+                PasswordService.hash_password("Mitarbeiter2024!"),
+                "Mitarbeiter",
+                "Feldkirch",
+            ),
         )
         connection.commit()
+
+    # Migration: admin der durch ältere Versionen deaktiviert angelegt wurde, reaktivieren
+    try:
+        inactive = connection.execute(
+            "SELECT id FROM users WHERE username = 'admin' AND is_active = 0"
+        ).fetchone()
+        if inactive:
+            connection.execute(
+                "UPDATE users SET is_active = 1, failed_attempts = 0, locked_until = NULL, "
+                "password_hash = ? WHERE username = 'admin'",
+                (PasswordService.hash_password(_ADMIN_DEFAULT_PW),),
+            )
+            connection.commit()
+    except Exception:
+        pass
 
     if in_pytest:
         try:

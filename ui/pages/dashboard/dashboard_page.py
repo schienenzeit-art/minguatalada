@@ -1,3 +1,6 @@
+import sys
+from pathlib import Path
+
 from PyQt6.QtWidgets import (
     QWidget,
     QVBoxLayout,
@@ -15,7 +18,15 @@ from PyQt6.QtWidgets import (
     QGraphicsDropShadowEffect,
 )
 from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtGui import QBrush, QColor, QFont
+from PyQt6.QtGui import QBrush, QColor, QFont, QPixmap
+
+
+def _logo_path() -> Path:
+    if getattr(sys, "frozen", False):
+        base = Path(sys._MEIPASS)  # type: ignore[attr-defined]
+    else:
+        base = Path(__file__).resolve().parent.parent.parent.parent
+    return base / "assets" / "logo.png"
 
 from services.dashboard_service import DashboardService
 from ui.pages.case_create_page import CaseCreateDialog
@@ -62,8 +73,28 @@ class DashboardPage(QWidget):
         topbar.setObjectName("TopBarCard")
         topbar.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         topbar_layout = QHBoxLayout(topbar)
-        topbar_layout.setContentsMargins(24, 24, 24, 24)
+        topbar_layout.setContentsMargins(24, 16, 24, 16)
         topbar_layout.setSpacing(18)
+
+        # ── Logo ──────────────────────────────────────────────────────────────
+        logo_lbl = QLabel()
+        logo_lbl.setAlignment(Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft)
+        lp = _logo_path()
+        if lp.exists():
+            pix = QPixmap(str(lp)).scaled(
+                160, 72,
+                Qt.AspectRatioMode.KeepAspectRatio,
+                Qt.TransformationMode.SmoothTransformation,
+            )
+            logo_lbl.setPixmap(pix)
+        logo_lbl.setFixedWidth(170)
+        topbar_layout.addWidget(logo_lbl)
+
+        # Trennlinie
+        sep = QFrame()
+        sep.setFrameShape(QFrame.Shape.VLine)
+        sep.setStyleSheet("color: #e0e0e0; max-width: 1px;")
+        topbar_layout.addWidget(sep)
 
         title_column = QVBoxLayout()
         title_column.setSpacing(6)
