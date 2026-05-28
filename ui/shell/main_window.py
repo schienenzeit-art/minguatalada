@@ -1,5 +1,5 @@
 from PyQt6.QtGui import QAction
-from PyQt6.QtWidgets import QInputDialog, QLineEdit, QMainWindow, QMessageBox, QWidget, QHBoxLayout, QVBoxLayout
+from PyQt6.QtWidgets import QMainWindow, QMessageBox, QWidget, QHBoxLayout, QVBoxLayout
 
 from app.container import ServiceContainer
 from core.session import Session
@@ -66,13 +66,6 @@ class MainWindow(QMainWindow):
             template_service=self.services.document_template_service,
             pdf_service=self.services.pdf_service,
         )
-
-        # Load available users for switching
-        try:
-            available_users = self.services.user_service.get_all_users()
-            self.topbar.set_available_users(available_users)
-        except Exception:
-            pass
 
         self.topbar.user_changed.connect(self.on_user_changed)
         self.topbar.search_requested.connect(self.on_search_requested)
@@ -280,6 +273,15 @@ class MainWindow(QMainWindow):
             parent_app="tasks",
         )
 
+        # ── SMTP-Einstellungen ────────────────────────────────────────────────
+        from ui.pages.settings.smtp_settings_page import SmtpSettingsPage
+        self.register_route(
+            "smtp_settings",
+            SmtpSettingsPage(settings_service=self.services.settings_service),
+            title="SMTP / E-Mail",
+            parent_app="administration",
+        )
+
         # ── Serienbriefe ──────────────────────────────────────────────────────
         from ui.pages.serial_letters_page import SerialLettersPage
         self.register_route(
@@ -363,35 +365,9 @@ class MainWindow(QMainWindow):
         self.navigation.set_active(self.navigation_controller.get_parent_app(page))
 
     def on_user_changed(self, user: dict) -> None:
+        # Kein Benutzerwechsel — nur Abmelden ist erlaubt.
         if user.get("logout"):
             self.close()
-            return
-
-        target_username = user.get("username", "")
-        if target_username == (self.current_user or {}).get("username"):
-            return
-
-        password, ok = QInputDialog.getText(
-            self,
-            "Benutzer wechseln",
-            f"Passwort für «{user.get('full_name', target_username)}»:",
-            QLineEdit.EchoMode.Password,
-        )
-        if not ok or not password:
-            self.topbar.set_current_user(self.current_user)
-            return
-
-        result = self.services.auth_service.login(target_username, password)
-        if not result.get("success"):
-            QMessageBox.warning(self, "Fehler", result.get("message", "Anmeldung fehlgeschlagen."))
-            self.topbar.set_current_user(self.current_user)
-            return
-
-        authenticated_user = result["user"]
-        self.current_user = authenticated_user
-        Session.set_user(authenticated_user)
-        self.topbar.set_current_user(authenticated_user)
-        self.route_to("dashboard")
 
     def on_search_requested(self, search_text: str) -> None:
         from ui.dialogs.search_result_dialog import SearchResultDialog

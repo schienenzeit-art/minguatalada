@@ -195,11 +195,13 @@ class TopBar(QWidget):
 
     def _open_letter_wizard(self, template_type: str | None) -> None:
         from ui.dialogs.letter_wizard_dialog import LetterWizardDialog
+        from core.case_context import CaseContext
         dlg = LetterWizardDialog(
             template_type=template_type,
             claim_service=self._doc_claim_service,
             template_service=self._doc_template_service,
             pdf_service=self._doc_pdf_service,
+            initial_claim=CaseContext.get_claim(),   # aktuellen Fall vorausfüllen
             parent=self,
         )
         dlg.exec()
@@ -290,7 +292,7 @@ class TopBar(QWidget):
             self._notification_service.mark_all_read()
             self._refresh_badge()
 
-    # ── Benutzerwechsel ───────────────────────────────────────────────────────
+    # ── Benutzerverwaltung (kein Wechsel – nur Abmelden) ─────────────────────
     def _get_user_display_name(self) -> str:
         if self.current_user:
             return self.current_user.get("full_name", "Benutzer")[:22]
@@ -301,22 +303,24 @@ class TopBar(QWidget):
         self.avatar_button.setText(self._get_user_display_name())
 
     def set_available_users(self, users: list[dict]) -> None:
-        self.available_users = users
+        # Benutzerwechsel ist deaktiviert — diese Methode ist ein No-op.
+        pass
 
     def _show_user_menu(self) -> None:
-        if not self.available_users:
-            return
+        """Zeigt nur Benutzerinfo und Abmelden — kein Benutzerwechsel erlaubt."""
         menu = QMenu(self)
-        for user in self.available_users:
-            action = menu.addAction(user.get("full_name", user.get("username", "-")))
-            action.triggered.connect(lambda checked=False, u=user: self._switch_user(u))
+        user = self.current_user or {}
+        role = user.get("role_name", "")
+        location = user.get("location_name", "")
+
+        info = menu.addAction(f"{user.get('full_name','–')}  ·  {role}")
+        info.setEnabled(False)
+        if location:
+            loc_action = menu.addAction(f"Standort: {location}")
+            loc_action.setEnabled(False)
         menu.addSeparator()
         menu.addAction("Abmelden").triggered.connect(self._on_logout)
         menu.exec(self.avatar_button.mapToGlobal(self.avatar_button.rect().bottomLeft()))
-
-    def _switch_user(self, user: dict) -> None:
-        self.set_current_user(user)
-        self.user_changed.emit(user)
 
     def _on_logout(self) -> None:
         self.user_changed.emit({"logout": True})

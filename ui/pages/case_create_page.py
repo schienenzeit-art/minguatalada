@@ -26,6 +26,7 @@ from PyQt6.QtCore import Qt, QDate
 from services.case_service import CaseService
 from services.claim_service import ClaimService
 from services.document_service import DocumentService
+from core.case_context import CaseContext
 from ui.pages.claim_evaluation_dialog import ClaimEvaluationDialog
 
 
@@ -439,5 +440,16 @@ class CaseCreateDialog(QDialog):
             return
 
         claim_id = self.created_case.get("id")
+
+        # CaseContext setzen bevor Dialog öffnet
+        CaseContext.set(claim_id)
+
         dlg = ClaimEvaluationDialog(claim_id=claim_id, claim_service=self.claim_service)
-        dlg.exec()
+        if dlg.exec() == QDialog.DialogCode.Accepted:
+            # Nach Prüfung direkt in den Fall navigieren
+            from ui.pages.claim_detail_page import ClaimDetailPage
+            detail = ClaimDetailPage(
+                claim_id=claim_id,
+                claim_service=self.claim_service,
+            )
+            detail.exec()

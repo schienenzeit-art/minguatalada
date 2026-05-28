@@ -183,7 +183,15 @@ class UsersPage(QWidget):
             QMessageBox.warning(self, "Fehler", result["message"])
             return
 
-        QMessageBox.information(self, "Erfolg", result["message"])
+        # Initialpasswort für Weitergabe anzeigen
+        QMessageBox.information(
+            self, "Benutzer angelegt",
+            f"Benutzer «{user_data['full_name']}» wurde erfolgreich angelegt.\n\n"
+            f"Benutzername: {user_data['username']}\n"
+            f"Initialpasswort: {user_data['password']}\n\n"
+            "Das Passwort muss bei der ersten Anmeldung geändert werden.\n"
+            "Bitte geben Sie diese Login-Daten persönlich an den Mitarbeiter weiter.",
+        )
         self.load_users()
 
     def on_user_row_double_clicked(self, row: int, column: int) -> None:

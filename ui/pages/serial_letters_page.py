@@ -7,7 +7,7 @@ from datetime import date
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
     QDialog, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-    QComboBox, QTableWidget, QTableWidgetItem, QHeaderView,
+    QComboBox, QTableWidget, QTableWidgetItem, QHeaderView, QLineEdit,
     QMessageBox, QCheckBox, QProgressBar, QGroupBox, QFileDialog,
     QAbstractItemView,
 )
@@ -37,28 +37,52 @@ class SerialLettersPage(QWidget):
             subtitle="Vorlage wählen, Fälle auswählen und Briefe als Sammel-PDF oder Einzel-PDFs generieren.",
         ))
 
-        # ── Vorlage + Typ ─────────────────────────────────────────────────────
+        # ── Vorlage ───────────────────────────────────────────────────────────
         opt_row = QHBoxLayout()
         opt_row.setSpacing(12)
         opt_row.addWidget(QLabel("Vorlage:"))
         self._tpl_combo = QComboBox()
         self._tpl_combo.setMinimumWidth(280)
         opt_row.addWidget(self._tpl_combo)
-        opt_row.addWidget(QLabel("Status-Filter:"))
+        opt_row.addStretch()
+        layout.addLayout(opt_row)
+
+        # ── Suche (primär: Name, sekundär: Aktenzeichen + Status) ────────────
+        search_row = QHBoxLayout()
+        search_row.setSpacing(12)
+        search_row.addWidget(QLabel("Suche Name:"))
+        self._name_search = QLineEdit()
+        self._name_search.setPlaceholderText("Vorname oder Nachname …")
+        self._name_search.setMinimumWidth(260)
+        self._name_search.textChanged.connect(self._apply_filter)
+        search_row.addWidget(self._name_search, 2)
+
+        search_row.addWidget(QLabel("Aktenzeichen:"))
+        self._case_search = QLineEdit()
+        self._case_search.setPlaceholderText("AS-…")
+        self._case_search.setMaximumWidth(160)
+        self._case_search.textChanged.connect(self._apply_filter)
+        search_row.addWidget(self._case_search)
+
+        search_row.addWidget(QLabel("Status:"))
         self._status_combo = QComboBox()
         self._status_combo.addItem("Alle Status", None)
         from core.claim_status import ClaimStatus
         for key, label in ClaimStatus.DISPLAY_NAMES.items():
             self._status_combo.addItem(label, key)
         self._status_combo.currentIndexChanged.connect(self._apply_filter)
-        opt_row.addWidget(self._status_combo)
-        opt_row.addStretch()
-        layout.addLayout(opt_row)
+        search_row.addWidget(self._status_combo)
+
+        clear_btn = QPushButton("Zurücksetzen")
+        clear_btn.setObjectName("SoftButton")
+        clear_btn.clicked.connect(self._clear_filters)
+        search_row.addWidget(clear_btn)
+        layout.addLayout(search_row)
 
         # ── Tabelle ───────────────────────────────────────────────────────────
         self._table = QTableWidget()
         self._table.setColumnCount(5)
-        self._table.setHorizontalHeaderLabels(["", "Aktenzeichen", "Person", "Status", "Standort"])
+        self._table.setHorizontalHeaderLabels(["", "Person", "Aktenzeichen", "Status", "Standort"])
         hh = self._table.horizontalHeader()
         hh.setSectionResizeMode(0, QHeaderView.ResizeMode.Fixed)
         hh.setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
@@ -125,13 +149,32 @@ class SerialLettersPage(QWidget):
                 self._claims = []
         self._apply_filter()
 
+    def _clear_filters(self):
+        self._name_search.clear()
+        self._case_search.clear()
+        self._status_combo.setCurrentIndex(0)
+
     def _apply_filter(self):
         from core.claim_status import ClaimStatus
-        status_filter = self._status_combo.currentData()
-        filtered = [
-            c for c in self._claims
-            if status_filter is None or c.get("status") == status_filter
-        ]
+        name_q   = self._name_search.text().strip().lower()
+        case_q   = self._case_search.text().strip().lower()
+        status_q = self._status_combo.currentData()
+
+        filtered = []
+        for c in self._claims:
+            full_name = (
+                f"{c.get('person_first_name','')} {c.get('person_last_name','')}".lower()
+            )
+            case_no = (c.get("case_number") or "").lower()
+
+            if name_q and name_q not in full_name:
+                continue
+            if case_q and case_q not in case_no:
+                continue
+            if status_q and c.get("status") != status_q:
+                continue
+            filtered.append(c)
+
         self._table.setRowCount(len(filtered))
         for row, claim in enumerate(filtered):
             cb = QCheckBox()
@@ -141,12 +184,14 @@ class SerialLettersPage(QWidget):
             cb_layout.setContentsMargins(6, 0, 0, 0)
             cb_layout.addWidget(cb)
             self._table.setCellWidget(row, 0, cb_widget)
-            self._table.setItem(row, 1, QTableWidgetItem(claim.get("case_number", "")))
+
             name = f"{claim.get('person_first_name','')} {claim.get('person_last_name','')}".strip()
-            self._table.setItem(row, 2, QTableWidgetItem(name))
+            self._table.setItem(row, 1, QTableWidgetItem(name))
+            self._table.setItem(row, 2, QTableWidgetItem(claim.get("case_number", "")))
             self._table.setItem(row, 3, QTableWidgetItem(
                 ClaimStatus.get_display(claim.get("status", ""))))
             self._table.setItem(row, 4, QTableWidgetItem(claim.get("location_name", "")))
+            # ID an Person-Spalte hängen
             self._table.item(row, 1).setData(Qt.ItemDataRole.UserRole, claim.get("id"))
         self._update_count()
 
@@ -180,9 +225,12 @@ class SerialLettersPage(QWidget):
         for row in range(self._table.rowCount()):
             cb = self._get_row_checkbox(row)
             if cb and cb.isChecked():
+                # ID ist in Spalte 1 (Person-Spalte) hinterlegt
                 item = self._table.item(row, 1)
                 if item:
-                    ids.append(item.data(Qt.ItemDataRole.UserRole))
+                    cid = item.data(Qt.ItemDataRole.UserRole)
+                    if cid:
+                        ids.append(cid)
         return ids
 
     def _get_contexts(self, claim_ids: list[int]) -> list[dict]:

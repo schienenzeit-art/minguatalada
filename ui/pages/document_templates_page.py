@@ -68,6 +68,16 @@ class DocumentTemplatesPage(QWidget):
 
         # ── Toolbar ────────────────────────────────────────────────────────────
         tool_row = QHBoxLayout()
+
+        seed_btn = QPushButton("Standardvorlagen initialisieren")
+        seed_btn.setObjectName("SoftButton")
+        seed_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        seed_btn.setToolTip(
+            "Fehlende Standardvorlagen anlegen (vorhandene werden nicht überschrieben)"
+        )
+        seed_btn.clicked.connect(self._seed_default_templates)
+        tool_row.addWidget(seed_btn)
+
         tool_row.addStretch()
         new_btn = QPushButton("+ Neue Vorlage")
         new_btn.setObjectName("PrimaryButton")
@@ -234,6 +244,21 @@ class DocumentTemplatesPage(QWidget):
         if ans == QMessageBox.StandardButton.Yes:
             self.svc.delete_template(tpl["id"])
             self.refresh()
+
+    def _seed_default_templates(self):
+        """Fehlende Standardvorlagen anlegen ohne vorhandene zu überschreiben."""
+        try:
+            from database.db import get_connection, seed_default_templates
+            with get_connection() as conn:
+                seed_default_templates(conn)
+            self.refresh()
+            QMessageBox.information(
+                self, "Standardvorlagen initialisiert",
+                "Fehlende Standardvorlagen wurden erfolgreich angelegt.\n"
+                "Vorhandene Vorlagen wurden nicht verändert.",
+            )
+        except Exception as exc:
+            QMessageBox.critical(self, "Fehler", str(exc))
 
     def _generate_selected(self):
         row = self._get_selected_row()

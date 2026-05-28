@@ -52,6 +52,11 @@ DEFAULT_SETTINGS = {
         "description": "STARTTLS verwenden (empfohlen für Port 587)",
         "editable_by_admin": True,
     },
+    "SMTP_ACTIVE": {
+        "value": False, "value_type": "bool", "category": "E-Mail",
+        "description": "SMTP-Mailversand aktiviert",
+        "editable_by_admin": True,
+    },
     # ── Anspruchsgrenzen ──────────────────────────────────────────────────────
     "BASE_LIMIT": {
         "value": 820.0,
@@ -128,6 +133,26 @@ class SettingsService:
         self.repository.update_setting_value(key, value, updated_by=Session.get_user_id())
         self._record_audit_log(setting["id"], key, old_value, value, comment)
         return self.repository.get_setting(key)
+
+    def save_smtp_config(self, config: dict) -> None:
+        """SMTP-Konfiguration speichern. Erlaubt für Admin, Supervisor und Standortleitung."""
+        from services.user_service import USERMGMT_ALLOWED_ROLES
+        role = (Session.get_user() or {}).get("role_name", "")
+        if role and role not in USERMGMT_ALLOWED_ROLES:
+            raise PermissionError("Nur Admin/Supervisor/Standortleitung dürfen SMTP-Einstellungen ändern.")
+        for key, value in config.items():
+            setting = self.repository.get_setting(key)
+            if setting is not None:
+                self.repository.update_setting_value(key, value, updated_by=Session.get_user_id())
+            else:
+                self.repository.create_setting(key=key, value=value, value_type="text",
+                                                category="E-Mail", description=key)
+
+    def get_smtp_config(self) -> dict:
+        """Gibt aktuelle SMTP-Konfiguration als Dict zurück."""
+        keys = ["SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASSWORD",
+                "SMTP_FROM_EMAIL", "SMTP_FROM_NAME", "SMTP_USE_TLS", "SMTP_ACTIVE"]
+        return {k: self.get(k, "") for k in keys}
 
     def _record_audit_log(
         self,

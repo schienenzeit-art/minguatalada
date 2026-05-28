@@ -45,6 +45,15 @@ class UserService:
         is_active: bool = True,
         must_change_password: bool = True,
     ) -> Dict[str, Any]:
+        # Rollenprüfung: Nur Admin/Supervisor/Standortleitung dürfen Benutzer anlegen
+        from core.session import Session as _Session
+        caller_role = (_Session.get_user() or {}).get("role_name", "")
+        if caller_role and caller_role not in USERMGMT_ALLOWED_ROLES:
+            return {
+                "success": False,
+                "message": "Keine Berechtigung. Nur Admin und Supervisor dürfen Benutzer anlegen.",
+            }
+
         full_name = full_name.strip()
         username = username.strip()
         password = password.strip()

@@ -1269,146 +1269,233 @@ def migrate_existing_claim_statuses(connection: sqlite3.Connection) -> None:
 
 
 def seed_default_templates(connection: sqlite3.Connection) -> None:
-    """Seeded Standard-Vorlagentexte für alle Status, falls noch keine vorhanden."""
-    existing = connection.execute(
-        "SELECT COUNT(*) FROM document_templates"
-    ).fetchone()[0]
-    if existing > 0:
-        return  # Keine Überschreibung bestehender Vorlagen
+    """Seeded Standard-Vorlagentexte.
 
+    Prüft jeden Eintrag einzeln per Name — vorhandene Vorlagen werden NICHT überschrieben,
+    fehlende werden nachgeseeded. Kein Härtefall-Template (ausdrücklich ausgenommen).
+    """
     templates = [
+        # ── 1. Anspruchsberechtigt ────────────────────────────────────────────
         {
-            "name": "Bescheid – Anspruchsberechtigt",
-            "template_type": "BESCHEID",
-            "body_text": """{{ANREDE}},
+            "name":           "Bescheid – Anspruchsberechtigt",
+            "template_type":  "BESCHEID",
+            "status_trigger": "ANSPRUCHSBERECHTIGT",
+            "body_text": """\
+{{ANREDE}},
 
-wir freuen uns, Ihnen mitteilen zu können, dass Ihr Antrag auf Unterstützungsleistungen beim Verein Tischlein Deck Dich Vorarlberg geprüft und positiv entschieden wurde.
+im Namen des Vereins Tischlein Deck Dich Vorarlberg freuen wir uns, Ihnen mitteilen zu können, dass Ihr Antrag auf Unterstützungsleistungen nach eingehender Prüfung positiv beschieden wurde.
 
 Aktenzeichen: {{AKTENZEICHEN}}
 Prüfungsdatum: {{DATUM}}
-Ergebnis: {{STATUS}}
+Standort: {{STANDORT}}
 
-{{BEGRUENDUNG}}
-
-Sie sind damit berechtigt, die Leistungen des Vereins in Anspruch zu nehmen. Für die Ausgabe Ihrer Kundenkarte wenden Sie sich bitte an den Standort {{STANDORT}}.
-
-Bei Fragen stehen wir Ihnen jederzeit zur Verfügung.
-
-Mit freundlichen Grüßen
-{{MITARBEITER}}
-Verein Tischlein Deck Dich Vorarlberg""",
-        },
-        {
-            "name": "Bescheid – Abgelehnt",
-            "template_type": "BESCHEID",
-            "body_text": """{{ANREDE}},
-
-nach sorgfältiger Prüfung Ihres Antrags müssen wir Ihnen leider mitteilen, dass Ihrem Ansuchen um Unterstützungsleistungen nicht entsprochen werden kann.
-
-Aktenzeichen: {{AKTENZEICHEN}}
-Prüfungsdatum: {{DATUM}}
-Ergebnis: {{STATUS}}
+Ergebnis der Prüfung:
+Ihr Antrag wurde positiv bewertet. Sie sind damit berechtigt, die Leistungen des Vereins in Anspruch zu nehmen.
 
 Begründung:
 {{BEGRUENDUNG}}
 
-Sollten sich Ihre persönlichen oder finanziellen Verhältnisse wesentlich ändern, steht Ihnen die Möglichkeit offen, einen neuen Antrag zu stellen. Bei Fragen zu dieser Entscheidung wenden Sie sich bitte an {{STANDORT}}.
+Nächste Schritte:
+Für die Ausstellung Ihrer persönlichen Kundenkarte wenden Sie sich bitte an den Standort {{STANDORT}}. Bringen Sie zu diesem Termin bitte einen gültigen Lichtbildausweis mit.
+
+Die Karte wird auf Ihren Namen ausgestellt und ist ausschließlich für Ihre Person bestimmt.
+
+Sollten Sie Fragen zu Ihrem Antrag oder zu den Leistungen des Vereins haben, stehen Ihnen die Mitarbeiterinnen und Mitarbeiter des Standorts {{STANDORT}} gerne zur Verfügung.
 
 Mit freundlichen Grüßen
-{{MITARBEITER}}
-Verein Tischlein Deck Dich Vorarlberg""",
-        },
-        {
-            "name": "Bescheid – Vorläufig Abgelehnt",
-            "template_type": "BESCHEID",
-            "body_text": """{{ANREDE}},
 
-Ihr Antrag auf Unterstützungsleistungen wurde geprüft. Aufgrund fehlender oder noch nicht vollständiger Unterlagen kann derzeit keine abschließende Entscheidung getroffen werden.
+{{MITARBEITER}}
+Verein Tischlein Deck Dich Vorarlberg
+Ladritschweg 10c · 6773 Vandans""",
+        },
+
+        # ── 2. Abgelehnt ─────────────────────────────────────────────────────
+        {
+            "name":           "Bescheid – Abgelehnt",
+            "template_type":  "BESCHEID",
+            "status_trigger": "ABGELEHNT",
+            "body_text": """\
+{{ANREDE}},
+
+nach eingehender Prüfung Ihres Antrags auf Unterstützungsleistungen beim Verein Tischlein Deck Dich Vorarlberg müssen wir Ihnen leider mitteilen, dass Ihrem Ansuchen nicht entsprochen werden kann.
 
 Aktenzeichen: {{AKTENZEICHEN}}
 Prüfungsdatum: {{DATUM}}
-Ergebnis: {{STATUS}}
+Standort: {{STANDORT}}
+
+Ergebnis der Prüfung:
+Ihr Antrag wurde abgelehnt.
 
 Begründung:
 {{BEGRUENDUNG}}
 
-Wir bitten Sie, die fehlenden Unterlagen schnellstmöglich beim Standort {{STANDORT}} einzureichen, damit Ihr Antrag weiter bearbeitet werden kann.
+Die vollständige Begründung dieser Entscheidung entnehmen Sie bitte dem beigefügten Prüfungsprotokoll (Aktenzeichen {{AKTENZEICHEN}}).
 
-Sobald alle Unterlagen vollständig vorliegen, werden wir Ihren Antrag erneut prüfen und Sie über das Ergebnis informieren.
+Widerspruchsrecht:
+Sie haben das Recht, innerhalb von 14 Tagen ab Zustellung dieses Bescheids schriftlich Widerspruch einzulegen. Richten Sie Ihren Widerspruch bitte unter Angabe des Aktenzeichens {{AKTENZEICHEN}} an den Standort {{STANDORT}}.
+
+Neue Antragstellung:
+Sollten sich Ihre persönlichen oder wirtschaftlichen Verhältnisse wesentlich ändern, steht Ihnen jederzeit die Möglichkeit offen, einen neuen Antrag zu stellen.
+
+Wir bedanken uns für Ihr Vertrauen und bedauern, Ihnen keine positive Entscheidung mitteilen zu können.
 
 Mit freundlichen Grüßen
-{{MITARBEITER}}
-Verein Tischlein Deck Dich Vorarlberg""",
-        },
-        {
-            "name": "Bescheid – Härtefall",
-            "template_type": "BESCHEID",
-            "body_text": """{{ANREDE}},
 
-nach Prüfung Ihres Antrags haben wir festgestellt, dass Ihre Situation besondere Berücksichtigung verdient. Ihr Antrag wurde daher als Härtefall eingestuft und an die zuständige Stelle zur weiteren Bearbeitung weitergeleitet.
+{{MITARBEITER}}
+Verein Tischlein Deck Dich Vorarlberg
+Ladritschweg 10c · 6773 Vandans
+
+Beilage: Prüfungsprotokoll (Aktenzeichen {{AKTENZEICHEN}})""",
+        },
+
+        # ── 3. Vorläufig Abgelehnt / Rückfrage ───────────────────────────────
+        {
+            "name":           "Bescheid – Vorläufig Abgelehnt",
+            "template_type":  "BESCHEID",
+            "status_trigger": "VORLAEFIG_ABGELEHNT",
+            "body_text": """\
+{{ANREDE}},
+
+Ihr Antrag auf Unterstützungsleistungen beim Verein Tischlein Deck Dich Vorarlberg wurde einer ersten Prüfung unterzogen. Aufgrund fehlender oder unvollständiger Unterlagen kann derzeit keine abschließende Entscheidung getroffen werden.
 
 Aktenzeichen: {{AKTENZEICHEN}}
 Prüfungsdatum: {{DATUM}}
-Einstufung: {{STATUS}}
+Standort: {{STANDORT}}
+
+Ergebnis der Prüfung:
+Vorläufig abgelehnt – weitere Abklärung erforderlich.
 
 Begründung:
 {{BEGRUENDUNG}}
 
-Sie werden über das endgültige Ergebnis gesondert informiert. Bei dringenden Fragen wenden Sie sich bitte direkt an den Standort {{STANDORT}}.
+Erforderliche Maßnahmen:
+Damit Ihr Antrag weiterbearbeitet werden kann, bitten wir Sie, die fehlenden Unterlagen oder Informationen umgehend beim Standort {{STANDORT}} einzureichen.
+
+Sobald alle erforderlichen Dokumente vollständig vorliegen, wird Ihr Antrag erneut geprüft und Sie werden schriftlich über das endgültige Ergebnis informiert.
+
+Bitte beachten Sie, dass bei ausbleibender Rückmeldung innerhalb von 30 Tagen der Antrag als zurückgezogen gilt.
+
+Für Rückfragen oder zur Terminvereinbarung wenden Sie sich bitte an den Standort {{STANDORT}}.
 
 Mit freundlichen Grüßen
-{{MITARBEITER}}
-Verein Tischlein Deck Dich Vorarlberg""",
-        },
-        {
-            "name": "Mitteilung – In Prüfung",
-            "template_type": "INFORMATION",
-            "body_text": """{{ANREDE}},
 
-wir bestätigen den Eingang Ihres Antrags auf Unterstützungsleistungen.
+{{MITARBEITER}}
+Verein Tischlein Deck Dich Vorarlberg
+Ladritschweg 10c · 6773 Vandans""",
+        },
+
+        # ── 4. In Prüfung (Eingangsbestätigung) ──────────────────────────────
+        {
+            "name":           "Eingangsbestätigung – Antrag in Prüfung",
+            "template_type":  "INFORMATION",
+            "status_trigger": "IN_PRUEFUNG",
+            "body_text": """\
+{{ANREDE}},
+
+wir bestätigen den Eingang Ihres Antrags auf Unterstützungsleistungen beim Verein Tischlein Deck Dich Vorarlberg und danken Ihnen für Ihr Vertrauen.
 
 Aktenzeichen: {{AKTENZEICHEN}}
 Eingangsdatum: {{DATUM}}
-Status: {{STATUS}}
+Standort: {{STANDORT}}
+Aktueller Status: Antrag in Prüfung
 
-Ihr Antrag befindet sich derzeit in Bearbeitung. Wir werden Ihnen das Ergebnis der Prüfung baldmöglichst mitteilen.
+Ihr Antrag wird derzeit von unseren Mitarbeiterinnen und Mitarbeitern sorgfältig geprüft. Sobald die Prüfung abgeschlossen ist, werden wir Sie schriftlich über das Ergebnis informieren.
 
-Für die zügige Bearbeitung bitten wir Sie sicherzustellen, dass alle erforderlichen Unterlagen vollständig eingereicht wurden. Bei Fragen wenden Sie sich bitte an den Standort {{STANDORT}}.
+Für eine zügige Bearbeitung bitten wir Sie, sicherzustellen, dass alle erforderlichen Unterlagen vollständig und lesbar vorliegen. Sollten noch Nachweise fehlen, werden wir Sie gesondert kontaktieren.
+
+Bitte halten Sie bei allen Kontaktaufnahmen Ihr Aktenzeichen bereit: {{AKTENZEICHEN}}
+
+Bei Fragen zum Stand Ihrer Bearbeitung stehen Ihnen die Mitarbeiterinnen und Mitarbeiter des Standorts {{STANDORT}} gerne zur Verfügung.
 
 Mit freundlichen Grüßen
-{{MITARBEITER}}
-Verein Tischlein Deck Dich Vorarlberg""",
-        },
-        {
-            "name": "Bescheid – Freigabe Karte",
-            "template_type": "BESCHEID",
-            "body_text": """{{ANREDE}},
 
-wir freuen uns, Ihnen mitteilen zu können, dass Ihre Kundenkarte zur Ausgabe freigegeben wurde.
+{{MITARBEITER}}
+Verein Tischlein Deck Dich Vorarlberg
+Ladritschweg 10c · 6773 Vandans""",
+        },
+
+        # ── 5. Freigabe Kundenkarte ───────────────────────────────────────────
+        {
+            "name":           "Mitteilung – Kundenkarte freigegeben",
+            "template_type":  "INFORMATION",
+            "status_trigger": "FREIGABE_KARTE",
+            "body_text": """\
+{{ANREDE}},
+
+wir freuen uns, Ihnen mitteilen zu können, dass Ihre persönliche Kundenkarte für den Bezug von Leistungen des Vereins Tischlein Deck Dich Vorarlberg ausgestellt und zur Abholung bereitsteht.
 
 Aktenzeichen: {{AKTENZEICHEN}}
-Datum: {{DATUM}}
-Status: {{STATUS}}
+Ausstellungsdatum: {{DATUM}}
+Standort: {{STANDORT}}
 
-Bitte begeben Sie sich zum Standort {{STANDORT}}, um Ihre Karte entgegenzunehmen. Bringen Sie bitte einen gültigen Lichtbildausweis mit.
+Abholung Ihrer Kundenkarte:
+Bitte holen Sie Ihre Karte persönlich beim Standort {{STANDORT}} ab. Bringen Sie dabei bitte einen gültigen Lichtbildausweis mit.
 
-Die Karte berechtigt Sie zum Bezug der Leistungen des Vereins Tischlein Deck Dich Vorarlberg.
+Wichtige Hinweise zur Nutzung Ihrer Kundenkarte:
+– Die Karte ist personengebunden und nicht übertragbar.
+– Sie ist ausschließlich für die im Antrag genannten Personen bestimmt.
+– Das Ablaufdatum ist auf der Karte vermerkt. Rechtzeitig vor Ablauf erhalten Sie eine Erinnerung.
+– Bei Verlust oder Diebstahl informieren Sie bitte umgehend den Standort {{STANDORT}}.
+
+Mit der Kundenkarte sind Sie berechtigt, die Leistungen des Vereins im Rahmen Ihrer geprüften Anspruchsberechtigung zu nutzen.
 
 Mit freundlichen Grüßen
+
 {{MITARBEITER}}
-Verein Tischlein Deck Dich Vorarlberg""",
+Verein Tischlein Deck Dich Vorarlberg
+Ladritschweg 10c · 6773 Vandans""",
+        },
+
+        # ── 6. Widerspruch erhalten ───────────────────────────────────────────
+        {
+            "name":           "Eingangsbestätigung – Widerspruch",
+            "template_type":  "INFORMATION",
+            "status_trigger": "WIDERSPRUCH",
+            "body_text": """\
+{{ANREDE}},
+
+wir bestätigen den Eingang Ihres Widerspruchs zum Bescheid betreffend Ihren Antrag auf Unterstützungsleistungen beim Verein Tischlein Deck Dich Vorarlberg.
+
+Aktenzeichen: {{AKTENZEICHEN}}
+Eingang des Widerspruchs: {{DATUM}}
+Standort: {{STANDORT}}
+
+Ihr Widerspruch wird von uns sorgfältig geprüft. Dabei werden alle von Ihnen vorgebrachten Argumente und Unterlagen berücksichtigt. Wir werden Ihnen das Ergebnis dieser Prüfung innerhalb einer angemessenen Frist schriftlich mitteilen.
+
+Falls Sie weitere Unterlagen oder Informationen zur Unterstützung Ihres Widerspruchs einreichen möchten, bitten wir Sie, dies baldmöglichst zu tun.
+
+Bitte halten Sie bei allen Kontaktaufnahmen Ihr Aktenzeichen bereit: {{AKTENZEICHEN}}
+
+Für Rückfragen zum Widerspruchsverfahren stehen Ihnen die Mitarbeiterinnen und Mitarbeiter des Standorts {{STANDORT}} gerne zur Verfügung.
+
+Mit freundlichen Grüßen
+
+{{MITARBEITER}}
+Verein Tischlein Deck Dich Vorarlberg
+Ladritschweg 10c · 6773 Vandans""",
         },
     ]
 
     for t in templates:
+        # Einzeln nach Name prüfen — nur anlegen wenn noch nicht vorhanden
         try:
-            connection.execute(
-                """INSERT OR IGNORE INTO document_templates
-                   (name, template_type, description, body_text, is_active, created_by)
-                   VALUES (?,?,?,?,1,NULL)""",
-                (t["name"], t["template_type"],
-                 f"Standard-Vorlage: {t['name']}", t["body_text"]),
-            )
+            exists = connection.execute(
+                "SELECT id FROM document_templates WHERE name=?", (t["name"],)
+            ).fetchone()
+            if not exists:
+                connection.execute(
+                    """INSERT INTO document_templates
+                       (name, template_type, description, body_text,
+                        status_trigger, is_active, version, created_by)
+                       VALUES (?,?,?,?,?,1,1,NULL)""",
+                    (
+                        t["name"],
+                        t["template_type"],
+                        f"Standard-Vorlage für: {t['name']}",
+                        t["body_text"],
+                        t.get("status_trigger"),
+                    ),
+                )
         except Exception:
             pass
     connection.commit()

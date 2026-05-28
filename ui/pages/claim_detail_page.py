@@ -337,6 +337,9 @@ class ClaimDetailPage(QDialog):
         activity_layout.addStretch()
         self.activity_group.setLayout(activity_layout)
 
+        # ── Fallbezogene Action-Toolbar ───────────────────────────────────────
+        self._action_toolbar = self._build_action_toolbar()
+
         action_layout = QHBoxLayout()
         action_layout.addStretch()
         self.clone_button = QPushButton("Fall klonen")
@@ -360,6 +363,7 @@ class ClaimDetailPage(QDialog):
 
         content_layout.addWidget(title_label)
         content_layout.addWidget(subtitle_label)
+        content_layout.addWidget(self._action_toolbar)
         content_layout.addWidget(header_box)
         content_layout.addWidget(self.person_group)
         content_layout.addLayout(finance_row)
@@ -374,6 +378,132 @@ class ClaimDetailPage(QDialog):
 
         scroll.setWidget(content_widget)
         outer_layout.addWidget(scroll)
+
+    def _build_action_toolbar(self):
+        """Erstellt die fallbezogene Aktions-Toolbar (immer sichtbar oben)."""
+        from PyQt6.QtWidgets import QFrame
+        bar = QFrame()
+        bar.setObjectName("caseActionToolbar")
+        bar.setStyleSheet(
+            "#caseActionToolbar { background: #f0f4f8; border: 1px solid #d0dae6; "
+            "border-radius: 8px; }"
+        )
+        layout = QHBoxLayout(bar)
+        layout.setContentsMargins(12, 8, 12, 8)
+        layout.setSpacing(8)
+
+        def _btn(label, slot, obj_name="SoftButton", tooltip=""):
+            b = QPushButton(label)
+            b.setObjectName(obj_name)
+            b.setCursor(Qt.CursorShape.PointingHandCursor)
+            if tooltip:
+                b.setToolTip(tooltip)
+            b.clicked.connect(slot)
+            return b
+
+        self._tb_print   = _btn("Drucken",         self._tb_print_action,   tooltip="Bescheid drucken")
+        self._tb_mail    = _btn("E-Mail senden",    self._tb_mail_action,    tooltip="Bescheid per E-Mail senden")
+        self._tb_brief   = _btn("Brief erstellen",  self._tb_brief_action,   tooltip="Bescheid/Brief als PDF erstellen")
+        self._tb_wv      = _btn("Wiedervorlage",    self._tb_wv_action,      tooltip="Wiedervorlage für diesen Fall setzen")
+        self._tb_card    = _btn("Karte erstellen",  self._tb_card_action,    "PrimaryButton", tooltip="Kundenkarte ausstellen")
+
+        layout.addWidget(self._tb_print)
+        layout.addWidget(self._tb_mail)
+        layout.addWidget(self._tb_brief)
+        layout.addWidget(self._tb_wv)
+        layout.addWidget(self._tb_card)
+        layout.addStretch()
+        return bar
+
+    def _refresh_action_toolbar(self):
+        """Aktualisiert Aktivierungszustand der Toolbar-Buttons je nach Status und Rolle."""
+        if not self.claim:
+            return
+        from core.session import Session
+        status    = self.claim.get("status", "")
+        role      = (Session.get_user() or {}).get("role_name", "")
+        email     = self.claim.get("person_email", "") or ""
+        eligible  = status in ("ANSPRUCHSBERECHTIGT", "HAERTEFALL")
+        has_eval  = bool(self.claim.get("evaluation_date"))
+        priv      = role in ("Admin", "Supervisor", "Standortleitung")
+
+        self._tb_print.setEnabled(has_eval)
+        self._tb_mail.setEnabled(has_eval and bool(email))
+        self._tb_mail.setToolTip(
+            f"An: {email}" if email else "Keine E-Mail-Adresse hinterlegt"
+        )
+        self._tb_brief.setEnabled(True)
+        self._tb_card.setEnabled(eligible and priv)
+        self._tb_card.setToolTip(
+            "Kundenkarte ausstellen" if (eligible and priv)
+            else "Nur für Anspruchsberechtigte (Supervisor/Admin)"
+        )
+
+    # ── Toolbar-Aktionen ──────────────────────────────────────────────────────
+    def _tb_print_action(self):
+        try:
+            from services.document_package_service import DocumentPackageService
+            import os, sys
+            pkgs = DocumentPackageService().build_package_for_claim_id(
+                self.claim_id, self.claim_service
+            )
+            for p in pkgs:
+                if sys.platform == "win32":
+                    os.startfile(p, "print")
+                else:
+                    os.startfile(p) if hasattr(os, "startfile") else None
+        except Exception as exc:
+            from PyQt6.QtWidgets import QMessageBox
+            QMessageBox.critical(self, "Fehler", str(exc))
+
+    def _tb_mail_action(self):
+        from PyQt6.QtWidgets import QInputDialog
+        email = (self.claim or {}).get("person_email", "") or ""
+        to, ok = QInputDialog.getText(self, "E-Mail senden", "Empfänger:", text=email)
+        if not ok or not to.strip():
+            return
+        try:
+            from services.document_package_service import DocumentPackageService
+            from services.user_mail_service import UserMailService
+            pkgs = DocumentPackageService().build_package_for_claim_id(
+                self.claim_id, self.claim_service
+            )
+            name = f"{(self.claim or {}).get('person_first_name','')} {(self.claim or {}).get('person_last_name','')}".strip()
+            UserMailService().send_document_mail(
+                to_email=to.strip(), person_name=name,
+                subject=None, html_body=None, pdf_paths=pkgs,
+            )
+            from PyQt6.QtWidgets import QMessageBox
+            QMessageBox.information(self, "Gesendet", f"E-Mail an {to.strip()} gesendet.")
+        except Exception as exc:
+            from PyQt6.QtWidgets import QMessageBox
+            QMessageBox.critical(self, "Fehler", str(exc))
+
+    def _tb_brief_action(self):
+        try:
+            from ui.dialogs.letter_wizard_dialog import LetterWizardDialog
+            dlg = LetterWizardDialog(
+                template_type="BESCHEID",
+                claim_service=self.claim_service,
+                initial_claim=self.claim,  # Fall direkt übergeben inkl. Auto-Select
+                parent=self,
+            )
+            dlg.exec()
+        except Exception as exc:
+            from PyQt6.QtWidgets import QMessageBox
+            QMessageBox.critical(self, "Fehler", str(exc))
+
+    def _tb_wv_action(self):
+        from ui.dialogs.wiedervorlage_dialog import WiedervorlageDialog
+        dlg = WiedervorlageDialog(
+            claim_id=self.claim_id,
+            case_number=(self.claim or {}).get("case_number", ""),
+            parent=self,
+        )
+        dlg.exec()
+
+    def _tb_card_action(self):
+        self.on_create_card()
 
     def load_claim(self):
         claim = self.claim_service.get_claim_by_id(self.claim_id)
@@ -505,6 +635,7 @@ class ClaimDetailPage(QDialog):
         self.load_notes()
         self.load_activity_feed()
         self.load_cards()
+        self._refresh_action_toolbar()
 
     def open_person_dossier(self):
         if not self.claim or not self.claim.get("person_id"):

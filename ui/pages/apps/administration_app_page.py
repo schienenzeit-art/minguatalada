@@ -20,6 +20,7 @@ _NAV_GROUPS = [
         "items": [
             ("Standorte",           "locations"),
             ("Einstellungen",       "settings"),
+            ("SMTP / E-Mail",       "smtp_settings"),
             ("Daten-Import",        "import"),
         ],
     },
