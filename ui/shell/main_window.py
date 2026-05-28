@@ -9,9 +9,9 @@ from ui.pages.dashboard.dashboard_page import DashboardPage
 from ui.pages.claims.claims_page import ClaimsPage
 from ui.pages.tasks.tasks_page import TasksPage
 from ui.pages.users.users_page import UsersPage
-from ui.pages.documents_web_page import DocumentsWebPage
+from ui.pages.documents.documents_page import DocumentsPage
 from ui.pages.locations.locations_page import LocationsPage
-from ui.pages.reports_web_page import ReportsWebPage
+from ui.pages.reports_page import ReportsPage
 from ui.pages.settings.settings_page import SettingsPage
 from ui.pages.cards_page import CardsPage
 from ui.pages.person_dossier_page import PersonDossierPage
@@ -110,27 +110,26 @@ class MainWindow(QMainWindow):
         )
         self.register_route(
             "documents",
-            DocumentsWebPage(
+            DocumentsPage(
                 document_service=self.services.document_service,
                 location_service=self.services.location_service,
-                view_mode="documents",
             ),
             title="Dokumente",
             parent_app="documents",
         )
         self.register_route(
             "archive",
-            DocumentsWebPage(
+            DocumentsPage(
                 document_service=self.services.document_service,
                 location_service=self.services.location_service,
-                view_mode="archive",
+                archive_mode=True,
             ),
             title="Archiv",
             parent_app="documents",
         )
         self.register_route(
             "reports",
-            ReportsWebPage(report_service=self.services.report_service),
+            ReportsPage(report_service=self.services.report_service),
             title="Berichte",
             parent_app="reports",
         )

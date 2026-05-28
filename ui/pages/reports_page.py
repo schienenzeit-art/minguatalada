@@ -1,4 +1,5 @@
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QUrl
+from PyQt6.QtGui import QDesktopServices
 from PyQt6.QtWidgets import (
     QWidget,
     QVBoxLayout,
@@ -8,11 +9,13 @@ from PyQt6.QtWidgets import (
     QPushButton,
     QTableWidgetItem,
     QHeaderView,
+    QMessageBox,
 )
 from ui.components.table_widget import TableWidget
 
 from core.session import Session
 from services.report_service import ReportService
+from services.pdf_service import PDFService
 from ui.components.page_header import PageHeader
 
 
@@ -20,6 +23,7 @@ class ReportsPage(QWidget):
     def __init__(self, report_service: ReportService | None = None):
         super().__init__()
         self.report_service = report_service or ReportService()
+        self.pdf_service = PDFService(report_service=self.report_service)
         self.setup_ui()
         self.load_reports()
 
@@ -49,6 +53,13 @@ class ReportsPage(QWidget):
         self.refresh_button = QPushButton("Aktualisieren")
         self.refresh_button.clicked.connect(self.load_reports)
         filter_row.addWidget(self.refresh_button)
+
+        export_pdf_btn = QPushButton("PDF exportieren")
+        export_pdf_btn.setObjectName("SoftButton")
+        export_pdf_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        export_pdf_btn.clicked.connect(self._export_pdf)
+        filter_row.addWidget(export_pdf_btn)
+
         filter_row.addStretch()
 
         layout.addLayout(filter_row)
@@ -122,4 +133,12 @@ class ReportsPage(QWidget):
             self.card_table.insertRow(row)
             self.card_table.setItem(row, 0, QTableWidgetItem(item["status"]))
             self.card_table.setItem(row, 1, QTableWidgetItem(str(item["count"])))
+
+    def _export_pdf(self):
+        location_id = self.location_combo.currentData()
+        try:
+            path = self.pdf_service.generate_location_report_pdf(location_id)
+            QDesktopServices.openUrl(QUrl.fromLocalFile(path))
+        except Exception as exc:
+            QMessageBox.warning(self, "PDF-Export fehlgeschlagen", str(exc))
 

@@ -27,13 +27,22 @@ class DocumentsPage(QWidget):
         self,
         document_service: DocumentService | None = None,
         location_service: LocationService | None = None,
+        archive_mode: bool = False,
     ):
         super().__init__()
         self.document_service = document_service or DocumentService()
         self.location_service = location_service or LocationService()
         self.document_id_filter: int | None = None
+        self._archive_mode = archive_mode
         self.setup_ui()
         self.load_filters()
+        if archive_mode:
+            for i in range(self.status_combo.count()):
+                if self.status_combo.itemData(i) == "ARCHIVIERT":
+                    self.status_combo.blockSignals(True)
+                    self.status_combo.setCurrentIndex(i)
+                    self.status_combo.blockSignals(False)
+                    break
         self.refresh_documents()
 
     def setup_ui(self):
@@ -42,9 +51,16 @@ class DocumentsPage(QWidget):
         layout.setContentsMargins(24, 24, 24, 24)
         layout.setSpacing(16)
 
+        if self._archive_mode:
+            _title = "Archiv"
+            _subtitle = "Archivierte Dokumente und Nachweise."
+        else:
+            _title = "Dokumente"
+            _subtitle = "Verwalten Sie Nachweise, Dokumente und zugeordnete Verbindungen zu Fällen, Personen, Karten und Standorten."
+
         header = PageHeader(
-            title="Dokumente & Archiv",
-            subtitle="Verwalten Sie Nachweise, Dokumente und zugeordnete Verbindungen zu Fällen, Personen, Karten und Standorten.",
+            title=_title,
+            subtitle=_subtitle,
             action_text="Dokument hochladen",
             action_callback=self.open_upload_dialog,
         )
