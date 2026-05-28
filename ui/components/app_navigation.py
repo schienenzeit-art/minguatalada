@@ -45,8 +45,17 @@ class AppNavigation(QWidget):
         for app in AppRegistry.get_visible_apps():
             self.add_nav_item(layout, app.title, app.page_key)
 
-        # ── Personal-Bereich ──────────────────────────────────────────────────
+        # ── Supervisor-spezifische Freigaben ──────────────────────────────────
         role_name = (Session.get_user() or {}).get("role_name", "")
+        if role_name in _PERSONAL_ROLES:
+            layout.addSpacing(10)
+            sv_label = QLabel("Freigaben")
+            sv_label.setObjectName("appNavSection")
+            layout.addWidget(sv_label)
+            layout.addSpacing(2)
+            self.add_nav_item(layout, "  Erneute Prüfung", "re_evaluations")
+
+        # ── Personal-Bereich ──────────────────────────────────────────────────
         if role_name in _PERSONAL_ROLES:
             layout.addSpacing(10)
             personal_label = QLabel("Personal")

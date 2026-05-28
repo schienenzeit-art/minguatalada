@@ -113,6 +113,49 @@ class NotificationService:
             reference_id=claim_id,
         )
 
+    def notify_supervisors_first_evaluation_done(
+        self,
+        case_number: str,
+        claim_id: int,
+        examiner_name: str,
+        status_display: str,
+        evaluation_date: str,
+    ) -> None:
+        """Benachrichtigt Supervisors nach abgeschlossener Erstprüfung durch Mitarbeiter."""
+        self.notify(
+            title=f"Erstprüfung abgeschlossen: {case_number}",
+            message=(
+                f"Mitarbeiter: {examiner_name} | "
+                f"Status: {status_display} | "
+                f"Datum: {evaluation_date[:10] if evaluation_date else '-'} | "
+                "Überprüfung oder Freigabe zur erneuten Prüfung ggf. erforderlich."
+            ),
+            type_="CLAIM",
+            user_id=None,
+            reference_type="claim",
+            reference_id=claim_id,
+        )
+
+    def notify_re_evaluation_requested(
+        self,
+        case_number: str,
+        claim_id: int,
+        requester_name: str,
+        reason: str | None,
+    ) -> None:
+        """Benachrichtigt Supervisors, dass ein Mitarbeiter erneute Prüfung beantragt hat."""
+        self.notify(
+            title=f"Freigabe erneute Prüfung: {case_number}",
+            message=(
+                f"Angefordert von: {requester_name} | "
+                f"Grund: {reason or '(kein Grund angegeben)'}"
+            ),
+            type_="CLAIM",
+            user_id=None,
+            reference_type="claim",
+            reference_id=claim_id,
+        )
+
     def notify_age_alert(self, message: str, claim_id: int) -> None:
         """Dashboard-Meldung für 20-Jahre-Altersgrenze."""
         self.notify(

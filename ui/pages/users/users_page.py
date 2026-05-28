@@ -9,18 +9,32 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import QDateTime
 
 from ui.components.table_widget import TableWidget
-from services.user_service import UserService
+from services.user_service import UserService, USERMGMT_ALLOWED_ROLES
 from ui.components.page_header import PageHeader
 from ui.components.action_button import ActionButton
 from ui.dialogs.user_dialog import AddUserDialog
+from core.session import Session
 
 
 class UsersPage(QWidget):
     def __init__(self, user_service: UserService | None = None):
         super().__init__()
         self.user_service = user_service or UserService()
+        role = (Session.get_user() or {}).get("role_name", "")
+        if role not in USERMGMT_ALLOWED_ROLES:
+            self._setup_denied_ui()
+            return
         self.setup_ui()
         self.load_users()
+
+    def _setup_denied_ui(self):
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(40, 60, 40, 40)
+        lbl = QLabel("Zugriff verweigert – Sie haben keine Berechtigung für die Benutzerverwaltung.")
+        lbl.setWordWrap(True)
+        lbl.setStyleSheet("color: #b42318; font-size: 15px; font-weight: 600;")
+        layout.addWidget(lbl)
+        layout.addStretch()
 
     def setup_ui(self):
         self.setObjectName("usersPage")

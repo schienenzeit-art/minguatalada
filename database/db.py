@@ -784,6 +784,116 @@ def initialize_database() -> None:
         except Exception:
             pass
 
+        # ── Migration: Personen card_expiry_import ────────────────────────────
+        try:
+            if not has_column('persons', 'card_expiry_import'):
+                connection.execute("ALTER TABLE persons ADD COLUMN card_expiry_import TEXT")
+                connection.commit()
+        except Exception:
+            pass
+
+        # ── Migration: Prüfungszähler + Erstprüfer ────────────────────────────
+        try:
+            if not has_column('claims', 'evaluation_count'):
+                connection.execute(
+                    "ALTER TABLE claims ADD COLUMN evaluation_count INTEGER NOT NULL DEFAULT 0"
+                )
+                connection.commit()
+        except Exception:
+            pass
+        try:
+            if not has_column('claims', 'first_examiner_id'):
+                connection.execute(
+                    "ALTER TABLE claims ADD COLUMN first_examiner_id INTEGER"
+                )
+                connection.commit()
+        except Exception:
+            pass
+
+        # ── Migration: Dokument-Vorlagen Erweiterung ─────────────────────────
+        for col, defn in [
+            ("docx_data",      "BLOB"),
+            ("status_trigger", "TEXT"),
+            ("version",        "INTEGER DEFAULT 1"),
+        ]:
+            try:
+                if not has_column("document_templates", col):
+                    connection.execute(
+                        f"ALTER TABLE document_templates ADD COLUMN {col} {defn}"
+                    )
+                    connection.commit()
+            except Exception:
+                pass
+
+        # ── Migration: Persönliche Mailkonten ─────────────────────────────────
+        try:
+            connection.execute("""
+                CREATE TABLE IF NOT EXISTS user_mail_configs (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL UNIQUE,
+                    smtp_host TEXT NOT NULL DEFAULT '',
+                    smtp_port INTEGER NOT NULL DEFAULT 587,
+                    smtp_user TEXT NOT NULL DEFAULT '',
+                    smtp_password_enc TEXT DEFAULT '',
+                    from_email TEXT NOT NULL DEFAULT '',
+                    from_name TEXT DEFAULT '',
+                    use_tls INTEGER NOT NULL DEFAULT 1,
+                    signature_html TEXT DEFAULT '',
+                    is_active INTEGER NOT NULL DEFAULT 1,
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                )
+            """)
+            connection.commit()
+        except Exception:
+            pass
+
+        # ── Migration: Wiedervorlagen ──────────────────────────────────────────
+        try:
+            connection.execute("""
+                CREATE TABLE IF NOT EXISTS wiedervorlagen (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    due_date TEXT NOT NULL,
+                    note TEXT,
+                    claim_id INTEGER,
+                    person_id INTEGER,
+                    is_done INTEGER NOT NULL DEFAULT 0,
+                    done_at TEXT,
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                    FOREIGN KEY (claim_id) REFERENCES claims(id) ON DELETE SET NULL,
+                    FOREIGN KEY (person_id) REFERENCES persons(id) ON DELETE SET NULL
+                )
+            """)
+            connection.commit()
+        except Exception:
+            pass
+
+        # ── Migration: Erneute-Prüfung-Anfragen ───────────────────────────────
+        try:
+            connection.execute("""
+                CREATE TABLE IF NOT EXISTS re_evaluation_requests (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    claim_id INTEGER NOT NULL,
+                    requested_by INTEGER NOT NULL,
+                    request_reason TEXT,
+                    status TEXT NOT NULL DEFAULT 'PENDING',
+                    reviewed_by INTEGER,
+                    review_comment TEXT,
+                    requested_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    reviewed_at TEXT,
+                    consumed_at TEXT,
+                    FOREIGN KEY (claim_id) REFERENCES claims(id),
+                    FOREIGN KEY (requested_by) REFERENCES users(id),
+                    FOREIGN KEY (reviewed_by) REFERENCES users(id)
+                )
+            """)
+            connection.commit()
+        except Exception:
+            pass
+
         # ── Migration: Anspruch Wohnbeihilfe ──────────────────────────────────
         try:
             if not has_column('claims', 'has_housing_benefit'):
@@ -978,6 +1088,7 @@ def seed_basic_data(connection: sqlite3.Connection) -> None:
 
     connection.commit()
     seed_document_types(connection)
+    seed_default_templates(connection)
     seed_claims(connection)
 
 
@@ -1154,6 +1265,152 @@ def migrate_existing_claim_statuses(connection: sqlite3.Connection) -> None:
             "UPDATE claims SET status = ? WHERE status = ?",
             (new_status, old_status),
         )
+    connection.commit()
+
+
+def seed_default_templates(connection: sqlite3.Connection) -> None:
+    """Seeded Standard-Vorlagentexte für alle Status, falls noch keine vorhanden."""
+    existing = connection.execute(
+        "SELECT COUNT(*) FROM document_templates"
+    ).fetchone()[0]
+    if existing > 0:
+        return  # Keine Überschreibung bestehender Vorlagen
+
+    templates = [
+        {
+            "name": "Bescheid – Anspruchsberechtigt",
+            "template_type": "BESCHEID",
+            "body_text": """{{ANREDE}},
+
+wir freuen uns, Ihnen mitteilen zu können, dass Ihr Antrag auf Unterstützungsleistungen beim Verein Tischlein Deck Dich Vorarlberg geprüft und positiv entschieden wurde.
+
+Aktenzeichen: {{AKTENZEICHEN}}
+Prüfungsdatum: {{DATUM}}
+Ergebnis: {{STATUS}}
+
+{{BEGRUENDUNG}}
+
+Sie sind damit berechtigt, die Leistungen des Vereins in Anspruch zu nehmen. Für die Ausgabe Ihrer Kundenkarte wenden Sie sich bitte an den Standort {{STANDORT}}.
+
+Bei Fragen stehen wir Ihnen jederzeit zur Verfügung.
+
+Mit freundlichen Grüßen
+{{MITARBEITER}}
+Verein Tischlein Deck Dich Vorarlberg""",
+        },
+        {
+            "name": "Bescheid – Abgelehnt",
+            "template_type": "BESCHEID",
+            "body_text": """{{ANREDE}},
+
+nach sorgfältiger Prüfung Ihres Antrags müssen wir Ihnen leider mitteilen, dass Ihrem Ansuchen um Unterstützungsleistungen nicht entsprochen werden kann.
+
+Aktenzeichen: {{AKTENZEICHEN}}
+Prüfungsdatum: {{DATUM}}
+Ergebnis: {{STATUS}}
+
+Begründung:
+{{BEGRUENDUNG}}
+
+Sollten sich Ihre persönlichen oder finanziellen Verhältnisse wesentlich ändern, steht Ihnen die Möglichkeit offen, einen neuen Antrag zu stellen. Bei Fragen zu dieser Entscheidung wenden Sie sich bitte an {{STANDORT}}.
+
+Mit freundlichen Grüßen
+{{MITARBEITER}}
+Verein Tischlein Deck Dich Vorarlberg""",
+        },
+        {
+            "name": "Bescheid – Vorläufig Abgelehnt",
+            "template_type": "BESCHEID",
+            "body_text": """{{ANREDE}},
+
+Ihr Antrag auf Unterstützungsleistungen wurde geprüft. Aufgrund fehlender oder noch nicht vollständiger Unterlagen kann derzeit keine abschließende Entscheidung getroffen werden.
+
+Aktenzeichen: {{AKTENZEICHEN}}
+Prüfungsdatum: {{DATUM}}
+Ergebnis: {{STATUS}}
+
+Begründung:
+{{BEGRUENDUNG}}
+
+Wir bitten Sie, die fehlenden Unterlagen schnellstmöglich beim Standort {{STANDORT}} einzureichen, damit Ihr Antrag weiter bearbeitet werden kann.
+
+Sobald alle Unterlagen vollständig vorliegen, werden wir Ihren Antrag erneut prüfen und Sie über das Ergebnis informieren.
+
+Mit freundlichen Grüßen
+{{MITARBEITER}}
+Verein Tischlein Deck Dich Vorarlberg""",
+        },
+        {
+            "name": "Bescheid – Härtefall",
+            "template_type": "BESCHEID",
+            "body_text": """{{ANREDE}},
+
+nach Prüfung Ihres Antrags haben wir festgestellt, dass Ihre Situation besondere Berücksichtigung verdient. Ihr Antrag wurde daher als Härtefall eingestuft und an die zuständige Stelle zur weiteren Bearbeitung weitergeleitet.
+
+Aktenzeichen: {{AKTENZEICHEN}}
+Prüfungsdatum: {{DATUM}}
+Einstufung: {{STATUS}}
+
+Begründung:
+{{BEGRUENDUNG}}
+
+Sie werden über das endgültige Ergebnis gesondert informiert. Bei dringenden Fragen wenden Sie sich bitte direkt an den Standort {{STANDORT}}.
+
+Mit freundlichen Grüßen
+{{MITARBEITER}}
+Verein Tischlein Deck Dich Vorarlberg""",
+        },
+        {
+            "name": "Mitteilung – In Prüfung",
+            "template_type": "INFORMATION",
+            "body_text": """{{ANREDE}},
+
+wir bestätigen den Eingang Ihres Antrags auf Unterstützungsleistungen.
+
+Aktenzeichen: {{AKTENZEICHEN}}
+Eingangsdatum: {{DATUM}}
+Status: {{STATUS}}
+
+Ihr Antrag befindet sich derzeit in Bearbeitung. Wir werden Ihnen das Ergebnis der Prüfung baldmöglichst mitteilen.
+
+Für die zügige Bearbeitung bitten wir Sie sicherzustellen, dass alle erforderlichen Unterlagen vollständig eingereicht wurden. Bei Fragen wenden Sie sich bitte an den Standort {{STANDORT}}.
+
+Mit freundlichen Grüßen
+{{MITARBEITER}}
+Verein Tischlein Deck Dich Vorarlberg""",
+        },
+        {
+            "name": "Bescheid – Freigabe Karte",
+            "template_type": "BESCHEID",
+            "body_text": """{{ANREDE}},
+
+wir freuen uns, Ihnen mitteilen zu können, dass Ihre Kundenkarte zur Ausgabe freigegeben wurde.
+
+Aktenzeichen: {{AKTENZEICHEN}}
+Datum: {{DATUM}}
+Status: {{STATUS}}
+
+Bitte begeben Sie sich zum Standort {{STANDORT}}, um Ihre Karte entgegenzunehmen. Bringen Sie bitte einen gültigen Lichtbildausweis mit.
+
+Die Karte berechtigt Sie zum Bezug der Leistungen des Vereins Tischlein Deck Dich Vorarlberg.
+
+Mit freundlichen Grüßen
+{{MITARBEITER}}
+Verein Tischlein Deck Dich Vorarlberg""",
+        },
+    ]
+
+    for t in templates:
+        try:
+            connection.execute(
+                """INSERT OR IGNORE INTO document_templates
+                   (name, template_type, description, body_text, is_active, created_by)
+                   VALUES (?,?,?,?,1,NULL)""",
+                (t["name"], t["template_type"],
+                 f"Standard-Vorlage: {t['name']}", t["body_text"]),
+            )
+        except Exception:
+            pass
     connection.commit()
 
 

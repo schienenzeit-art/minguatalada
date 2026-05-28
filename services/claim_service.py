@@ -20,6 +20,9 @@ class ClaimService:
         expense_repository: ExpenseRepositoryPort | None = None,
         evaluation_service: PruefungService | None = None,
         settings_service: SettingsService | None = None,
+        re_evaluation_service=None,
+        notification_service=None,
+        audit_service=None,
     ):
         self.claim_repository = claim_repository or ClaimRepository()
         self.settings_service = settings_service or SettingsService()
@@ -28,6 +31,27 @@ class ClaimService:
         self.income_repo = income_repository or IncomeRepository()
         self.expense_repo = expense_repository or ExpenseRepository()
         self.note_repo = ClaimNoteRepository()
+        self._re_eval_svc = re_evaluation_service
+        self._notification_svc = notification_service
+        self._audit_svc = audit_service
+
+    def _get_re_eval_svc(self):
+        if self._re_eval_svc is None:
+            from services.re_evaluation_service import ReEvaluationService
+            self._re_eval_svc = ReEvaluationService()
+        return self._re_eval_svc
+
+    def _get_notification_svc(self):
+        if self._notification_svc is None:
+            from services.notification_service import NotificationService
+            self._notification_svc = NotificationService()
+        return self._notification_svc
+
+    def _get_audit_svc(self):
+        if self._audit_svc is None:
+            from services.audit_service import AuditService
+            self._audit_svc = AuditService()
+        return self._audit_svc
 
     def _default_pruefung_service(self) -> PruefungService:
         return PruefungService(
@@ -106,6 +130,19 @@ class ClaimService:
         examiner_id: Optional[int] = None,
         has_housing_benefit: Optional[bool] = None,
     ) -> dict:
+        # ── Prüfungssperre: Nur einmal pro Antrag für Mitarbeiter ─────────────
+        re_eval_svc = self._get_re_eval_svc()
+        eval_count = self.claim_repository.get_evaluation_count(claim_id)
+        allowed, reason = re_eval_svc.can_evaluate(claim_id, eval_count)
+        if not allowed:
+            self._get_audit_svc().log(
+                "evaluation_blocked", "claim", claim_id,
+                f"Prüfversuch blockiert für User {examiner_id}. Grund: {reason}"
+            )
+            raise PermissionError(reason)
+
+        is_first_evaluation = (eval_count == 0)
+
         self.income_repo.save_incomes(claim_id, incomes)
         self.expense_repo.save_expenses(claim_id, expenses)
 
@@ -141,7 +178,19 @@ class ClaimService:
             evaluation_date=evaluation_date,
         )
 
-        # Wohnbeihilfe-Status in Claim speichern
+        # ── Prüfungszähler inkrementieren ────────────────────────────────────
+        self.claim_repository.increment_evaluation_count(
+            claim_id, examiner_id, is_first=is_first_evaluation
+        )
+
+        # ── Bei Wiederholungsprüfung: genehmigte Freigabe verbrauchen ─────────
+        if not is_first_evaluation:
+            try:
+                re_eval_svc.consume_approved_request(claim_id)
+            except Exception:
+                pass
+
+        # ── Wohnbeihilfe-Status in Claim speichern ────────────────────────────
         if has_housing_benefit is not None:
             try:
                 from database.db import get_connection
@@ -151,6 +200,36 @@ class ClaimService:
                         (1 if has_housing_benefit else 0, claim_id),
                     )
                     conn.commit()
+            except Exception:
+                pass
+
+        # ── AuditLog ──────────────────────────────────────────────────────────
+        from core.claim_status import ClaimStatus
+        status_display = ClaimStatus.get_display(evaluation.status)
+        audit_action = "first_evaluation_completed" if is_first_evaluation else "re_evaluation_completed"
+        self._get_audit_svc().log(
+            audit_action, "claim", claim_id,
+            f"Prüfer: {examiner_id} | Status: {status_display} | "
+            f"Erstprüfung: {'Ja' if is_first_evaluation else 'Nein'}"
+        )
+
+        # ── Nach Erstprüfung: Supervisor benachrichtigen ───────────────────────
+        if is_first_evaluation:
+            try:
+                claim = self.claim_repository.get_claim_by_id(claim_id)
+                case_number   = (claim or {}).get("case_number", str(claim_id))
+                examiner_name = (claim or {}).get("examiner_name", f"User {examiner_id}")
+                self._get_notification_svc().notify_supervisors_first_evaluation_done(
+                    case_number=case_number,
+                    claim_id=claim_id,
+                    examiner_name=examiner_name,
+                    status_display=status_display,
+                    evaluation_date=evaluation_date,
+                )
+                self._get_audit_svc().log(
+                    "supervisor_notified_after_first_evaluation", "claim", claim_id,
+                    f"Supervisor benachrichtigt nach Erstprüfung von {case_number}."
+                )
             except Exception:
                 pass
 

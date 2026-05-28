@@ -4,7 +4,11 @@ from database.db import get_connection
 class DocumentTemplateRepository:
     def list_templates(self, include_inactive: bool = False) -> list[dict]:
         with get_connection() as conn:
-            sql = """SELECT dt.*, c.name AS category_name
+            sql = """SELECT dt.id, dt.name, dt.template_type, dt.description,
+                            dt.body_text, dt.category_id, dt.is_active, dt.created_by,
+                            dt.created_at, dt.updated_at,
+                            dt.status_trigger, dt.version,
+                            c.name AS category_name
                      FROM document_templates dt
                      LEFT JOIN categories c ON dt.category_id = c.id"""
             if not include_inactive:
@@ -23,8 +27,9 @@ class DocumentTemplateRepository:
         with get_connection() as conn:
             cur = conn.execute(
                 """INSERT INTO document_templates
-                   (name, template_type, description, body_text, category_id, is_active, created_by)
-                   VALUES (?,?,?,?,?,?,?)""",
+                   (name, template_type, description, body_text, category_id,
+                    is_active, created_by, docx_data, status_trigger, version)
+                   VALUES (?,?,?,?,?,?,?,?,?,1)""",
                 (
                     data["name"],
                     data.get("template_type", "BRIEF"),
@@ -33,6 +38,8 @@ class DocumentTemplateRepository:
                     data.get("category_id"),
                     1 if data.get("is_active", True) else 0,
                     data.get("created_by"),
+                    data.get("docx_data"),
+                    data.get("status_trigger"),
                 ),
             )
             conn.commit()
@@ -40,21 +47,45 @@ class DocumentTemplateRepository:
 
     def update(self, template_id: int, data: dict) -> None:
         with get_connection() as conn:
-            conn.execute(
-                """UPDATE document_templates SET
-                   name=?, template_type=?, description=?, body_text=?,
-                   category_id=?, is_active=?, updated_at=CURRENT_TIMESTAMP
-                   WHERE id=?""",
-                (
-                    data["name"],
-                    data.get("template_type", "BRIEF"),
-                    data.get("description"),
-                    data.get("body_text", ""),
-                    data.get("category_id"),
-                    1 if data.get("is_active", True) else 0,
-                    template_id,
-                ),
-            )
+            if "docx_data" in data:
+                conn.execute(
+                    """UPDATE document_templates SET
+                       name=?, template_type=?, description=?, body_text=?,
+                       category_id=?, is_active=?, docx_data=?,
+                       status_trigger=?, version=COALESCE(version,1)+1,
+                       updated_at=CURRENT_TIMESTAMP
+                       WHERE id=?""",
+                    (
+                        data["name"],
+                        data.get("template_type", "BRIEF"),
+                        data.get("description"),
+                        data.get("body_text", ""),
+                        data.get("category_id"),
+                        1 if data.get("is_active", True) else 0,
+                        data.get("docx_data"),
+                        data.get("status_trigger"),
+                        template_id,
+                    ),
+                )
+            else:
+                conn.execute(
+                    """UPDATE document_templates SET
+                       name=?, template_type=?, description=?, body_text=?,
+                       category_id=?, is_active=?, status_trigger=?,
+                       version=COALESCE(version,1)+1,
+                       updated_at=CURRENT_TIMESTAMP
+                       WHERE id=?""",
+                    (
+                        data["name"],
+                        data.get("template_type", "BRIEF"),
+                        data.get("description"),
+                        data.get("body_text", ""),
+                        data.get("category_id"),
+                        1 if data.get("is_active", True) else 0,
+                        data.get("status_trigger"),
+                        template_id,
+                    ),
+                )
             conn.commit()
 
     def delete(self, template_id: int) -> None:

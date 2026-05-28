@@ -60,6 +60,13 @@ class MainWindow(QMainWindow):
         # Wire notification service to TopBar bell
         self.topbar.set_notification_service(self.services.notification_service)
 
+        # Wire document services to TopBar dropdown
+        self.topbar.set_document_services(
+            claim_service=self.services.claim_service,
+            template_service=self.services.document_template_service,
+            pdf_service=self.services.pdf_service,
+        )
+
         # Load available users for switching
         try:
             available_users = self.services.user_service.get_all_users()
@@ -261,6 +268,28 @@ class MainWindow(QMainWindow):
             "roles",
             RoleManagementPage(role_service=self.services.role_service),
             title="Rollenverwaltung",
+            parent_app="administration",
+        )
+
+        # ── Erneute-Prüfung-Freigabe ──────────────────────────────────────────
+        from ui.pages.re_evaluation_page import ReEvaluationPage
+        self.register_route(
+            "re_evaluations",
+            ReEvaluationPage(re_evaluation_service=self.services.re_evaluation_service),
+            title="Freigabe erneute Prüfung",
+            parent_app="tasks",
+        )
+
+        # ── Serienbriefe ──────────────────────────────────────────────────────
+        from ui.pages.serial_letters_page import SerialLettersPage
+        self.register_route(
+            "serial_letters",
+            SerialLettersPage(
+                claim_service=self.services.claim_service,
+                template_service=self.services.document_template_service,
+                pdf_service=self.services.pdf_service,
+            ),
+            title="Serienbriefe",
             parent_app="administration",
         )
 

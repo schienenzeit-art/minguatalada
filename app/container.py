@@ -43,11 +43,18 @@ from services.age_alert_service import AgeAlertService
 from services.household_service import HouseholdService
 from services.ocr_service import OcrService
 from services.update_service import UpdateService
+from services.re_evaluation_service import ReEvaluationService
+from services.user_mail_service import UserMailService
+from services.wiedervorlage_service import WiedervorlageService
+from services.document_package_service import DocumentPackageService
+from database.repositories.user_mail_config_repository import UserMailConfigRepository
+from database.repositories.wiedervorlage_repository import WiedervorlageRepository
 from database.repositories.audit_repository import AuditRepository
 from database.repositories.approval_repository import ApprovalRepository
 from database.repositories.checklist_repository import ChecklistRepository
 from database.repositories.document_template_repository import DocumentTemplateRepository
 from database.repositories.household_member_repository import HouseholdMemberRepository
+from database.repositories.re_evaluation_repository import ReEvaluationRepository
 
 
 @dataclass
@@ -82,6 +89,10 @@ class ServiceContainer:
     household_service: HouseholdService
     ocr_service: OcrService
     update_service: UpdateService
+    re_evaluation_service: ReEvaluationService
+    user_mail_service: UserMailService
+    wiedervorlage_service: WiedervorlageService
+    document_package_service: DocumentPackageService
 
 
 def build_service_container() -> ServiceContainer:
@@ -108,11 +119,19 @@ def build_service_container() -> ServiceContainer:
         category_repo=category_repository,
         settings_service=settings_service,
     )
+    re_evaluation_service = ReEvaluationService(repo=ReEvaluationRepository())
+
+    audit_service_early   = AuditService(repo=AuditRepository())
+    notification_service_early = NotificationService(repo=NotificationRepository())
+
     claim_service = ClaimService(
         claim_repository=claim_repository,
         income_repository=income_repository,
         expense_repository=expense_repository,
         settings_service=settings_service,
+        re_evaluation_service=re_evaluation_service,
+        notification_service=notification_service_early,
+        audit_service=audit_service_early,
     )
 
     task_service = TaskService(
@@ -152,10 +171,16 @@ def build_service_container() -> ServiceContainer:
     checklist_service         = ChecklistService(repo=ChecklistRepository())
     document_template_service = DocumentTemplateService(repo=DocumentTemplateRepository())
 
-    age_alert_service      = AgeAlertService()
-    household_service      = HouseholdService()
-    ocr_service            = OcrService()
-    update_service         = UpdateService(settings_service=settings_service)
+    age_alert_service        = AgeAlertService()
+    household_service        = HouseholdService()
+    ocr_service              = OcrService()
+    update_service           = UpdateService(settings_service=settings_service)
+    user_mail_service        = UserMailService(repo=UserMailConfigRepository())
+    wiedervorlage_service    = WiedervorlageService(repo=WiedervorlageRepository())
+    document_package_service = DocumentPackageService(
+        pdf_service=pdf_service,
+        template_service=document_template_service,
+    )
 
     return ServiceContainer(
         auth_service=auth_service,
@@ -188,4 +213,8 @@ def build_service_container() -> ServiceContainer:
         household_service=household_service,
         ocr_service=ocr_service,
         update_service=update_service,
+        re_evaluation_service=re_evaluation_service,
+        user_mail_service=user_mail_service,
+        wiedervorlage_service=wiedervorlage_service,
+        document_package_service=document_package_service,
     )

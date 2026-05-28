@@ -6,13 +6,15 @@ PDF documents. It is kept minimal and uses services to fetch data.
 
 from __future__ import annotations
 
+from datetime import datetime, date as _date
 from pathlib import Path
 from typing import Optional
 
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
-from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table
+from reportlab.lib.units import mm
+from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, Frame
 from reportlab.platypus.tables import TableStyle
 
 from app.config import DATA_DIR
@@ -26,6 +28,13 @@ from database.repositories.person_repository import PersonRepository
 
 
 PDF_ROOT = DATA_DIR / "pdfs"
+
+# ── Absender (fest hinterlegt, kann über Mandant überschrieben werden) ────────
+_ABSENDER_NAME   = "Verein Tischlein Deck Dich Vorarlberg"
+_ABSENDER_STR    = "Ladritschweg 10c"
+_ABSENDER_PLZORT = "6773 Vandans"
+_ABSENDER_EMAIL  = "info@tischleindeckdich-vbg.at"
+_ABSENDER_CITY   = "Vandans"
 
 
 class PDFService:
@@ -345,6 +354,195 @@ class PDFService:
         story.append(Paragraph(card.get("note") or "-", self.normal_style))
 
         return self._build_document(Path(file_path), story)
+
+    # ── Fensterbrief (Brief / Bescheid nach österreichischem Standard) ────────
+    def generate_letter_pdf(
+        self,
+        template_id: int,
+        context: dict,
+        file_path: Optional[str] = None,
+    ) -> str:
+        """Generiert einen druckfertigen Bescheid/Brief als Fensterbrief-PDF.
+
+        Adressblock liegt im österreichischen Sichtfensterbereich
+        (ca. 20–95 mm von links, 40–80 mm von oben) für DL-Umschläge.
+        """
+        from reportlab.pdfgen import canvas as rl_canvas
+        from reportlab.lib.styles import ParagraphStyle as PS
+
+        from services.document_template_service import DocumentTemplateService
+        svc = DocumentTemplateService()
+        rendered = svc.render(template_id, context)
+
+        if file_path is None:
+            tpl = svc.get_template(template_id)
+            safe = (tpl.get("name") or "Brief").replace(" ", "_")
+            ts   = datetime.now().strftime("%Y%m%d_%H%M%S")
+            file_path = str(PDF_ROOT / f"Brief_{safe}_{ts}.pdf")
+
+        Path(file_path).parent.mkdir(parents=True, exist_ok=True)
+
+        w, h = A4   # 595.28 pt × 841.89 pt
+        c = rl_canvas.Canvas(str(file_path), pagesize=A4)
+
+        # ── Trennlinie Adressfenster (unsichtbar für Druck, Hilfsline deaktiviert) ─
+
+        # ── Absender-Rücksendevermerklinie (8pt, grau, über Empfängerfenster) ──
+        c.setFont("Helvetica", 7)
+        c.setFillColorRGB(0.45, 0.45, 0.45)
+        c.drawString(
+            20*mm, h - 36*mm,
+            f"{_ABSENDER_NAME} · {_ABSENDER_STR} · {_ABSENDER_PLZORT}",
+        )
+
+        # ── Empfänger-Adressblock (Fensterzone: x=20–95mm, y=40–80mm von oben) ─
+        c.setFillColorRGB(0, 0, 0)
+        c.setFont("Helvetica", 11)
+        addr_lines = [
+            f"{context.get('VORNAME','')} {context.get('NACHNAME','')}".strip(),
+            context.get("ADRESSE", ""),
+            f"{context.get('PLZ','')} {context.get('ORT','')}".strip(),
+        ]
+        y_addr = h - 50*mm
+        for line in addr_lines:
+            line = line.strip()
+            if line:
+                c.drawString(20*mm, y_addr, line)
+                y_addr -= 6.5*mm
+
+        # ── Absender-Block rechts ─────────────────────────────────────────────
+        c.setFont("Helvetica-Bold", 10)
+        c.setFillColorRGB(0, 0, 0)
+        c.drawString(120*mm, h - 22*mm, _ABSENDER_NAME)
+        c.setFont("Helvetica", 9)
+        c.setFillColorRGB(0.2, 0.2, 0.2)
+        c.drawString(120*mm, h - 28*mm, _ABSENDER_STR)
+        c.drawString(120*mm, h - 33.5*mm, _ABSENDER_PLZORT)
+        c.drawString(120*mm, h - 39*mm, _ABSENDER_EMAIL)
+
+        # ── Ort und Datum (rechtsbündig) ──────────────────────────────────────
+        datum = context.get("DATUM", _date.today().strftime("%d.%m.%Y"))
+        c.setFont("Helvetica", 10)
+        c.setFillColorRGB(0, 0, 0)
+        c.drawRightString(190*mm, h - 96*mm, f"{_ABSENDER_CITY}, {datum}")
+
+        # ── Aktenzeichen / Betreff ────────────────────────────────────────────
+        betreff = context.get("BETREFF", context.get("AKTENZEICHEN", ""))
+        if betreff:
+            c.setFont("Helvetica-Bold", 10)
+            c.drawString(20*mm, h - 108*mm, f"Betreff: {betreff}")
+
+        # ── Brieftext (mit automatischem Zeilenumbruch via Platypus Frame) ─────
+        body_style = PS(
+            "LetterBody",
+            fontName="Helvetica",
+            fontSize=10,
+            leading=15,
+            spaceAfter=10,
+        )
+        text_frame = Frame(
+            20*mm,          # x
+            28*mm,          # y (Unterkante)
+            170*mm,         # Breite
+            h - 120*mm - 28*mm,  # Höhe (von Unterkante bis Textstart)
+            showBoundary=0,
+        )
+        story = []
+        for para in rendered.split("\n\n"):
+            para = para.strip()
+            if para:
+                # HTML-Sonderzeichen escapen, Zeilenumbrüche als <br/>
+                para = (para
+                        .replace("&", "&amp;")
+                        .replace("<", "&lt;")
+                        .replace(">", "&gt;")
+                        .replace("\n", "<br/>"))
+                story.append(Paragraph(para, body_style))
+        text_frame.addFromList(story, c)
+
+        c.save()
+        return str(file_path)
+
+    def generate_serial_letters_pdf(
+        self,
+        template_id: int,
+        contexts: list[dict],
+        file_path: Optional[str] = None,
+    ) -> str:
+        """Generiert ein Sammel-PDF mit mehreren Briefen (ein Brief pro Seite)."""
+        from reportlab.pdfgen import canvas as rl_canvas
+        from reportlab.lib.styles import ParagraphStyle as PS
+        from services.document_template_service import DocumentTemplateService
+
+        svc = DocumentTemplateService()
+        if file_path is None:
+            ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+            file_path = str(PDF_ROOT / f"Serienbriefe_{ts}.pdf")
+
+        Path(file_path).parent.mkdir(parents=True, exist_ok=True)
+        w, h = A4
+        c = rl_canvas.Canvas(str(file_path), pagesize=A4)
+
+        for i, ctx in enumerate(contexts):
+            rendered = svc.render(template_id, ctx)
+            self._draw_letter_page(c, ctx, rendered, w, h)
+            if i < len(contexts) - 1:
+                c.showPage()
+
+        c.save()
+        return str(file_path)
+
+    def _draw_letter_page(self, c, context: dict, rendered_text: str, w: float, h: float) -> None:
+        """Zeichnet eine Briefseite auf den übergebenen Canvas."""
+        from reportlab.lib.styles import ParagraphStyle as PS
+
+        c.setFont("Helvetica", 7)
+        c.setFillColorRGB(0.45, 0.45, 0.45)
+        c.drawString(20*mm, h - 36*mm,
+            f"{_ABSENDER_NAME} · {_ABSENDER_STR} · {_ABSENDER_PLZORT}")
+
+        c.setFillColorRGB(0, 0, 0)
+        c.setFont("Helvetica", 11)
+        addr_lines = [
+            f"{context.get('VORNAME','')} {context.get('NACHNAME','')}".strip(),
+            context.get("ADRESSE", ""),
+            f"{context.get('PLZ','')} {context.get('ORT','')}".strip(),
+        ]
+        y_addr = h - 50*mm
+        for line in addr_lines:
+            line = line.strip()
+            if line:
+                c.drawString(20*mm, y_addr, line)
+                y_addr -= 6.5*mm
+
+        c.setFont("Helvetica-Bold", 10)
+        c.drawString(120*mm, h - 22*mm, _ABSENDER_NAME)
+        c.setFont("Helvetica", 9)
+        c.setFillColorRGB(0.2, 0.2, 0.2)
+        c.drawString(120*mm, h - 28*mm, _ABSENDER_STR)
+        c.drawString(120*mm, h - 33.5*mm, _ABSENDER_PLZORT)
+        c.drawString(120*mm, h - 39*mm, _ABSENDER_EMAIL)
+
+        datum = context.get("DATUM", _date.today().strftime("%d.%m.%Y"))
+        c.setFont("Helvetica", 10)
+        c.setFillColorRGB(0, 0, 0)
+        c.drawRightString(190*mm, h - 96*mm, f"{_ABSENDER_CITY}, {datum}")
+
+        betreff = context.get("BETREFF", context.get("AKTENZEICHEN", ""))
+        if betreff:
+            c.setFont("Helvetica-Bold", 10)
+            c.drawString(20*mm, h - 108*mm, f"Betreff: {betreff}")
+
+        body_style = PS("LetterBody", fontName="Helvetica", fontSize=10, leading=15, spaceAfter=10)
+        text_frame = Frame(20*mm, 28*mm, 170*mm, h - 120*mm - 28*mm, showBoundary=0)
+        story = []
+        for para in rendered_text.split("\n\n"):
+            para = para.strip()
+            if para:
+                para = (para.replace("&", "&amp;").replace("<", "&lt;")
+                            .replace(">", "&gt;").replace("\n", "<br/>"))
+                story.append(Paragraph(para, body_style))
+        text_frame.addFromList(story, c)
 
     def generate_location_report_pdf(
         self,

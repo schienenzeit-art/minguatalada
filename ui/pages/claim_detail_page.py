@@ -22,6 +22,7 @@ from services.card_service import CardService
 from services.claim_service import ClaimService
 from core.claim_status import ClaimStatus
 from core.session import Session
+from core.case_context import CaseContext
 from ui.pages.claim_evaluation_dialog import ClaimEvaluationDialog
 from ui.pages.person_dossier_dialog import PersonDossierDialog
 
@@ -380,6 +381,8 @@ class ClaimDetailPage(QDialog):
             self.description_label.setText("Anspruch nicht gefunden.")
             self.evaluation_button.setEnabled(False)
             return
+        # CaseContext für Topbar-Aktionen aktualisieren
+        CaseContext.set(self.claim_id, claim)
 
         self.claim = claim
         self.case_number_label.setText(claim.get("case_number") or "-")
@@ -754,6 +757,10 @@ class ClaimDetailPage(QDialog):
             )
 
     def open_evaluation_dialog(self):
+        # CaseContext aktualisieren damit Topbar-Aktionen fallbezogen sind
+        CaseContext.set(self.claim_id, self.claim)
         dialog = ClaimEvaluationDialog(self.claim_id, self.claim_service)
         if dialog.exec() == QDialog.DialogCode.Accepted:
             self.load_claim()
+            # CaseContext nach Reload aktualisieren
+            CaseContext.set(self.claim_id, self.claim)

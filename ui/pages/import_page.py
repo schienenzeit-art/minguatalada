@@ -22,7 +22,7 @@ from services.category_service import CategoryService
 from database.repositories.person_repository import PersonRepository
 
 
-EXPECTED_COLS = ["Vorname", "Nachname", "Adresse", "PLZ", "Ort", "E-Mail", "Kategorie", "Standort"]
+EXPECTED_COLS = ["Vorname", "Nachname", "Adresse", "PLZ", "Ort", "E-Mail", "Kategorie", "Standort", "Geburtsdatum", "Kartenablauf"]
 REQUIRED_COLS = {"Vorname", "Nachname", "Adresse", "PLZ", "Ort"}
 
 
@@ -83,6 +83,7 @@ class ImportPage(QWidget):
         info_lbl = QLabel(
             f"<b>Erwartete Spalten:</b> {', '.join(EXPECTED_COLS)}<br>"
             f"<b>Pflichtfelder:</b> {', '.join(sorted(REQUIRED_COLS))}<br>"
+            "<b>Optional:</b> Geburtsdatum (TT.MM.JJJJ oder JJJJ-MM-TT), Kartenablauf (TT.MM.JJJJ oder JJJJ-MM-TT)<br>"
             "Erste Zeile muss die Spaltenköpfe enthalten. "
             "Trennzeichen: Komma oder Semikolon (CSV) bzw. erste Tabelle (Excel)."
         )
@@ -231,15 +232,31 @@ class ImportPage(QWidget):
 
     # ── Spaltenzuordnung ──────────────────────────────────────────────────────
     _COL_ALIASES = {
-        "Vorname":   ["vorname", "first_name", "firstname", "f_name"],
-        "Nachname":  ["nachname", "name", "last_name", "lastname", "l_name", "familienname"],
-        "Adresse":   ["adresse", "address", "strasse", "strasse_nr"],
-        "PLZ":       ["plz", "postal_code", "postleitzahl", "zip"],
-        "Ort":       ["ort", "city", "gemeinde", "wohnort"],
-        "E-Mail":    ["email", "e-mail", "e_mail", "mail"],
-        "Kategorie": ["kategorie", "category", "cat"],
-        "Standort":  ["standort", "location", "ort2"],
+        "Vorname":      ["vorname", "first_name", "firstname", "f_name"],
+        "Nachname":     ["nachname", "name", "last_name", "lastname", "l_name", "familienname"],
+        "Adresse":      ["adresse", "address", "strasse", "strasse_nr"],
+        "PLZ":          ["plz", "postal_code", "postleitzahl", "zip"],
+        "Ort":          ["ort", "city", "gemeinde", "wohnort"],
+        "E-Mail":       ["email", "e-mail", "e_mail", "mail"],
+        "Kategorie":    ["kategorie", "category", "cat"],
+        "Standort":     ["standort", "location", "ort2"],
+        "Geburtsdatum": ["geburtsdatum", "birth_date", "birthdate", "geburtstag", "dob", "datum_geburt"],
+        "Kartenablauf": ["kartenablauf", "card_expiry", "ablaufdatum", "karte_ablauf", "expiry_date", "ablauf"],
     }
+
+    @staticmethod
+    def _normalize_date(value: str) -> str | None:
+        """Normalisiert Datumseingaben auf ISO-Format YYYY-MM-DD."""
+        val = str(value or "").strip()
+        if not val:
+            return None
+        for fmt in ("%d.%m.%Y", "%Y-%m-%d", "%d/%m/%Y", "%m/%d/%Y"):
+            try:
+                from datetime import datetime as _dt
+                return _dt.strptime(val, fmt).strftime("%Y-%m-%d")
+            except ValueError:
+                continue
+        return None
 
     def _map_columns(self, row: dict) -> dict:
         result = {}
@@ -300,14 +317,16 @@ class ImportPage(QWidget):
 
             try:
                 self.person_repo.create_person({
-                    "first_name":  mapped.get("Vorname", "").strip(),
-                    "last_name":   mapped.get("Nachname", "").strip(),
-                    "address":     mapped.get("Adresse", "").strip(),
-                    "postal_code": mapped.get("PLZ", "").strip(),
-                    "city":        mapped.get("Ort", "").strip(),
-                    "email":       mapped.get("E-Mail", "").strip() or None,
-                    "category_id": category_id,
-                    "location_id": location_id,
+                    "first_name":        mapped.get("Vorname", "").strip(),
+                    "last_name":         mapped.get("Nachname", "").strip(),
+                    "address":           mapped.get("Adresse", "").strip(),
+                    "postal_code":       mapped.get("PLZ", "").strip(),
+                    "city":              mapped.get("Ort", "").strip(),
+                    "email":             mapped.get("E-Mail", "").strip() or None,
+                    "category_id":       category_id,
+                    "location_id":       location_id,
+                    "birth_date":        self._normalize_date(mapped.get("Geburtsdatum", "")),
+                    "card_expiry_import": self._normalize_date(mapped.get("Kartenablauf", "")),
                 })
                 ok_count += 1
             except Exception as exc:
@@ -343,5 +362,5 @@ class ImportPage(QWidget):
         with open(path, "w", newline="", encoding="utf-8-sig") as f:
             writer = csv.writer(f, delimiter=";")
             writer.writerow(EXPECTED_COLS)
-            writer.writerow(["Max", "Mustermann", "Musterstraße 1", "6700", "Bludenz", "max@example.com", "Allgemein", "Bludenz"])
+            writer.writerow(["Max", "Mustermann", "Musterstraße 1", "6700", "Bludenz", "max@example.com", "Allgemein", "Bludenz", "15.03.1985", "31.12.2025"])
         QMessageBox.information(self, "Vorlage gespeichert", f"Vorlage unter:\n{path}")

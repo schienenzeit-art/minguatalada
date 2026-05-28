@@ -6,6 +6,12 @@ from services.password_service import PasswordService
 from services.auth_service import MAX_FAILED_ATTEMPTS
 from datetime import datetime
 
+# Benutzer die niemals deaktiviert oder gelöscht werden dürfen
+_PROTECTED_USERNAMES = frozenset({"admin"})
+
+# Rollen mit Zugriff auf Benutzerverwaltung
+USERMGMT_ALLOWED_ROLES = frozenset({"Admin", "Supervisor", "Standortleitung"})
+
 
 class UserService:
     def __init__(self, user_repository: UserRepositoryPort | None = None):
@@ -78,15 +84,31 @@ class UserService:
             "message": "Benutzer wurde angelegt.",
         }
 
-    def set_user_active(self, user_id: int, is_active: bool) -> None:
+    def set_user_active(self, user_id: int, is_active: bool) -> Dict[str, Any]:
+        target = self.user_repository.get_by_id(user_id)
+        if target and target.get("username") in _PROTECTED_USERNAMES and not is_active:
+            return {"success": False, "message": "Der Systemadministrator kann nicht deaktiviert werden."}
         self.user_repository.set_active(user_id, is_active)
         try:
             self.user_repository.log_audit(None, "set_active", "user", user_id, f"set_active={is_active}")
         except Exception:
             pass
+        return {"success": True, "message": "Status aktualisiert."}
 
     def get_user_by_id(self, user_id: int) -> Optional[Dict[str, object]]:
         return self.user_repository.get_by_id(user_id)
+
+    def delete_user(self, user_id: int) -> Dict[str, Any]:
+        """Löscht einen Benutzer. Systemadministrator und Mitarbeiter/Freiwillige sind geschützt."""
+        target = self.user_repository.get_by_id(user_id)
+        if target is None:
+            return {"success": False, "message": "Benutzer nicht gefunden."}
+        if target.get("username") in _PROTECTED_USERNAMES:
+            return {"success": False, "message": "Der Systemadministrator kann nicht gelöscht werden."}
+        role_name = target.get("role_name", "")
+        if role_name in ("Mitarbeiter",):
+            return {"success": False, "message": "Mitarbeiter und Freiwillige dürfen nicht gelöscht werden. Status kann auf 'Inaktiv' gesetzt werden."}
+        return {"success": False, "message": "Löschen ist in dieser Anwendung nicht vorgesehen. Benutzer bitte deaktivieren."}
 
     def update_user(
         self,
@@ -101,6 +123,8 @@ class UserService:
         existing = self.user_repository.get_by_id(user_id)
         if existing is None:
             return {"success": False, "message": "Benutzer nicht gefunden."}
+        if existing.get("username") in _PROTECTED_USERNAMES and not is_active:
+            return {"success": False, "message": "Der Systemadministrator kann nicht deaktiviert werden."}
 
         if not full_name.strip() or not username.strip() or role_id is None:
             return {"success": False, "message": "Name, Benutzername und Rolle sind erforderlich."}

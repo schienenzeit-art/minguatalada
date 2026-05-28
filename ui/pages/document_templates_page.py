@@ -15,6 +15,7 @@ from PyQt6.QtWidgets import (
 from ui.components.page_header import PageHeader
 from services.document_template_service import DocumentTemplateService, TEMPLATE_TYPES
 from services.category_service import CategoryService
+from core.claim_status import ClaimStatus
 
 
 _TYPE_LABELS = {
@@ -131,6 +132,21 @@ class DocumentTemplatesPage(QWidget):
         generate_btn.clicked.connect(self._generate_selected)
         btn_row.addWidget(generate_btn)
 
+        docx_up_btn = QPushButton("DOCX hochladen")
+        docx_up_btn.setObjectName("SoftButton")
+        docx_up_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        docx_up_btn.setToolTip(
+            "Word-Vorlage (.docx) hochladen. Platzhalter: {{VORNAME}}, {{STATUS}}, ..."
+        )
+        docx_up_btn.clicked.connect(self._upload_docx)
+        btn_row.addWidget(docx_up_btn)
+
+        docx_down_btn = QPushButton("DOCX herunterladen")
+        docx_down_btn.setObjectName("SoftButton")
+        docx_down_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        docx_down_btn.clicked.connect(self._download_docx)
+        btn_row.addWidget(docx_down_btn)
+
         delete_btn = QPushButton("Löschen")
         delete_btn.setObjectName("DangerButton")
         delete_btn.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -228,6 +244,55 @@ class DocumentTemplatesPage(QWidget):
         dlg = _GenerateDialog(template=tpl, svc=self.svc, parent=self)
         dlg.exec()
 
+    def _upload_docx(self):
+        row = self._get_selected_row()
+        if row is None:
+            QMessageBox.information(self, "Hinweis", "Bitte eine Vorlage auswählen.")
+            return
+        tpl = self._templates[row]
+        from PyQt6.QtWidgets import QFileDialog
+        path, _ = QFileDialog.getOpenFileName(
+            self, "DOCX-Vorlage öffnen", "", "Word-Dokument (*.docx)"
+        )
+        if not path:
+            return
+        try:
+            with open(path, "rb") as f:
+                docx_bytes = f.read()
+            self.svc.upload_docx(tpl["id"], docx_bytes)
+            QMessageBox.information(self, "Hochgeladen",
+                f"DOCX-Vorlage «{tpl['name']}» wurde erfolgreich hochgeladen.\n"
+                "Platzhalter {{VORNAME}}, {{NACHNAME}}, {{STATUS}} etc. werden beim Generieren ersetzt.")
+            self.refresh()
+        except Exception as exc:
+            QMessageBox.critical(self, "Fehler", str(exc))
+
+    def _download_docx(self):
+        row = self._get_selected_row()
+        if row is None:
+            QMessageBox.information(self, "Hinweis", "Bitte eine Vorlage auswählen.")
+            return
+        tpl = self._templates[row]
+        docx_bytes = self.svc.get_docx_bytes(tpl["id"])
+        if not docx_bytes:
+            QMessageBox.information(self, "Keine DOCX",
+                "Diese Vorlage hat keine hochgeladene DOCX-Datei.\n"
+                "Klicken Sie 'DOCX hochladen' um eine Word-Vorlage hinzuzufügen.")
+            return
+        from PyQt6.QtWidgets import QFileDialog
+        safe_name = tpl["name"].replace(" ", "_").replace("/", "_")
+        path, _ = QFileDialog.getSaveFileName(
+            self, "DOCX speichern", f"{safe_name}.docx", "Word-Dokument (*.docx)"
+        )
+        if not path:
+            return
+        with open(path, "wb") as f:
+            f.write(bytes(docx_bytes))
+        from PyQt6.QtCore import QUrl
+        from PyQt6.QtGui import QDesktopServices
+        QDesktopServices.openUrl(QUrl.fromLocalFile(path))
+        QMessageBox.information(self, "Heruntergeladen", f"Vorlage gespeichert:\n{path}")
+
 
 class _TemplateDialog(QDialog):
     def __init__(self, categories: list[dict],
@@ -270,6 +335,12 @@ class _TemplateDialog(QDialog):
         self._active_cb.setChecked(True)
         form.addRow("", self._active_cb)
 
+        self._status_trigger = QComboBox()
+        self._status_trigger.addItem("(kein Status-Trigger)", None)
+        for key, label in ClaimStatus.DISPLAY_NAMES.items():
+            self._status_trigger.addItem(label, key)
+        form.addRow("Standard für Status", self._status_trigger)
+
         layout.addLayout(form)
 
         layout.addWidget(QLabel("Inhalt (Platzhalter: {{VORNAME}}, {{NACHNAME}}, {{AKTENZEICHEN}}, …):"))
@@ -299,6 +370,9 @@ class _TemplateDialog(QDialog):
         self._description.setText(t.get("description") or "")
         self._active_cb.setChecked(bool(t.get("is_active", 1)))
         self._body.setPlainText(t.get("body_text") or "")
+        st_idx = self._status_trigger.findData(t.get("status_trigger"))
+        if st_idx >= 0:
+            self._status_trigger.setCurrentIndex(st_idx)
 
     def _on_save(self):
         if not self._name.text().strip():
@@ -308,12 +382,13 @@ class _TemplateDialog(QDialog):
 
     def get_data(self) -> dict:
         return {
-            "name":          self._name.text().strip(),
-            "template_type": self._type_combo.currentData(),
-            "category_id":   self._cat_combo.currentData(),
-            "description":   self._description.text().strip() or None,
-            "is_active":     self._active_cb.isChecked(),
-            "body_text":     self._body.toPlainText(),
+            "name":           self._name.text().strip(),
+            "template_type":  self._type_combo.currentData(),
+            "category_id":    self._cat_combo.currentData(),
+            "description":    self._description.text().strip() or None,
+            "is_active":      self._active_cb.isChecked(),
+            "body_text":      self._body.toPlainText(),
+            "status_trigger": self._status_trigger.currentData(),
         }
 
 
@@ -366,9 +441,17 @@ class _GenerateDialog(QDialog):
         btn_row.addWidget(preview_btn)
         btn_row.addStretch()
         copy_btn = QPushButton("Text kopieren")
-        copy_btn.setObjectName("PrimaryButton")
+        copy_btn.setObjectName("SoftButton")
         copy_btn.clicked.connect(self._copy_to_clipboard)
         btn_row.addWidget(copy_btn)
+        pdf_btn = QPushButton("Als PDF speichern")
+        pdf_btn.setObjectName("PrimaryButton")
+        pdf_btn.clicked.connect(self._save_as_pdf)
+        btn_row.addWidget(pdf_btn)
+        mail_btn = QPushButton("Per E-Mail senden")
+        mail_btn.setObjectName("SecondaryButton")
+        mail_btn.clicked.connect(self._send_by_email)
+        btn_row.addWidget(mail_btn)
         close_btn = QPushButton("Schließen")
         close_btn.setObjectName("SoftButton")
         close_btn.clicked.connect(self.accept)
@@ -388,3 +471,37 @@ class _GenerateDialog(QDialog):
         from PyQt6.QtWidgets import QApplication
         QApplication.clipboard().setText(self._preview.toPlainText())
         QMessageBox.information(self, "Kopiert", "Text in Zwischenablage kopiert.")
+
+    def _save_as_pdf(self):
+        from PyQt6.QtWidgets import QFileDialog
+        from services.pdf_service import PDFService
+        path, _ = QFileDialog.getSaveFileName(
+            self, "PDF speichern", f"{self._template['name']}.pdf", "PDF (*.pdf)"
+        )
+        if not path:
+            return
+        try:
+            pdf_svc = PDFService()
+            pdf_svc.generate_letter_pdf(self._template["id"], self._get_context(), file_path=path)
+            from PyQt6.QtCore import QUrl
+            from PyQt6.QtGui import QDesktopServices
+            QDesktopServices.openUrl(QUrl.fromLocalFile(path))
+        except Exception as exc:
+            QMessageBox.critical(self, "Fehler", f"PDF-Erstellung fehlgeschlagen:\n{exc}")
+
+    def _send_by_email(self):
+        from PyQt6.QtWidgets import QInputDialog
+        to, ok = QInputDialog.getText(self, "E-Mail senden", "Empfänger-E-Mail-Adresse:")
+        if not ok or not to.strip():
+            return
+        try:
+            from services.pdf_service import PDFService
+            from services.mail_service import MailService
+            pdf_svc  = PDFService()
+            pdf_path = pdf_svc.generate_letter_pdf(self._template["id"], self._get_context())
+            mail_svc = MailService()
+            name = f"{self._get_context().get('VORNAME','')} {self._get_context().get('NACHNAME','')}".strip()
+            mail_svc.send_letter(to_email=to.strip(), person_name=name or "Empfänger", pdf_path=pdf_path)
+            QMessageBox.information(self, "Gesendet", f"E-Mail an {to.strip()} wurde gesendet.")
+        except Exception as exc:
+            QMessageBox.critical(self, "Fehler", f"E-Mail konnte nicht gesendet werden:\n{exc}")

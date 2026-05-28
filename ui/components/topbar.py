@@ -16,7 +16,10 @@ class TopBar(QWidget):
         self.title           = title
         self.current_user    = current_user
         self.available_users = []
-        self._notification_service = None
+        self._notification_service   = None
+        self._doc_claim_service      = None
+        self._doc_template_service   = None
+        self._doc_pdf_service        = None
         self._unread_count   = 0
         self.setup_ui()
 
@@ -68,6 +71,13 @@ class TopBar(QWidget):
         self._badge.hide()
         self._badge.raise_()
 
+        # ── Dokument-Button ────────────────────────────────────────────────────
+        self._doc_button = QPushButton("Dokument")
+        self._doc_button.setObjectName("topbarButton")
+        self._doc_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._doc_button.setToolTip("Brief, Bescheid oder Sonstiges erstellen")
+        self._doc_button.clicked.connect(self._show_document_menu)
+
         # ── Benutzer-Button ────────────────────────────────────────────────────
         self.avatar_button = QPushButton(self._get_user_display_name())
         self.avatar_button.setObjectName("topbarButton")
@@ -77,8 +87,136 @@ class TopBar(QWidget):
         layout.addWidget(self.page_title)
         layout.addStretch()
         layout.addWidget(self.search_input)
+        layout.addWidget(self._doc_button)
         layout.addWidget(self._bell_container)
         layout.addWidget(self.avatar_button)
+
+    # ── Dokument-Services binden ──────────────────────────────────────────────
+    def set_document_services(self, claim_service=None, template_service=None, pdf_service=None) -> None:
+        self._doc_claim_service    = claim_service
+        self._doc_template_service = template_service
+        self._doc_pdf_service      = pdf_service
+
+    def _show_document_menu(self) -> None:
+        from core.case_context import CaseContext
+        menu = QMenu(self)
+        menu.setMinimumWidth(240)
+
+        # ── Aktuelle-Fall-Aktionen (nur wenn Fall aktiv) ──────────────────────
+        if CaseContext.is_active():
+            case_no = CaseContext.get_case_number()
+            header = menu.addAction(f"Aktueller Fall: {case_no}")
+            header.setEnabled(False)
+            menu.addSeparator()
+            menu.addAction("Drucken …").triggered.connect(self._print_current_claim)
+            menu.addAction("Wiedervorlage setzen …").triggered.connect(self._set_wiedervorlage)
+            menu.addAction("Karte erstellen …").triggered.connect(self._create_card_for_claim)
+            menu.addAction("Per E-Mail senden …").triggered.connect(self._mail_current_claim)
+            menu.addSeparator()
+
+        menu.addAction("Bescheid erstellen …").triggered.connect(
+            lambda: self._open_letter_wizard("BESCHEID"))
+        menu.addAction("Brief erstellen …").triggered.connect(
+            lambda: self._open_letter_wizard("BRIEF"))
+        menu.addAction("Sonstiges Dokument …").triggered.connect(
+            lambda: self._open_letter_wizard(None))
+        menu.addSeparator()
+        menu.addAction("Serienbriefe …").triggered.connect(self._open_serial_letters)
+        menu.exec(self._doc_button.mapToGlobal(self._doc_button.rect().bottomLeft()))
+
+    def _print_current_claim(self) -> None:
+        from core.case_context import CaseContext
+        claim = CaseContext.get_claim()
+        if not claim:
+            return
+        try:
+            from services.document_package_service import DocumentPackageService
+            import os, sys
+            pkgs = DocumentPackageService().build_package(claim)
+            for p in pkgs:
+                if sys.platform == "win32":
+                    os.startfile(p, "print")
+                else:
+                    os.startfile(p) if hasattr(os, "startfile") else None
+        except Exception as exc:
+            from PyQt6.QtWidgets import QMessageBox
+            QMessageBox.warning(self, "Fehler", str(exc))
+
+    def _set_wiedervorlage(self) -> None:
+        from core.case_context import CaseContext
+        from ui.dialogs.wiedervorlage_dialog import WiedervorlageDialog
+        dlg = WiedervorlageDialog(
+            claim_id=CaseContext.get_claim_id(),
+            case_number=CaseContext.get_case_number(),
+            parent=self,
+        )
+        dlg.exec()
+
+    def _create_card_for_claim(self) -> None:
+        from core.case_context import CaseContext
+        claim = CaseContext.get_claim()
+        if not claim:
+            from PyQt6.QtWidgets import QMessageBox
+            QMessageBox.information(self, "Hinweis", "Kein aktiver Fall.")
+            return
+        try:
+            from ui.pages.post_evaluation_panel import PostEvaluationPanel
+            panel = PostEvaluationPanel(claim=claim, parent=self)
+            panel._create_card()
+        except Exception as exc:
+            from PyQt6.QtWidgets import QMessageBox
+            QMessageBox.warning(self, "Fehler", str(exc))
+
+    def _mail_current_claim(self) -> None:
+        from core.case_context import CaseContext
+        claim = CaseContext.get_claim()
+        if not claim:
+            return
+        email = claim.get("person_email", "") or ""
+        from PyQt6.QtWidgets import QInputDialog
+        to, ok = QInputDialog.getText(self, "E-Mail senden",
+                                       "Empfänger-E-Mail:", text=email)
+        if not ok or not to.strip():
+            return
+        try:
+            from services.document_package_service import DocumentPackageService
+            from services.user_mail_service import UserMailService
+            pkgs = DocumentPackageService().build_package(claim)
+            name = f"{claim.get('person_first_name','')} {claim.get('person_last_name','')}".strip()
+            UserMailService().send_document_mail(
+                to_email=to.strip(), person_name=name,
+                subject=None, html_body=None, pdf_paths=pkgs,
+            )
+            from PyQt6.QtWidgets import QMessageBox
+            QMessageBox.information(self, "Gesendet", f"E-Mail an {to.strip()} gesendet.")
+        except Exception as exc:
+            from PyQt6.QtWidgets import QMessageBox
+            QMessageBox.critical(self, "Fehler", str(exc))
+
+    def _open_letter_wizard(self, template_type: str | None) -> None:
+        from ui.dialogs.letter_wizard_dialog import LetterWizardDialog
+        dlg = LetterWizardDialog(
+            template_type=template_type,
+            claim_service=self._doc_claim_service,
+            template_service=self._doc_template_service,
+            pdf_service=self._doc_pdf_service,
+            parent=self,
+        )
+        dlg.exec()
+
+    def _open_serial_letters(self) -> None:
+        try:
+            from ui.pages.serial_letters_page import SerialLettersDialog
+            dlg = SerialLettersDialog(
+                claim_service=self._doc_claim_service,
+                template_service=self._doc_template_service,
+                pdf_service=self._doc_pdf_service,
+                parent=self,
+            )
+            dlg.exec()
+        except Exception as exc:
+            from PyQt6.QtWidgets import QMessageBox
+            QMessageBox.warning(self, "Fehler", str(exc))
 
     # ── Notification-Service binden ───────────────────────────────────────────
     def set_notification_service(self, svc) -> None:

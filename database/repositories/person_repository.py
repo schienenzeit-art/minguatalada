@@ -9,8 +9,9 @@ class PersonRepository:
             cursor = connection.execute(
                 """
                 INSERT INTO persons (
-                    first_name, last_name, address, postal_code, city, email, category_id, location_id
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    first_name, last_name, address, postal_code, city, email,
+                    category_id, location_id, birth_date, card_expiry_import
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     person.get("first_name"),
@@ -21,6 +22,8 @@ class PersonRepository:
                     person.get("email"),
                     person.get("category_id"),
                     person.get("location_id"),
+                    person.get("birth_date") or None,
+                    person.get("card_expiry_import") or None,
                 ),
             )
             connection.commit()

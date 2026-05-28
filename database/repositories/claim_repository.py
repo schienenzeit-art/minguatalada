@@ -504,3 +504,37 @@ class ClaimRepository:
             connection.commit()
 
         return cursor.rowcount > 0
+
+    def increment_evaluation_count(
+        self, claim_id: int, examiner_id: int | None, is_first: bool
+    ) -> None:
+        """Inkrementiert den Prüfungszähler. Setzt first_examiner_id bei Erstprüfung."""
+        with get_connection() as connection:
+            tbl = self._table_name(connection)
+            if is_first and examiner_id is not None:
+                connection.execute(
+                    f"""UPDATE {tbl} SET
+                        evaluation_count = evaluation_count + 1,
+                        first_examiner_id = ?,
+                        updated_at = CURRENT_TIMESTAMP
+                        WHERE id = ?""",
+                    (examiner_id, claim_id),
+                )
+            else:
+                connection.execute(
+                    f"""UPDATE {tbl} SET
+                        evaluation_count = evaluation_count + 1,
+                        updated_at = CURRENT_TIMESTAMP
+                        WHERE id = ?""",
+                    (claim_id,),
+                )
+            connection.commit()
+
+    def get_evaluation_count(self, claim_id: int) -> int:
+        """Gibt den aktuellen Prüfungszähler zurück."""
+        with get_connection() as connection:
+            tbl = self._table_name(connection)
+            row = connection.execute(
+                f"SELECT evaluation_count FROM {tbl} WHERE id=?", (claim_id,)
+            ).fetchone()
+            return int(row["evaluation_count"]) if row and "evaluation_count" in row.keys() else 0

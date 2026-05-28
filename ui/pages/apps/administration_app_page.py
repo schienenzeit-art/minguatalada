@@ -28,6 +28,7 @@ _NAV_GROUPS = [
         "items": [
             ("Dokumentvorlagen",        "document_templates"),
             ("Unterlagen-Checklisten",  "checklist_templates"),
+            ("Serienbriefe",            "serial_letters"),
         ],
     },
     {

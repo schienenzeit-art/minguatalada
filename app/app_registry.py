@@ -61,12 +61,16 @@ class AppRegistry:
         ),
     ]
 
+    # Rollen die admin_only-Apps sehen dürfen
+    _PRIVILEGED_ROLES = frozenset({"Admin", "Supervisor", "Standortleitung"})
+
     @classmethod
     def get_visible_apps(cls) -> List[AppMetadata]:
+        role = (Session.get_user() or {}).get("role_name", "")
         return [
             app
             for app in cls.APPS
-            if app.visible and (not app.admin_only or Session.is_admin())
+            if app.visible and (not app.admin_only or role in cls._PRIVILEGED_ROLES)
         ]
 
     @classmethod

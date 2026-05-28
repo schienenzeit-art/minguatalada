@@ -15,6 +15,44 @@ from database.repositories.setting_repository import SettingRepository
 
 
 DEFAULT_SETTINGS = {
+    # ── SMTP-Konfiguration ────────────────────────────────────────────────────
+    "SMTP_HOST": {
+        "value": "", "value_type": "text", "category": "E-Mail",
+        "description": "SMTP-Servername (z. B. smtp.office365.com)",
+        "editable_by_admin": True,
+    },
+    "SMTP_PORT": {
+        "value": 587, "value_type": "number", "category": "E-Mail",
+        "description": "SMTP-Port (587 für TLS, 465 für SSL)",
+        "editable_by_admin": True,
+    },
+    "SMTP_USER": {
+        "value": "", "value_type": "text", "category": "E-Mail",
+        "description": "SMTP-Benutzername / E-Mail-Adresse",
+        "editable_by_admin": True,
+    },
+    "SMTP_PASSWORD": {
+        "value": "", "value_type": "text", "category": "E-Mail",
+        "description": "SMTP-Passwort (verschlüsselt gespeichert)",
+        "editable_by_admin": True,
+    },
+    "SMTP_FROM_EMAIL": {
+        "value": "", "value_type": "text", "category": "E-Mail",
+        "description": "Absender-E-Mail-Adresse",
+        "editable_by_admin": True,
+    },
+    "SMTP_FROM_NAME": {
+        "value": "Verein Tischlein Deck Dich Vorarlberg", "value_type": "text",
+        "category": "E-Mail",
+        "description": "Angezeigter Absendername",
+        "editable_by_admin": True,
+    },
+    "SMTP_USE_TLS": {
+        "value": True, "value_type": "bool", "category": "E-Mail",
+        "description": "STARTTLS verwenden (empfohlen für Port 587)",
+        "editable_by_admin": True,
+    },
+    # ── Anspruchsgrenzen ──────────────────────────────────────────────────────
     "BASE_LIMIT": {
         "value": 820.0,
         "value_type": "number",

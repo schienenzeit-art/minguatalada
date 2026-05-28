@@ -25,17 +25,28 @@ from pathlib import Path
 from core.claim_status import ClaimStatus
 from core.session import Session
 from services.claim_service import ClaimService
+from services.checklist_service import ChecklistService
+from services.re_evaluation_service import ReEvaluationService
 from services.document_service import DocumentService
 from services.pdf_service import PDFService
 
 
 class ClaimEvaluationDialog(QDialog):
-    def __init__(self, claim_id: int | None = None, claim_service: ClaimService | None = None):
+    def __init__(
+        self,
+        claim_id: int | None = None,
+        claim_service: ClaimService | None = None,
+        checklist_service: ChecklistService | None = None,
+        re_evaluation_service: ReEvaluationService | None = None,
+    ):
         super().__init__()
         self.claim_id = claim_id
         self.claim_service = claim_service or ClaimService()
+        self.checklist_service = checklist_service or ChecklistService()
+        self.re_evaluation_service = re_evaluation_service or ReEvaluationService()
         self.current_evaluation = None
         self.claim = None
+        self._lock_state: dict = {"locked": False}
 
         self.setWindowTitle("Anspruchsprüfung")
         self.setMinimumWidth(1000)
@@ -143,13 +154,25 @@ class ClaimEvaluationDialog(QDialog):
         self.disability_degree_input.setValue(0)
         self.disability_degree_input.setEnabled(False)
 
-        # Wohnbeihilfe-Checkbox (Anforderung 2)
+        # Wohnbeihilfe-Checkbox (Anforderung 2) — direkt bei den Einnahmen
         self.housing_benefit_check = QCheckBox("Wohnbeihilfe vorhanden / beantragt")
         self.housing_benefit_check.setToolTip(
             "Bitte angeben ob die Person Wohnbeihilfe erhält oder beantragt hat.\n"
             "Fehlt die Wohnbeihilfe, wird der Fall vorläufig abgelehnt und eine weitere Abklärung ausgelöst."
         )
         self.housing_benefit_set = False  # Wird True sobald Nutzer explizit setzt
+
+        # Wohnbeihilfe-Warnfeld — ebenfalls bei den Einnahmen
+        self.housing_benefit_warning = QLabel(
+            "Achtung: Keine Wohnbeihilfe angegeben → vorläufige Ablehnung + weitere Abklärung."
+        )
+        self.housing_benefit_warning.setStyleSheet(
+            "color: #9a6700; background: #fff7e6; border: 1px solid #f7d9a3; "
+            "border-radius: 6px; padding: 6px 10px;"
+        )
+        self.housing_benefit_warning.setWordWrap(True)
+        self.housing_benefit_warning.setVisible(False)
+        self.housing_benefit_check.toggled.connect(self._on_housing_benefit_changed)
 
         body_layout = QHBoxLayout()
         body_layout.setSpacing(18)
@@ -160,10 +183,17 @@ class ClaimEvaluationDialog(QDialog):
         income_layout = QGridLayout()
         income_layout.setHorizontalSpacing(16)
         income_layout.setVerticalSpacing(12)
-        for row, (name, widget) in enumerate(self.income_fields.items()):
+        grid_row = 0
+        for name, widget in self.income_fields.items():
             label = QLabel(name)
-            income_layout.addWidget(label, row, 0)
-            income_layout.addWidget(widget, row, 1)
+            income_layout.addWidget(label, grid_row, 0)
+            income_layout.addWidget(widget, grid_row, 1)
+            grid_row += 1
+            if name == "Wohnbeihilfe":
+                income_layout.addWidget(self.housing_benefit_check, grid_row, 0, 1, 2)
+                grid_row += 1
+                income_layout.addWidget(self.housing_benefit_warning, grid_row, 0, 1, 2)
+                grid_row += 1
         income_box.setLayout(income_layout)
 
         household_box = QGroupBox("Haushaltsdaten")
@@ -176,20 +206,6 @@ class ClaimEvaluationDialog(QDialog):
         household_form.addRow("Kinder", self.child_count_input)
         household_form.addRow("Kategorie", self.category_combo)
         household_form.addRow("Behinderungsgrad (%)", self.disability_degree_input)
-        household_form.addRow("", self.housing_benefit_check)
-
-        # Wohnbeihilfe-Warnfeld
-        self.housing_benefit_warning = QLabel(
-            "Achtung: Keine Wohnbeihilfe angegeben → vorläufige Ablehnung + weitere Abklärung."
-        )
-        self.housing_benefit_warning.setStyleSheet(
-            "color: #9a6700; background: #fff7e6; border: 1px solid #f7d9a3; "
-            "border-radius: 6px; padding: 6px 10px;"
-        )
-        self.housing_benefit_warning.setWordWrap(True)
-        self.housing_benefit_warning.setVisible(False)
-        household_form.addRow("", self.housing_benefit_warning)
-        self.housing_benefit_check.toggled.connect(self._on_housing_benefit_changed)
 
         household_box.setLayout(household_form)
 
@@ -249,8 +265,22 @@ class ClaimEvaluationDialog(QDialog):
         result_box.setLayout(result_layout)
         result_box.setMinimumWidth(260)
 
+        # ── Unterlagen-Checkliste (automatisch eingeblendet) ──────────────────
+        checklist_box = QGroupBox("Unterlagen-Checkliste")
+        checklist_layout = QVBoxLayout()
+        checklist_layout.setContentsMargins(8, 8, 8, 8)
+        self._checklist_placeholder = QLabel("Checkliste wird nach Öffnen eines Falls geladen.")
+        self._checklist_placeholder.setStyleSheet("color: #9b9896; font-size: 11px;")
+        self._checklist_placeholder.setWordWrap(True)
+        checklist_layout.addWidget(self._checklist_placeholder)
+        self._checklist_widget = None
+        checklist_box.setLayout(checklist_layout)
+        self._checklist_box = checklist_box
+        self._checklist_inner_layout = checklist_layout
+
         right_col = QVBoxLayout()
         right_col.addWidget(result_box)
+        right_col.addWidget(checklist_box)
         right_col.addStretch()
 
         body_layout.addLayout(left_col, 10)
@@ -262,6 +292,15 @@ class ClaimEvaluationDialog(QDialog):
         button_layout = QHBoxLayout()
         button_layout.setSpacing(12)
 
+        # ── Lock-Banner (sichtbar wenn Erstprüfung erfolgt und Mitarbeiter-Rolle) ─
+        self._lock_banner = QLabel("")
+        self._lock_banner.setWordWrap(True)
+        self._lock_banner.setVisible(False)
+        self._lock_banner.setStyleSheet(
+            "color: #9a6700; background: #fff7e6; border: 1px solid #f7d9a3; "
+            "border-radius: 6px; padding: 8px 12px; font-size: 12px;"
+        )
+
         self.start_button = QPushButton("Prüfung starten")
         self.start_button.setObjectName("primaryButton")
         self.start_button.clicked.connect(self.evaluate_claim)
@@ -271,11 +310,21 @@ class ClaimEvaluationDialog(QDialog):
         self.apply_status_button.setEnabled(False)
         self.apply_status_button.clicked.connect(self.apply_status)
 
+        self._request_approval_button = QPushButton("Freigabe anfordern …")
+        self._request_approval_button.setObjectName("secondaryButton")
+        self._request_approval_button.setVisible(False)
+        self._request_approval_button.setToolTip(
+            "Freigabe zur erneuten Prüfung beim Supervisor anfordern"
+        )
+        self._request_approval_button.clicked.connect(self._on_request_re_evaluation)
+
         buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
         buttons.rejected.connect(self.reject)
 
+        button_layout.addWidget(self._lock_banner)
         button_layout.addWidget(self.start_button)
         button_layout.addWidget(self.apply_status_button)
+        button_layout.addWidget(self._request_approval_button)
         button_layout.addStretch()
         button_layout.addWidget(buttons)
 
@@ -427,6 +476,18 @@ class ClaimEvaluationDialog(QDialog):
             return
 
         try:
+            # Sperre nochmals serverseitig prüfen (Defence-in-depth)
+            from database.repositories.claim_repository import ClaimRepository
+            eval_count = ClaimRepository().get_evaluation_count(self.claim_id)
+            allowed, reason = self.re_evaluation_service.can_evaluate(self.claim_id, eval_count)
+            if not allowed:
+                QMessageBox.warning(
+                    self, "Prüfung gesperrt",
+                    f"{reason}\n\nNutzen Sie 'Freigabe anfordern', um eine Supervisor-Freigabe zu beantragen.",
+                )
+                self._update_lock_ui()
+                return
+
             evaluation = self.claim_service.persist_evaluation(
                 claim_id=self.claim_id,
                 incomes=incomes,
@@ -465,8 +526,133 @@ class ClaimEvaluationDialog(QDialog):
             QMessageBox.critical(self, "Fehler", f"Fehler beim Speichern der Daten: {e}")
             return
 
-        QMessageBox.information(self, "Status aktualisiert", f"Der Anspruchsstatus wurde auf '{ClaimStatus.get_display(evaluation['status'])}' gesetzt.")
+        updated_claim = self.claim_service.get_claim_by_id(self.claim_id)
         self.accept()
+
+        # ── PostEvaluationPanel: Folgeaktionen direkt nach Prüfung ────────────
+        try:
+            from ui.pages.post_evaluation_panel import PostEvaluationPanel
+            from services.document_package_service import DocumentPackageService
+            from services.user_mail_service import UserMailService
+            from services.wiedervorlage_service import WiedervorlageService
+            panel = PostEvaluationPanel(
+                claim=updated_claim or {},
+                claim_service=self.claim_service,
+                document_package_service=DocumentPackageService(),
+                user_mail_service=UserMailService(),
+                wiedervorlage_service=WiedervorlageService(),
+                parent=self.parent(),
+            )
+            panel.exec()
+        except Exception:
+            pass
+
+    def _update_lock_ui(self) -> None:
+        """Aktualisiert den Lock-Banner und Buttons basierend auf dem aktuellen Sperr-Status."""
+        if self.claim_id is None:
+            return
+        try:
+            from database.repositories.claim_repository import ClaimRepository
+            eval_count = ClaimRepository().get_evaluation_count(self.claim_id)
+            state = self.re_evaluation_service.get_claim_lock_state(self.claim_id, eval_count)
+            self._lock_state = state
+
+            if state.get("locked"):
+                self._lock_banner.setText(
+                    f"Prüfung gesperrt: {state['reason']}"
+                )
+                self._lock_banner.setVisible(True)
+                self.apply_status_button.setEnabled(False)
+                # Zeige "Freigabe anfordern" nur wenn noch keine Anfrage gestellt
+                has_pending = state.get("pending_request") is not None
+                self._request_approval_button.setVisible(not has_pending)
+                self._request_approval_button.setEnabled(not has_pending)
+            elif eval_count > 0 and not state.get("privileged") and state.get("approved_request"):
+                self._lock_banner.setText(
+                    "Supervisor-Freigabe zur erneuten Prüfung liegt vor. Prüfung ist möglich."
+                )
+                self._lock_banner.setStyleSheet(
+                    "color: #1a8f4a; background: #e8f8ed; border: 1px solid #b7e4cf; "
+                    "border-radius: 6px; padding: 8px 12px; font-size: 12px;"
+                )
+                self._lock_banner.setVisible(True)
+                self._request_approval_button.setVisible(False)
+            else:
+                self._lock_banner.setVisible(False)
+                self._request_approval_button.setVisible(False)
+        except Exception:
+            pass
+
+    def _on_request_re_evaluation(self) -> None:
+        """Mitarbeiter fordert Freigabe zur erneuten Prüfung an."""
+        from PyQt6.QtWidgets import QInputDialog
+        reason, ok = QInputDialog.getText(
+            self, "Freigabe anfordern",
+            "Begründung (optional):",
+        )
+        if not ok:
+            return
+        try:
+            self.re_evaluation_service.request_re_evaluation(
+                self.claim_id, reason.strip() or None
+            )
+            # Supervisor benachrichtigen
+            from services.notification_service import NotificationService
+            from services.audit_service import AuditService
+            claim = self.claim
+            if claim:
+                case_number = claim.get("case_number", str(self.claim_id))
+                user = Session.get_user() or {}
+                NotificationService().notify_re_evaluation_requested(
+                    case_number=case_number,
+                    claim_id=self.claim_id,
+                    requester_name=user.get("full_name", "Mitarbeiter"),
+                    reason=reason.strip() or None,
+                )
+                AuditService().log(
+                    "re_evaluation_requested", "claim", self.claim_id,
+                    f"Freigabe zur erneuten Prüfung angefordert für {case_number}."
+                )
+            QMessageBox.information(
+                self,
+                "Freigabe angefordert",
+                "Die Freigabe zur erneuten Prüfung wurde beim Supervisor angefordert.\n"
+                "Sie werden benachrichtigt, sobald eine Entscheidung vorliegt.",
+            )
+            self._update_lock_ui()
+        except ValueError as exc:
+            QMessageBox.warning(self, "Hinweis", str(exc))
+        except Exception as exc:
+            QMessageBox.critical(self, "Fehler", str(exc))
+
+    def _load_checklist(self) -> None:
+        """Lädt oder erzeugt automatisch die Unterlagen-Checkliste für diesen Fall."""
+        if self.claim_id is None:
+            return
+        try:
+            from ui.components.checklist_widget import ChecklistWidget
+
+            # Vorhandene Items laden; wenn keine vorhanden → erste Vorlage auto-anwenden
+            existing = self.checklist_service.list_claim_items(self.claim_id)
+            if not existing:
+                templates = self.checklist_service.list_templates()
+                if templates:
+                    self.checklist_service.apply_template(self.claim_id, templates[0]["id"])
+
+            # Widget aufbauen
+            if self._checklist_widget is not None:
+                self._checklist_widget.deleteLater()
+            self._checklist_placeholder.hide()
+
+            self._checklist_widget = ChecklistWidget(
+                claim_id=self.claim_id,
+                checklist_service=self.checklist_service,
+                parent=self,
+            )
+            self._checklist_widget.setMinimumHeight(160)
+            self._checklist_inner_layout.addWidget(self._checklist_widget)
+        except Exception:
+            pass
 
     def _offer_open_pdf(self, pdf_path: str) -> None:
         """Zeigt nach erfolgreicher PDF-Erzeugung einen Dialog mit Öffnen/Ordner-Öffnen-Optionen."""
@@ -519,6 +705,9 @@ class ClaimEvaluationDialog(QDialog):
             amount.setText(f"{row['amount']:.2f}" if row else "0.00")
             proof.setChecked(bool(row and row.get("has_proof")))
             note.setText(row.get("note", "") if row else "")
+
+        self._load_checklist()
+        self._update_lock_ui()
 
         if claim.get("status") and claim.get("evaluation_reason") is not None:
             self.result_status.setText(f"● {ClaimStatus.get_display(claim['status'])}")
