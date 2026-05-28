@@ -38,32 +38,35 @@ class TopBar(QWidget):
         self.search_input.setMaximumWidth(300)
         self.search_input.returnPressed.connect(self._on_search)
 
-        # ── Benachrichtigungs-Bell ─────────────────────────────────────────────
-        self.bell_button = QPushButton("🔔")
-        self.bell_button.setObjectName("topbarButton")
+        # ── Benachrichtigungs-Bell mit Badge-Overlay ───────────────────────────
+        # Container hält Bell-Button + Badge als überlagerte Widgets
+        self._bell_container = QWidget()
+        self._bell_container.setFixedSize(44, 44)
+        self._bell_container.setStyleSheet("background: transparent;")
+
+        self.bell_button = QPushButton("🔔", self._bell_container)
+        self.bell_button.setObjectName("bellButton")
         self.bell_button.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.bell_button.setFixedSize(38, 38)
+        self.bell_button.setFixedSize(36, 36)
+        self.bell_button.move(0, 8)
         self.bell_button.setToolTip("Benachrichtigungen")
         self.bell_button.clicked.connect(self._show_notifications)
+        self.bell_button.setStyleSheet(
+            "QPushButton#bellButton { background: transparent; border: none; "
+            "font-size: 20px; padding: 0px; }"
+            "QPushButton#bellButton:hover { background: rgba(0,0,0,0.06); border-radius: 8px; }"
+        )
 
-        self._badge = QLabel("0")
+        self._badge = QLabel(self._bell_container)
         self._badge.setFixedSize(18, 18)
         self._badge.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._badge.setStyleSheet(
-            "background: #d1495b; color: #fff; border-radius: 9px; "
-            "font-size: 10px; font-weight: 800;"
+            "background: #e53935; color: #fff; border-radius: 9px; "
+            "font-size: 9px; font-weight: 800; border: 2px solid #fff;"
         )
+        self._badge.move(22, 0)
         self._badge.hide()
-
-        bell_container = QWidget()
-        bell_container.setFixedSize(44, 44)
-        bell_container.setStyleSheet("background: transparent;")
-        bell_layout = QVBoxLayout(bell_container)
-        bell_layout.setContentsMargins(0, 0, 0, 0)
-        bell_layout.setSpacing(0)
-
-        # Badge overlay via fixed positioning — simpler: use the button text
-        bell_layout.addWidget(self.bell_button)
+        self._badge.raise_()
 
         # ── Benutzer-Button ────────────────────────────────────────────────────
         self.avatar_button = QPushButton(self._get_user_display_name())
@@ -74,7 +77,7 @@ class TopBar(QWidget):
         layout.addWidget(self.page_title)
         layout.addStretch()
         layout.addWidget(self.search_input)
-        layout.addWidget(self.bell_button)
+        layout.addWidget(self._bell_container)
         layout.addWidget(self.avatar_button)
 
     # ── Notification-Service binden ───────────────────────────────────────────
@@ -95,14 +98,12 @@ class TopBar(QWidget):
             count = 0
         self._unread_count = count
         if count > 0:
-            self.bell_button.setText(f"🔔 {count}")
-            self.bell_button.setStyleSheet(
-                "background: #fde8e8; color: #c0362a; border: 1.5px solid #fad0cd; "
-                "border-radius: 10px; font-weight: 700; font-size: 12px;"
-            )
+            text = str(count) if count <= 99 else "99+"
+            self._badge.setText(text)
+            self._badge.show()
+            self._badge.raise_()
         else:
-            self.bell_button.setText("🔔")
-            self.bell_button.setStyleSheet("")
+            self._badge.hide()
 
     # ── Notifications-Dropdown ────────────────────────────────────────────────
     def _show_notifications(self) -> None:
@@ -111,7 +112,7 @@ class TopBar(QWidget):
 
         if self._notification_service is None:
             menu.addAction("Kein Benachrichtigungsdienst verfügbar").setEnabled(False)
-            menu.exec(self.bell_button.mapToGlobal(self.bell_button.rect().bottomLeft()))
+            menu.exec(self._bell_container.mapToGlobal(self._bell_container.rect().bottomLeft()))
             return
 
         notifications = self._notification_service.get_notifications(limit=20)
@@ -138,7 +139,7 @@ class TopBar(QWidget):
             mark_all = menu.addAction("Alle als gelesen markieren")
             mark_all.triggered.connect(self._mark_all_read)
 
-        menu.exec(self.bell_button.mapToGlobal(self.bell_button.rect().bottomLeft()))
+        menu.exec(self._bell_container.mapToGlobal(self._bell_container.rect().bottomLeft()))
 
     def _on_notification_click(self, notification_id: int) -> None:
         if self._notification_service:

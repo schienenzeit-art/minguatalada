@@ -6,6 +6,9 @@ from database.repositories.claim_repository import ClaimRepository
 from core.claim_status import ClaimStatus
 from core.card_status import CardStatus
 
+# Rollen mit Recht zur Kartenerstellung (Anforderung 9)
+CARD_CREATE_ROLES = {"Standortleitung", "Supervisor", "Admin"}
+
 
 class CardService:
     """
@@ -23,6 +26,12 @@ class CardService:
     def __init__(self):
         self.card_repository = CardRepository()
         self.claim_repository = ClaimRepository()
+
+    def can_create_card_for_role(self, role_name: str) -> tuple[bool, str]:
+        """Prüft ob die Rolle Kartenerstellung erlaubt (Anforderung 9: Mitarbeiter darf nicht)."""
+        if role_name not in CARD_CREATE_ROLES:
+            return False, f"Rolle '{role_name}' hat keine Berechtigung zur Kartenerstellung. Nur Standortleitung/Supervisor/Admin."
+        return True, ""
 
     def can_create_card_for_claim(self, claim_id: int) -> tuple[bool, str]:
         """
@@ -91,8 +100,18 @@ class CardService:
             expiry_dt = datetime.now() + timedelta(days=365)
             expiry_date = expiry_dt.strftime("%Y-%m-%d")
 
-        # Kartennummer generieren
-        card_number = self.card_repository.get_next_card_number()
+        # Kartennummer nach Standort-Nummernkreis generieren
+        location_id = claim.get("location_id")
+        location_name = claim.get("location_name")
+        is_staff = False
+        from domain.categories import CATEGORIES
+        # Kategorie "Freiwillige Mitarbeiter" → Staff-Nummernkreis
+        if claim.get("category_name") == "Freiwillige Mitarbeiter":
+            is_staff = True
+        card_number = self.card_repository.get_next_card_number(
+            location_name=location_name,
+            is_staff=is_staff,
+        )
 
         # Karte erstellen
         card_id = self.card_repository.create_card(

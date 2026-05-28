@@ -731,6 +731,97 @@ def initialize_database() -> None:
         except Exception:
             pass
 
+        # ── Anforderungen: Haushaltsmitglieder / Kinder ───────────────────────
+        try:
+            connection.execute("""
+                CREATE TABLE IF NOT EXISTS household_members (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    claim_id INTEGER NOT NULL,
+                    person_id INTEGER,
+                    first_name TEXT NOT NULL,
+                    last_name TEXT NOT NULL,
+                    birth_date TEXT,
+                    relationship TEXT NOT NULL DEFAULT 'Sonstiges',
+                    is_primary INTEGER NOT NULL DEFAULT 0,
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (claim_id) REFERENCES claims(id) ON DELETE CASCADE,
+                    FOREIGN KEY (person_id) REFERENCES persons(id) ON DELETE SET NULL
+                )
+            """)
+            connection.commit()
+        except Exception:
+            pass
+
+        # ── Anforderungen: Alters-Alerts (20-Jahre-Logik) ─────────────────────
+        try:
+            connection.execute("""
+                CREATE TABLE IF NOT EXISTS age_alerts (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    claim_id INTEGER NOT NULL,
+                    household_member_id INTEGER,
+                    alert_type TEXT NOT NULL,
+                    trigger_date TEXT NOT NULL,
+                    message TEXT,
+                    is_resolved INTEGER NOT NULL DEFAULT 0,
+                    resolved_by INTEGER,
+                    resolved_at TEXT,
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (claim_id) REFERENCES claims(id) ON DELETE CASCADE,
+                    FOREIGN KEY (household_member_id) REFERENCES household_members(id) ON DELETE SET NULL,
+                    FOREIGN KEY (resolved_by) REFERENCES users(id) ON DELETE SET NULL
+                )
+            """)
+            connection.commit()
+        except Exception:
+            pass
+
+        # ── Migration: Personen birth_date ────────────────────────────────────
+        try:
+            if not has_column('persons', 'birth_date'):
+                connection.execute("ALTER TABLE persons ADD COLUMN birth_date TEXT")
+                connection.commit()
+        except Exception:
+            pass
+
+        # ── Migration: Anspruch Wohnbeihilfe ──────────────────────────────────
+        try:
+            if not has_column('claims', 'has_housing_benefit'):
+                connection.execute("ALTER TABLE claims ADD COLUMN has_housing_benefit INTEGER DEFAULT NULL")
+                connection.commit()
+        except Exception:
+            pass
+        try:
+            if not has_column('claims', 'housing_benefit_note'):
+                connection.execute("ALTER TABLE claims ADD COLUMN housing_benefit_note TEXT")
+                connection.commit()
+        except Exception:
+            pass
+
+        # ── Migration: Kategorie-Umbenennung Sozialhilfebezüger ───────────────
+        try:
+            from domain.categories import CATEGORY_RENAMES
+            for old_name, new_name in CATEGORY_RENAMES.items():
+                old_cat = connection.execute("SELECT id FROM categories WHERE name=?", (old_name,)).fetchone()
+                new_cat = connection.execute("SELECT id FROM categories WHERE name=?", (new_name,)).fetchone()
+                if old_cat and not new_cat:
+                    connection.execute("UPDATE categories SET name=? WHERE name=?", (new_name, old_name))
+                elif old_cat and new_cat:
+                    # merge: update foreign keys auf neue ID, dann alte Kategorie löschen
+                    connection.execute("UPDATE persons SET category_id=? WHERE category_id=?", (new_cat["id"], old_cat["id"]))
+                    connection.execute("UPDATE claims SET category_id=? WHERE category_id=?", (new_cat["id"], old_cat["id"]))
+                    connection.execute("DELETE FROM categories WHERE id=?", (old_cat["id"],))
+            connection.commit()
+        except Exception:
+            pass
+
+        # ── Migration: Supervisor-Rolle ───────────────────────────────────────
+        try:
+            connection.execute("INSERT OR IGNORE INTO roles (name) VALUES (?)", ("Supervisor",))
+            connection.commit()
+        except Exception:
+            pass
+
         # ── M9: Unterlagen-Checklisten ────────────────────────────────────────
         try:
             connection.execute("""
@@ -930,6 +1021,14 @@ def seed_settings(connection: sqlite3.Connection) -> None:
             "string",
             "Fallnummern",
             "Präfix für generierte Fallnummern (z.B. AS → AS-2026-000001).",
+            1,
+        ),
+        (
+            "UPDATE_MANIFEST_URL",
+            "",
+            "string",
+            "Updates",
+            "URL zum Update-Manifest (JSON). Leer = kein Update-Server konfiguriert.",
             1,
         ),
     ]

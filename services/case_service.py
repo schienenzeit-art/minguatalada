@@ -75,6 +75,18 @@ class CaseService:
             created_by=user_id,
         )
 
+        # Supervisor-Benachrichtigung bei Fallanlage (Anforderung 10)
+        try:
+            from services.notification_service import NotificationService
+            NotificationService().notify_supervisors_new_case(
+                case_number=case_number,
+                claim_id=case_id,
+                location_id=location_id,
+                with_documents=False,
+            )
+        except Exception:
+            pass
+
         return {
             "id": case_id,
             "case_number": case_number,

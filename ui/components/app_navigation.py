@@ -4,6 +4,8 @@ from PyQt6.QtCore import Qt
 from app.app_registry import AppRegistry
 from core.session import Session
 
+_PERSONAL_ROLES = {"Standortleitung", "Supervisor", "Admin"}
+
 
 class AppNavigation(QWidget):
     def __init__(self, navigate_callback):
@@ -42,6 +44,18 @@ class AppNavigation(QWidget):
 
         for app in AppRegistry.get_visible_apps():
             self.add_nav_item(layout, app.title, app.page_key)
+
+        # ── Personal-Bereich ──────────────────────────────────────────────────
+        role_name = (Session.get_user() or {}).get("role_name", "")
+        if role_name in _PERSONAL_ROLES:
+            layout.addSpacing(10)
+            personal_label = QLabel("Personal")
+            personal_label.setObjectName("appNavSection")
+            layout.addWidget(personal_label)
+            layout.addSpacing(2)
+            self.add_nav_item(layout, "  Geschäftsführung", "personal_management")
+            self.add_nav_item(layout, "  Mitarbeiter", "personal_staff")
+            self.add_nav_item(layout, "  Freiwillige", "personal_volunteers")
 
         layout.addSpacerItem(QSpacerItem(20, 20, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding))
 

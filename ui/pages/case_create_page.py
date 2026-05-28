@@ -15,8 +15,13 @@ from PyQt6.QtWidgets import (
     QFileDialog,
     QListWidget,
     QScrollArea,
+    QDateEdit,
+    QTableWidget,
+    QTableWidgetItem,
+    QHeaderView,
+    QAbstractItemView,
 )
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QDate
 
 from services.case_service import CaseService
 from services.claim_service import ClaimService
@@ -90,8 +95,15 @@ class CaseCreateDialog(QDialog):
         self.category_combo = QComboBox()
         self.location_combo = QComboBox()
 
+        # Geburtsdatum (Anforderung 1)
+        self.birth_date = QDateEdit()
+        self.birth_date.setCalendarPopup(True)
+        self.birth_date.setDisplayFormat("dd.MM.yyyy")
+        self.birth_date.setDate(QDate.currentDate().addYears(-30))
+
         person_form.addRow("Name", self.last_name)
         person_form.addRow("Vorname", self.first_name)
+        person_form.addRow("Geburtsdatum", self.birth_date)
         person_form.addRow("Adresse", self.address)
         person_form.addRow("PLZ", self.postal_code)
         person_form.addRow("Ort", self.city)
@@ -101,6 +113,43 @@ class CaseCreateDialog(QDialog):
 
         person_card.setLayout(person_form)
         content_layout.addWidget(person_card)
+
+        # Haushaltsmitglieder-Bereich (Anforderungen 11 + 12)
+        self.household_card = QGroupBox("Alle im Haushalt lebenden Personen")
+        self.household_card.setVisible(False)
+        household_layout = QVBoxLayout()
+        household_layout.setSpacing(10)
+
+        hh_info = QLabel(
+            "Kategorie 'Familie': Bitte alle Haushaltsmitglieder erfassen "
+            "(Name, Vorname, Geburtsdatum, Beziehung)."
+        )
+        hh_info.setWordWrap(True)
+        hh_info.setStyleSheet("color: #52606d;")
+        household_layout.addWidget(hh_info)
+
+        self.household_table = QTableWidget(0, 4)
+        self.household_table.setHorizontalHeaderLabels(["Nachname", "Vorname", "Geburtsdatum", "Beziehung"])
+        self.household_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
+        self.household_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
+        self.household_table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.household_table.setFixedHeight(180)
+        household_layout.addWidget(self.household_table)
+
+        hh_btn_row = QHBoxLayout()
+        self.add_hh_btn = QPushButton("Haushaltsmitglied hinzufügen")
+        self.add_hh_btn.clicked.connect(self._on_add_household_member)
+        self.remove_hh_btn = QPushButton("Entfernen")
+        self.remove_hh_btn.clicked.connect(self._on_remove_household_member)
+        hh_btn_row.addWidget(self.add_hh_btn)
+        hh_btn_row.addWidget(self.remove_hh_btn)
+        hh_btn_row.addStretch()
+        household_layout.addLayout(hh_btn_row)
+
+        self.household_card.setLayout(household_layout)
+        content_layout.addWidget(self.household_card)
+
+        self.category_combo.currentTextChanged.connect(self._on_category_changed)
 
         case_card = QGroupBox("Fallinformation")
         case_layout = QVBoxLayout()
@@ -267,6 +316,7 @@ class CaseCreateDialog(QDialog):
         person = {
             "first_name": self.first_name.text().strip(),
             "last_name": self.last_name.text().strip(),
+            "birth_date": self.birth_date.date().toString("yyyy-MM-dd"),
             "address": self.address.text().strip(),
             "postal_code": self.postal_code.text().strip(),
             "city": self.city.text().strip(),
@@ -293,6 +343,20 @@ class CaseCreateDialog(QDialog):
 
         if self.selected_files:
             self._upload_documents(result)
+            # Supervisor-Notification mit Dokument-Hinweis
+            try:
+                from services.notification_service import NotificationService
+                NotificationService().notify_supervisors_new_case(
+                    case_number=result["case_number"],
+                    claim_id=result["id"],
+                    with_documents=True,
+                )
+            except Exception:
+                pass
+
+        # Haushaltsmitglieder speichern (nur wenn Familie-Kategorie)
+        if self.category_combo.currentText() == "Familie":
+            self._save_household_members(result["id"])
 
         QMessageBox.information(self, "Erfolg", "Person, Fall und ggf. Dokumente wurden angelegt.")
 
@@ -300,6 +364,74 @@ class CaseCreateDialog(QDialog):
         from core.session import Session
 
         return Session.get_user_id()
+
+    def _on_category_changed(self, category_text: str) -> None:
+        is_family = (category_text == "Familie")
+        self.household_card.setVisible(is_family)
+
+    def _on_add_household_member(self) -> None:
+        from ui.pages.personal.staff_form_dialog import StaffFormDialog
+
+        # Einfacher Inline-Dialog für Haushaltsmitglied
+        dlg = QDialog(self)
+        dlg.setWindowTitle("Haushaltsmitglied erfassen")
+        dlg.setMinimumWidth(360)
+        form = QFormLayout()
+        ln = QLineEdit()
+        fn = QLineEdit()
+        bd = QDateEdit()
+        bd.setCalendarPopup(True)
+        bd.setDisplayFormat("dd.MM.yyyy")
+        bd.setDate(QDate.currentDate().addYears(-10))
+        rel = QComboBox()
+        rel.addItems([
+            "Ehepartner", "Lebenspartner", "Kind", "Stiefkind", "Pflegekind",
+            "Elternteil", "Geschwister", "Sonstiges",
+        ])
+        form.addRow("Nachname", ln)
+        form.addRow("Vorname", fn)
+        form.addRow("Geburtsdatum", bd)
+        form.addRow("Beziehung", rel)
+        btns = QDialogButtonBox = __import__('PyQt6.QtWidgets', fromlist=['QDialogButtonBox']).QDialogButtonBox
+        btn_box = btns(btns.StandardButton.Ok | btns.StandardButton.Cancel)
+        btn_box.accepted.connect(dlg.accept)
+        btn_box.rejected.connect(dlg.reject)
+        layout = QVBoxLayout()
+        layout.addLayout(form)
+        layout.addWidget(btn_box)
+        dlg.setLayout(layout)
+
+        if dlg.exec():
+            row = self.household_table.rowCount()
+            self.household_table.insertRow(row)
+            self.household_table.setItem(row, 0, QTableWidgetItem(ln.text().strip()))
+            self.household_table.setItem(row, 1, QTableWidgetItem(fn.text().strip()))
+            self.household_table.setItem(row, 2, QTableWidgetItem(bd.date().toString("yyyy-MM-dd")))
+            self.household_table.setItem(row, 3, QTableWidgetItem(rel.currentText()))
+
+    def _on_remove_household_member(self) -> None:
+        row = self.household_table.currentRow()
+        if row >= 0:
+            self.household_table.removeRow(row)
+
+    def _save_household_members(self, claim_id: int) -> None:
+        try:
+            from services.household_service import HouseholdService
+            svc = HouseholdService()
+            for row in range(self.household_table.rowCount()):
+                ln = self.household_table.item(row, 0)
+                fn = self.household_table.item(row, 1)
+                bd = self.household_table.item(row, 2)
+                rel = self.household_table.item(row, 3)
+                svc.add_member(
+                    claim_id=claim_id,
+                    first_name=fn.text() if fn else "",
+                    last_name=ln.text() if ln else "",
+                    birth_date=bd.text() if bd else None,
+                    relationship=rel.text() if rel else "Sonstiges",
+                )
+        except Exception as e:
+            print(f"Haushaltsmitglieder konnten nicht gespeichert werden: {e}")
 
     def on_start_evaluation(self):
         if not self.created_case:

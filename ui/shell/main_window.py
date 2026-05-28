@@ -264,6 +264,9 @@ class MainWindow(QMainWindow):
             parent_app="administration",
         )
 
+        # ── Personal-Verwaltung (Anforderung 7) ───────────────────────────────
+        self._register_personal_routes()
+
         self.workspace_host.set_current_page("dashboard")
         body_layout.addWidget(self.workspace_host, 1)
 
@@ -294,6 +297,28 @@ class MainWindow(QMainWindow):
             "Druckfunktion ist im aktuellen Bereich nicht verfügbar. "
             "Öffnen Sie das Personendossier, um es zu drucken.",
         )
+
+    def _register_personal_routes(self) -> None:
+        """Personal-Routen – nur für berechtigte Rollen zugänglich (Anforderung 7)."""
+        from ui.components.sidebar import PERSONAL_MANAGEMENT_ROLES
+        user = Session.get_user() or {}
+        role = user.get("role_name", "")
+        if role not in PERSONAL_MANAGEMENT_ROLES:
+            return
+
+        from ui.pages.personal.personal_page import PersonalPage
+        for mode, key, title in [
+            ("management", "personal_management", "Geschäftsführung"),
+            ("staff",      "personal_staff",      "Mitarbeiter"),
+            ("volunteers", "personal_volunteers",  "Freiwillige"),
+        ]:
+            try:
+                page = PersonalPage(mode=mode, user_service=self.services.user_service)
+                self.register_route(key, page, title=title, parent_app=key)
+            except PermissionError:
+                pass
+            except Exception:
+                pass
 
     def register_route(self, key: str, widget: QWidget, title: str, parent_app: str | None = None) -> None:
         self.navigation_controller.register_route(key, widget, title, parent_app)

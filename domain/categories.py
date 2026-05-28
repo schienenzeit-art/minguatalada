@@ -3,5 +3,11 @@ CATEGORIES = [
     "Alleinerziehend",
     "Menschen mit Beeinträchtigung",
     "Familie",
-    "Sozialhilfebezüger",
+    "Sozialhilfebezieher",
+    "Freiwillige Mitarbeiter",
 ]
+
+# Mapping alter → neuer Bezeichnungen für Migration
+CATEGORY_RENAMES = {
+    "Sozialhilfebezüger": "Sozialhilfebezieher",
+}

@@ -22,6 +22,7 @@ from PyQt6.QtCore import Qt, QUrl
 from PyQt6.QtGui import QDesktopServices
 from pathlib import Path
 
+from core.claim_status import ClaimStatus
 from core.session import Session
 from services.claim_service import ClaimService
 from services.document_service import DocumentService
@@ -86,7 +87,7 @@ class ClaimEvaluationDialog(QDialog):
             "Alimente",
             "Mindestsicherung",
             "Unterhaltszahlungen",
-            "Diverse andere Einkommen",
+            "Sonstige Einnahmen",
             "Vermoegen",
             "Schenkungen",
         ]
@@ -110,6 +111,9 @@ class ClaimEvaluationDialog(QDialog):
             "Medikamente",
             "Autoversicherung",
             "Handy-Abo",
+            "Sonstige Ausgaben 1",
+            "Sonstige Ausgaben 2",
+            "Sonstige Ausgaben 3",
         ]
         for name in expense_names:
             amount = QLineEdit("0")
@@ -139,6 +143,14 @@ class ClaimEvaluationDialog(QDialog):
         self.disability_degree_input.setValue(0)
         self.disability_degree_input.setEnabled(False)
 
+        # Wohnbeihilfe-Checkbox (Anforderung 2)
+        self.housing_benefit_check = QCheckBox("Wohnbeihilfe vorhanden / beantragt")
+        self.housing_benefit_check.setToolTip(
+            "Bitte angeben ob die Person Wohnbeihilfe erhält oder beantragt hat.\n"
+            "Fehlt die Wohnbeihilfe, wird der Fall vorläufig abgelehnt und eine weitere Abklärung ausgelöst."
+        )
+        self.housing_benefit_set = False  # Wird True sobald Nutzer explizit setzt
+
         body_layout = QHBoxLayout()
         body_layout.setSpacing(18)
 
@@ -164,6 +176,21 @@ class ClaimEvaluationDialog(QDialog):
         household_form.addRow("Kinder", self.child_count_input)
         household_form.addRow("Kategorie", self.category_combo)
         household_form.addRow("Behinderungsgrad (%)", self.disability_degree_input)
+        household_form.addRow("", self.housing_benefit_check)
+
+        # Wohnbeihilfe-Warnfeld
+        self.housing_benefit_warning = QLabel(
+            "Achtung: Keine Wohnbeihilfe angegeben → vorläufige Ablehnung + weitere Abklärung."
+        )
+        self.housing_benefit_warning.setStyleSheet(
+            "color: #9a6700; background: #fff7e6; border: 1px solid #f7d9a3; "
+            "border-radius: 6px; padding: 6px 10px;"
+        )
+        self.housing_benefit_warning.setWordWrap(True)
+        self.housing_benefit_warning.setVisible(False)
+        household_form.addRow("", self.housing_benefit_warning)
+        self.housing_benefit_check.toggled.connect(self._on_housing_benefit_changed)
+
         household_box.setLayout(household_form)
 
         left_col.addWidget(income_box)
@@ -276,13 +303,23 @@ class ClaimEvaluationDialog(QDialog):
             self.category_combo.addItem(category)
 
     def _on_category_changed(self, category: str) -> None:
+        # Behinderungsgrad: nur bei dieser Kategorie sichtbar (kein Mindestprozent mehr)
         self.disability_degree_input.setEnabled(category == "Menschen mit Beeinträchtigung")
+
+    def _on_housing_benefit_changed(self, checked: bool) -> None:
+        self.housing_benefit_set = True
+        self.housing_benefit_warning.setVisible(not checked)
 
     def _parse_float(self, value: QLineEdit) -> float:
         try:
             return max(float(value.text().strip() or 0), 0.0)
         except ValueError:
             return 0.0
+
+    def _get_has_housing_benefit(self) -> bool | None:
+        if not self.housing_benefit_set:
+            return None
+        return self.housing_benefit_check.isChecked()
 
     def evaluate_claim(self) -> None:
         incomes = {k: self._parse_float(v) for k, v in self.income_fields.items()}
@@ -295,6 +332,8 @@ class ClaimEvaluationDialog(QDialog):
             else None
         )
 
+        has_housing_benefit = self._get_has_housing_benefit()
+
         evaluation = self.claim_service.evaluate_claim(
             incomes=incomes,
             expenses=expenses,
@@ -302,12 +341,13 @@ class ClaimEvaluationDialog(QDialog):
             child_count=self.child_count_input.value(),
             category=category,
             disability_degree=disability_degree,
+            has_housing_benefit=has_housing_benefit,
         )
 
         self.current_evaluation = evaluation
         status_text = evaluation["status"]
         status_icon = "●"
-        self.result_status.setText(f"{status_icon} {status_text}")
+        self.result_status.setText(f"{status_icon} {ClaimStatus.get_display(status_text)}")
         self.result_reason.setText(evaluation["reason"])
         self.result_totals.setText(
             f"Einnahmen: {evaluation['total_income']:.2f} €\n"
@@ -380,6 +420,7 @@ class ClaimEvaluationDialog(QDialog):
             if category == "Menschen mit Beeinträchtigung"
             else None
         )
+        has_housing_benefit = self._get_has_housing_benefit()
 
         if not category:
             QMessageBox.warning(self, "Ungültige Kategorie", "Bitte wählen Sie eine Kategorie für die Prüfung aus.")
@@ -395,6 +436,7 @@ class ClaimEvaluationDialog(QDialog):
                 category=category,
                 disability_degree=disability_degree,
                 examiner_id=Session.get_user_id(),
+                has_housing_benefit=has_housing_benefit,
             )
 
             pdf_service = PDFService()
@@ -423,7 +465,7 @@ class ClaimEvaluationDialog(QDialog):
             QMessageBox.critical(self, "Fehler", f"Fehler beim Speichern der Daten: {e}")
             return
 
-        QMessageBox.information(self, "Status aktualisiert", f"Der Anspruchsstatus wurde auf '{evaluation['status']}' gesetzt.")
+        QMessageBox.information(self, "Status aktualisiert", f"Der Anspruchsstatus wurde auf '{ClaimStatus.get_display(evaluation['status'])}' gesetzt.")
         self.accept()
 
     def _offer_open_pdf(self, pdf_path: str) -> None:
@@ -451,7 +493,7 @@ class ClaimEvaluationDialog(QDialog):
         self.claim = claim
         meta = (
             f"Fall: {claim.get('case_number', '-')}, Person: {claim.get('person_first_name','') or ''} {claim.get('person_last_name','') or ''}, "
-            f"Standort: {claim.get('location_name','-')}, Kategorie: {claim.get('category_name','-')}, Status: {claim.get('status','-')}"
+            f"Standort: {claim.get('location_name','-')}, Kategorie: {claim.get('category_name','-')}, Status: {ClaimStatus.get_display(claim.get('status','-'))}"
         )
         self.meta_label.setText(meta)
 
@@ -479,7 +521,7 @@ class ClaimEvaluationDialog(QDialog):
             note.setText(row.get("note", "") if row else "")
 
         if claim.get("status") and claim.get("evaluation_reason") is not None:
-            self.result_status.setText(f"● {claim['status']}")
+            self.result_status.setText(f"● {ClaimStatus.get_display(claim['status'])}")
             self.result_reason.setText(claim.get("evaluation_reason") or "-")
             self.result_totals.setText(
                 f"Einnahmen: {claim.get('total_income', 0.0):.2f} €\n"

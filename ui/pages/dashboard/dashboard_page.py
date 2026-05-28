@@ -64,9 +64,27 @@ class DashboardPage(QWidget):
 
         layout.addWidget(self.build_topbar())
         layout.addLayout(self.build_kpi_grid())
+
+        # Alters-Alerts (20-Jahre-Logik, Anforderung 1)
+        self.age_alert_banner = self._build_age_alert_banner()
+        layout.addWidget(self.age_alert_banner)
+
         layout.addWidget(self.build_main_card())
 
         self.setLayout(layout)
+
+    def _build_age_alert_banner(self) -> QFrame:
+        banner = QFrame()
+        banner.setObjectName("AgeAlertBanner")
+        banner.setStyleSheet(
+            "QFrame#AgeAlertBanner { background: #fff7e6; border: 1px solid #f7d9a3; "
+            "border-radius: 8px; padding: 0; }"
+        )
+        self._age_alert_layout = QVBoxLayout(banner)
+        self._age_alert_layout.setContentsMargins(16, 12, 16, 12)
+        self._age_alert_layout.setSpacing(6)
+        banner.setVisible(False)
+        return banner
 
     def build_topbar(self) -> QFrame:
         topbar = QFrame()
@@ -216,6 +234,44 @@ class DashboardPage(QWidget):
     def load_dashboard(self):
         self._refresh_kpi_cards()
         self._refresh_table_rows()
+        self._refresh_age_alerts()
+
+    def _refresh_age_alerts(self):
+        """Alterswarnung 20-Jahre-Logik im Dashboard (Anforderung 1)."""
+        # Alte Widgets entfernen
+        while self._age_alert_layout.count():
+            item = self._age_alert_layout.takeAt(0)
+            if item and item.widget():
+                item.widget().deleteLater()
+
+        try:
+            from services.age_alert_service import AgeAlertService
+            svc = AgeAlertService()
+            svc.generate_alerts()
+            alerts = svc.get_active_alerts()
+        except Exception:
+            alerts = []
+
+        if not alerts:
+            self.age_alert_banner.setVisible(False)
+            return
+
+        header = QLabel(f"Altersgrenze-Prüfung: {len(alerts)} offene Meldung(en)")
+        header.setStyleSheet("font-weight: 700; color: #9a6700; font-size: 13px;")
+        self._age_alert_layout.addWidget(header)
+
+        for alert in alerts[:5]:  # max 5 im Dashboard
+            msg_label = QLabel(f"• {alert.get('message', '')}")
+            msg_label.setWordWrap(True)
+            msg_label.setStyleSheet("color: #6b4500; font-size: 12px;")
+            self._age_alert_layout.addWidget(msg_label)
+
+        if len(alerts) > 5:
+            more = QLabel(f"... und {len(alerts) - 5} weitere Meldungen (Aufgaben-Modul öffnen)")
+            more.setStyleSheet("color: #9a6700; font-style: italic; font-size: 11px;")
+            self._age_alert_layout.addWidget(more)
+
+        self.age_alert_banner.setVisible(True)
 
     def _refresh_kpi_cards(self):
         while self.kpi_grid.count():

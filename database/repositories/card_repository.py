@@ -373,19 +373,79 @@ class CardRepository:
             stats[r["status"]] = r["cnt"]
         return stats
 
-    def get_next_card_number(self) -> str:
-        """
-        Generiert die nächste eindeutige Kartennummer.
-        Format: K-YYYY-XXXXXX
-        """
-        year = datetime.now().year
+    # Nummernkreise nach Standort (Anforderung 5)
+    # Bludenz: 10001–19999, Feldkirch: 20001–29999, Dornbirn: 30001–39999
+    # Personal/Freiwillige: 8001–8999
+    LOCATION_RANGES: dict[str, tuple[int, int]] = {
+        "Bludenz":   (10001, 19999),
+        "Feldkirch": (20001, 29999),
+        "Dornbirn":  (30001, 39999),
+    }
+    STAFF_RANGE_START = 8001
+    STAFF_RANGE_END   = 8999
 
+    def get_next_card_number(
+        self,
+        location_name: str | None = None,
+        is_staff: bool = False,
+    ) -> str:
+        """
+        Generiert die nächste Kartennummer gemäß Nummernkreis-Logik.
+
+        Nummernkreise:
+          Bludenz   → 10001–19999
+          Feldkirch → 20001–29999
+          Dornbirn  → 30001–39999
+          Personal/Freiwillige → 8001–8999
+
+        HINWEIS zu "8001": Alle Personal-/Freiwilligen-Karten liegen im Bereich
+        ab 8001. Es gibt NICHT alle dieselbe Nummer – jede Karte erhält eine
+        eigene Nummer in diesem Bereich. Sollte fachlich eine Einzelnummer
+        gewünscht sein, hier anpassen.
+        """
         with get_connection() as connection:
+            if is_staff:
+                start = self.STAFF_RANGE_START
+                end   = self.STAFF_RANGE_END
+                pattern = f"{start // 1000}%"
+                last = connection.execute(
+                    "SELECT card_number FROM cards WHERE CAST(card_number AS INTEGER) >= ? AND CAST(card_number AS INTEGER) <= ? ORDER BY CAST(card_number AS INTEGER) DESC LIMIT 1",
+                    (start, end),
+                ).fetchone()
+                if last and last[0]:
+                    try:
+                        next_num = int(last[0]) + 1
+                    except ValueError:
+                        next_num = start
+                else:
+                    next_num = start
+                if next_num > end:
+                    raise ValueError(f"Nummernkreis Personal ({start}–{end}) erschöpft")
+                return str(next_num)
+
+            if location_name and location_name in self.LOCATION_RANGES:
+                start, end = self.LOCATION_RANGES[location_name]
+                last = connection.execute(
+                    "SELECT card_number FROM cards WHERE CAST(card_number AS INTEGER) >= ? AND CAST(card_number AS INTEGER) <= ? ORDER BY CAST(card_number AS INTEGER) DESC LIMIT 1",
+                    (start, end),
+                ).fetchone()
+                if last and last[0]:
+                    try:
+                        next_num = int(last[0]) + 1
+                    except ValueError:
+                        next_num = start
+                else:
+                    next_num = start
+                if next_num > end:
+                    raise ValueError(f"Nummernkreis {location_name} ({start}–{end}) erschöpft")
+                return str(next_num)
+
+            # Fallback für unbekannte Standorte: altes Format
+            year = datetime.now().year
             last = connection.execute(
                 "SELECT card_number FROM cards WHERE card_number LIKE ? ORDER BY card_number DESC LIMIT 1",
                 (f"K-{year}-%",),
             ).fetchone()
-
             if last and last[0]:
                 try:
                     seq = int(last[0].split("-")[-1]) + 1
@@ -393,8 +453,7 @@ class CardRepository:
                     seq = 1
             else:
                 seq = 1
-
-        return f"K-{year}-{seq:06d}"
+            return f"K-{year}-{seq:06d}"
 
     def check_and_update_expiry_status(self, card_id: int, days_threshold: int = 30) -> str:
         """

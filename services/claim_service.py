@@ -80,6 +80,7 @@ class ClaimService:
         child_count: int,
         category: str,
         disability_degree: Optional[int] = None,
+        has_housing_benefit: Optional[bool] = None,
     ) -> dict:
         service = self._resolve_pruefung_service()
         result = service.evaluate_claim(
@@ -89,6 +90,7 @@ class ClaimService:
             child_count,
             category,
             disability_degree,
+            has_housing_benefit=has_housing_benefit,
         )
         return result.to_dict()
 
@@ -102,6 +104,7 @@ class ClaimService:
         category: str,
         disability_degree: Optional[int] = None,
         examiner_id: Optional[int] = None,
+        has_housing_benefit: Optional[bool] = None,
     ) -> dict:
         self.income_repo.save_incomes(claim_id, incomes)
         self.expense_repo.save_expenses(claim_id, expenses)
@@ -116,6 +119,7 @@ class ClaimService:
             child_count=child_count,
             category=category,
             disability_degree=disability_degree,
+            has_housing_benefit=has_housing_benefit,
         )
 
         evaluation_date = datetime.utcnow().isoformat()
@@ -136,6 +140,19 @@ class ClaimService:
             examiner_id=examiner_id,
             evaluation_date=evaluation_date,
         )
+
+        # Wohnbeihilfe-Status in Claim speichern
+        if has_housing_benefit is not None:
+            try:
+                from database.db import get_connection
+                with get_connection() as conn:
+                    conn.execute(
+                        "UPDATE claims SET has_housing_benefit=? WHERE id=?",
+                        (1 if has_housing_benefit else 0, claim_id),
+                    )
+                    conn.commit()
+            except Exception:
+                pass
 
         return evaluation.to_dict()
 

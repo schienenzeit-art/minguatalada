@@ -188,13 +188,14 @@ exe = EXE(
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
-    upx=True,
+    upx=False,           # UPX deaktiviert – reduziert AV-False-Positives
     console=False,
     disable_windowed_traceback=False,
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
     icon='assets/logo.ico',
+    version='installer/version_info.txt',   # Windows-Dateimetadaten
 )
 
 coll = COLLECT(
@@ -203,7 +204,7 @@ coll = COLLECT(
     a.zipfiles,
     a.datas,
     strip=False,
-    upx=True,
+    upx=False,           # UPX deaktiviert
     upx_exclude=[],
     name='MinGuataLada',
 )

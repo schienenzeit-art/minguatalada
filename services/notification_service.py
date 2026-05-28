@@ -65,3 +65,61 @@ class NotificationService:
 
     def cleanup_old(self, days: int = 90) -> int:
         return self.repo.delete_old(days)
+
+    # ── Supervisor-Benachrichtigungen (Anforderung 10) ────────────────────────
+
+    def notify_supervisors_new_case(
+        self,
+        case_number: str,
+        claim_id: int,
+        location_id: int | None = None,
+        with_documents: bool = False,
+    ) -> None:
+        """
+        Benachrichtigt alle Supervisor/Standortleitung dass ein neuer Fall
+        angelegt wurde und Unterlagen zur Prüfung vorliegen.
+        Supervisors erhalten die Meldung im Cockpit/Dashboard.
+        """
+        msg = f"Neuer Fall {case_number} angelegt"
+        if with_documents:
+            msg += " – Dokumente hochgeladen, Unterlagen prüfen und Anspruchsberechtigung beurteilen."
+        else:
+            msg += " – Unterlagen und Anspruchsberechtigung prüfen."
+
+        # Broadcast: user_id=None → alle Supervisors sehen die Meldung
+        # (Alternativ: gezielt pro Standort filtern wenn user-Tabelle erweitert wird)
+        self.notify(
+            title=f"Neuer Fall zur Prüfung: {case_number}",
+            message=msg,
+            type_="CLAIM",
+            user_id=None,
+            reference_type="claim",
+            reference_id=claim_id,
+        )
+
+    def notify_supervisors_approval_required(
+        self,
+        case_number: str,
+        claim_id: int,
+        reason: str,
+    ) -> None:
+        """Benachrichtigt Supervisors dass ein Fall Freigabe erfordert (4-Augen)."""
+        self.notify(
+            title=f"Freigabe erforderlich: {case_number}",
+            message=f"Fall {case_number} erfordert Vier-Augen-Freigabe. Grund: {reason}",
+            type_="CLAIM",
+            user_id=None,
+            reference_type="claim",
+            reference_id=claim_id,
+        )
+
+    def notify_age_alert(self, message: str, claim_id: int) -> None:
+        """Dashboard-Meldung für 20-Jahre-Altersgrenze."""
+        self.notify(
+            title="Altersgrenze-Prüfung erforderlich",
+            message=message,
+            type_="CLAIM",
+            user_id=None,
+            reference_type="claim",
+            reference_id=claim_id,
+        )

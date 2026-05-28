@@ -39,10 +39,15 @@ from services.audit_service import AuditService
 from services.approval_service import ApprovalService
 from services.checklist_service import ChecklistService
 from services.document_template_service import DocumentTemplateService
+from services.age_alert_service import AgeAlertService
+from services.household_service import HouseholdService
+from services.ocr_service import OcrService
+from services.update_service import UpdateService
 from database.repositories.audit_repository import AuditRepository
 from database.repositories.approval_repository import ApprovalRepository
 from database.repositories.checklist_repository import ChecklistRepository
 from database.repositories.document_template_repository import DocumentTemplateRepository
+from database.repositories.household_member_repository import HouseholdMemberRepository
 
 
 @dataclass
@@ -73,6 +78,10 @@ class ServiceContainer:
     approval_service: ApprovalService
     checklist_service: ChecklistService
     document_template_service: DocumentTemplateService
+    age_alert_service: AgeAlertService
+    household_service: HouseholdService
+    ocr_service: OcrService
+    update_service: UpdateService
 
 
 def build_service_container() -> ServiceContainer:
@@ -143,6 +152,11 @@ def build_service_container() -> ServiceContainer:
     checklist_service         = ChecklistService(repo=ChecklistRepository())
     document_template_service = DocumentTemplateService(repo=DocumentTemplateRepository())
 
+    age_alert_service      = AgeAlertService()
+    household_service      = HouseholdService()
+    ocr_service            = OcrService()
+    update_service         = UpdateService(settings_service=settings_service)
+
     return ServiceContainer(
         auth_service=auth_service,
         case_service=case_service,
@@ -170,4 +184,8 @@ def build_service_container() -> ServiceContainer:
         approval_service=approval_service,
         checklist_service=checklist_service,
         document_template_service=document_template_service,
+        age_alert_service=age_alert_service,
+        household_service=household_service,
+        ocr_service=ocr_service,
+        update_service=update_service,
     )
