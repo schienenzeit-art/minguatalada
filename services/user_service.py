@@ -1,6 +1,7 @@
 from typing import Any, Dict, List, Optional
 
 from app.ports import UserRepositoryPort
+from core.constants import NON_LOGIN_ROLES
 from database.repositories.user_repository import UserRepository
 from services.password_service import PasswordService
 from services.auth_service import MAX_FAILED_ATTEMPTS
@@ -35,6 +36,12 @@ class UserService:
     def get_user_counts_by_location(self) -> List[dict]:
         return self.user_repository.get_user_counts_by_location()
 
+    def _get_role_name(self, role_id: int) -> str:
+        """Rollenname anhand der ID nachschlagen."""
+        roles = self.user_repository.get_roles()
+        role = next((r for r in roles if r["id"] == role_id), None)
+        return role["name"] if role else ""
+
     def create_user(
         self,
         full_name: str,
@@ -56,12 +63,29 @@ class UserService:
 
         full_name = full_name.strip()
         username = username.strip()
-        password = password.strip()
 
-        if not full_name or not username or not password:
+        # Rollentyp bestimmen: Freiwillige benötigen kein Passwort
+        target_role_name = self._get_role_name(role_id)
+        is_volunteer = target_role_name in NON_LOGIN_ROLES
+
+        if is_volunteer:
+            # Zufälliger Platzhalter – niemand kennt dieses Passwort, Login wird
+            # zusätzlich durch die Rollenprüfung im AuthService verhindert.
+            import secrets
+            password = secrets.token_hex(32)
+            must_change_password = False
+        else:
+            password = password.strip()
+            if not password:
+                return {
+                    "success": False,
+                    "message": "Passwort ist für diesen Benutzertyp erforderlich.",
+                }
+
+        if not full_name or not username:
             return {
                 "success": False,
-                "message": "Name, Benutzername und Passwort sind erforderlich.",
+                "message": "Name und Benutzername sind erforderlich.",
             }
 
         if self.user_repository.get_by_username(username) is not None:
@@ -84,13 +108,18 @@ class UserService:
             if created:
                 if must_change_password:
                     self.user_repository.set_must_change_password(created["id"], True)
-                self.user_repository.log_audit(created.get("id"), "create_user", "user", created.get("id"), f"User {username} created")
+                action = "create_volunteer" if is_volunteer else "create_user"
+                self.user_repository.log_audit(
+                    created.get("id"), action, "user", created.get("id"),
+                    f"{'Freiwillige/r' if is_volunteer else 'Benutzer'} {username} angelegt"
+                )
         except Exception:
             pass
 
         return {
             "success": True,
-            "message": "Benutzer wurde angelegt.",
+            "message": "Eintrag wurde angelegt.",
+            "is_volunteer": is_volunteer,
         }
 
     def set_user_active(self, user_id: int, is_active: bool) -> Dict[str, Any]:
@@ -218,6 +247,11 @@ class UserService:
         admin = self.user_repository.get_by_id(admin_user_id)
         if admin is None or admin.get("role_name") != "Admin":
             return {"success": False, "message": "Keine Berechtigung."}
+
+        # Freiwillige haben keinen Systemzugang → kein Passwort-Reset
+        target_check = self.user_repository.get_by_id(target_user_id)
+        if target_check and target_check.get("role_name", "") in NON_LOGIN_ROLES:
+            return {"success": False, "message": "Freiwillige haben keinen Systemzugang. Passwort-Reset nicht möglich."}
 
         if len(new_password) < 10:
             return {"success": False, "message": "Neues Passwort muss mindestens 10 Zeichen lang sein."}

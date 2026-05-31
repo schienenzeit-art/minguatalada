@@ -1,48 +1,84 @@
 """
-Update-Architektur – Vorbereitung für Software-Updates via .exe Upload (Anforderung 15).
+Software-Update-System für Min Guata Lada.
 
-Aktueller Stand:
-  - Kein externer Webserver konfiguriert
-  - API-Schnittstelle noch nicht aktiv
-  - Architektur ist vollständig vorbereitet
+Update-Pakete sind ZIP-Dateien (Dateiendung .mugala) mit folgender Struktur:
+    manifest.json          – Pflichtdatei
+    migrations/            – SQL-Migrationsskripte (optional)
+        1.1.0_feature.sql
+    MinGuataLada-Setup-1.1.0.exe  – Inno-Setup-Installer (optional)
 
-Geplante Architektur:
-  1. Manifest-Datei auf externem Server (JSON):
-     { "version": "1.1.0", "url": "https://...", "sha256": "...", "release_notes": "..." }
-  2. Client vergleicht lokale Version gegen Manifest
-  3. Bei verfügbarem Update: Download + Signaturprüfung
-  4. Installation via subprocess (aktuellen Prozess ersetzen)
-
-Settings-Key: UPDATE_MANIFEST_URL (in settings-Tabelle konfigurierbar)
+manifest.json-Format:
+{
+    "version":          "1.1.0",
+    "min_base_version": "1.0.0",
+    "max_base_version": "1.0.99",
+    "installer_file":   "MinGuataLada-Setup-1.1.0.exe",
+    "migrations":       ["migrations/1.1.0_feature.sql"],
+    "changelog":        "- Neue Funktion\\n- Bugfix",
+    "release_date":     "2026-06-01",
+    "requires_restart": true
+}
 """
 import hashlib
+import json
+import shutil
 import subprocess
+import tempfile
+import zipfile
+from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-from app.config import DATA_DIR
+from app.config import DATA_DIR, DB_PATH
 
-# Aktuelle Versionsnummer der Applikation
 APP_VERSION = "1.0.0"
+
+BACKUPS_DIR = Path(DATA_DIR) / "backups"
+UPDATES_DIR = Path(DATA_DIR) / "updates"
+
+_MAX_BACKUPS = 10
+
+
+class UpdateManifest:
+    def __init__(self, data: dict):
+        self.version: str = data.get("version", "")
+        self.min_base_version: str = data.get("min_base_version", "0.0.0")
+        self.max_base_version: str = data.get("max_base_version", "")
+        self.installer_file: str = data.get("installer_file", "")
+        self.migrations: list[str] = data.get("migrations", [])
+        self.changelog: str = data.get("changelog", "")
+        self.release_date: str = data.get("release_date", "")
+        self.requires_restart: bool = data.get("requires_restart", True)
 
 
 class UpdateCheckResult:
-    def __init__(self, available: bool, version: str = "", url: str = "", notes: str = "", error: str = ""):
+    def __init__(self, available: bool, version: str = "", url: str = "",
+                 sha256: str = "", notes: str = "", error: str = ""):
         self.available = available
         self.version = version
         self.url = url
+        self.sha256 = sha256
         self.release_notes = notes
         self.error = error
 
 
+class UpdateResult:
+    def __init__(self, success: bool, message: str = "", backup_path: str = ""):
+        self.success = success
+        self.message = message
+        self.backup_path = backup_path
+
+
 class UpdateService:
-    """Software-Update-Mechanismus – aktuell architektonisch vorbereitet, kein Server konfiguriert."""
-
     MANIFEST_URL_SETTING_KEY = "UPDATE_MANIFEST_URL"
-    DOWNLOAD_DIR = Path(DATA_DIR) / "updates"
 
-    def __init__(self, settings_service=None):
+    def __init__(self, settings_service=None, audit_service=None):
         self.settings_service = settings_service
+        self.audit_service = audit_service
+        BACKUPS_DIR.mkdir(parents=True, exist_ok=True)
+        UPDATES_DIR.mkdir(parents=True, exist_ok=True)
+
+    # ── Version ────────────────────────────────────────────────────────────
 
     def get_current_version(self) -> str:
         return APP_VERSION
@@ -50,80 +86,532 @@ class UpdateService:
     def get_manifest_url(self) -> Optional[str]:
         if self.settings_service:
             try:
-                return self.settings_service.get_value(self.MANIFEST_URL_SETTING_KEY)
+                url = self.settings_service.get(self.MANIFEST_URL_SETTING_KEY)
+                return url if url else None
             except Exception:
                 pass
         return None
 
-    def check_for_updates(self) -> UpdateCheckResult:
-        """
-        Prüft ob eine neuere Version verfügbar ist.
+    # ── Online-Update-Prüfung ──────────────────────────────────────────────
 
-        Aktuell: Kein Server → gibt immer "nicht verfügbar" zurück.
-        Sobald UPDATE_MANIFEST_URL in den Einstellungen gesetzt wird, ist
-        diese Funktion automatisch aktiv.
-        """
+    def check_for_updates(self) -> UpdateCheckResult:
         manifest_url = self.get_manifest_url()
         if not manifest_url:
             return UpdateCheckResult(
                 available=False,
                 error="Kein Update-Server konfiguriert. Bitte UPDATE_MANIFEST_URL in den Einstellungen setzen.",
             )
-
         try:
-            import urllib.request, json
+            import urllib.request
             with urllib.request.urlopen(manifest_url, timeout=10) as resp:
                 manifest = json.loads(resp.read().decode())
-
             remote_version = manifest.get("version", "")
             if self._is_newer(remote_version, APP_VERSION):
                 return UpdateCheckResult(
                     available=True,
                     version=remote_version,
                     url=manifest.get("url", ""),
-                    notes=manifest.get("release_notes", ""),
+                    sha256=manifest.get("sha256", ""),
+                    notes=manifest.get("changelog", ""),
                 )
             return UpdateCheckResult(available=False, version=APP_VERSION)
-
         except Exception as e:
             return UpdateCheckResult(available=False, error=str(e))
 
     def download_update(self, url: str, expected_sha256: str = "") -> Path:
-        """
-        Lädt Update-Paket herunter und prüft Signatur.
-        Wirft Exception wenn Download fehlschlägt oder Prüfsumme falsch ist.
-        """
+        """Lädt Update-Paket herunter und prüft optionale SHA-256-Prüfsumme."""
         import urllib.request
-        self.DOWNLOAD_DIR.mkdir(parents=True, exist_ok=True)
+        UPDATES_DIR.mkdir(parents=True, exist_ok=True)
         filename = url.split("/")[-1]
-        dest = self.DOWNLOAD_DIR / filename
-
+        if not filename.endswith((".mugala", ".zip")):
+            filename += ".mugala"
+        dest = UPDATES_DIR / filename
         urllib.request.urlretrieve(url, dest)
-
         if expected_sha256:
             actual = hashlib.sha256(dest.read_bytes()).hexdigest()
-            if actual != expected_sha256:
+            if actual.lower() != expected_sha256.lower():
                 dest.unlink(missing_ok=True)
-                raise ValueError(f"Prüfsumme falsch: erwartet {expected_sha256}, erhalten {actual}")
-
+                raise ValueError(
+                    f"Prüfsumme ungültig.\nErwartet: {expected_sha256}\nErhalten:  {actual}"
+                )
         return dest
 
-    def install_update(self, exe_path: Path) -> None:
+    # ── Paket-Validierung ──────────────────────────────────────────────────
+
+    def validate_package(self, package_path: Path) -> tuple[bool, str, Optional[UpdateManifest]]:
         """
-        Startet den neuen Installer und beendet die aktuelle Anwendung.
-        Achtung: Beendet den aktuellen Prozess!
+        Prüft ein Update-Paket auf formale Korrektheit und Kompatibilität.
+        Gibt (ok, meldung, manifest) zurück.
+        Führt KEINE Datenbankänderungen durch.
         """
-        if not exe_path.exists():
-            raise FileNotFoundError(f"Installer nicht gefunden: {exe_path}")
-        subprocess.Popen([str(exe_path), "/SILENT"], creationflags=subprocess.DETACHED_PROCESS)
-        import sys
-        sys.exit(0)
+        if not package_path.exists():
+            return False, "Datei nicht gefunden.", None
+
+        if not zipfile.is_zipfile(package_path):
+            return False, "Ungültiges Paketformat. Erwartet wird eine ZIP/.mugala-Datei.", None
+
+        try:
+            with zipfile.ZipFile(package_path, "r") as zf:
+                names = zf.namelist()
+
+                if "manifest.json" not in names:
+                    return False, "manifest.json fehlt im Paket.", None
+
+                try:
+                    manifest_data = json.loads(zf.read("manifest.json").decode("utf-8"))
+                except json.JSONDecodeError as e:
+                    return False, f"manifest.json ist ungültig (JSON-Fehler): {e}", None
+
+                manifest = UpdateManifest(manifest_data)
+
+                if not manifest.version:
+                    return False, "Manifest enthält keine Versionsnummer.", None
+
+                if not self._is_newer(manifest.version, APP_VERSION):
+                    return (
+                        False,
+                        f"Update-Version {manifest.version} ist nicht neuer als "
+                        f"die installierte Version {APP_VERSION}.",
+                        None,
+                    )
+
+                if manifest.min_base_version:
+                    if not self._is_version_gte(APP_VERSION, manifest.min_base_version):
+                        return (
+                            False,
+                            f"Dieses Update erfordert mindestens Version {manifest.min_base_version}. "
+                            f"Installiert: {APP_VERSION}.",
+                            None,
+                        )
+
+                if manifest.max_base_version:
+                    if self._is_newer(APP_VERSION, manifest.max_base_version):
+                        return (
+                            False,
+                            f"Dieses Update ist für maximal Version {manifest.max_base_version} "
+                            f"geeignet. Installiert: {APP_VERSION}.",
+                            None,
+                        )
+
+                for migration in manifest.migrations:
+                    if migration not in names:
+                        return (
+                            False,
+                            f"Migration '{migration}' im Manifest referenziert, "
+                            f"aber nicht im Paket enthalten.",
+                            None,
+                        )
+
+                if manifest.installer_file and manifest.installer_file not in names:
+                    return (
+                        False,
+                        f"Installer '{manifest.installer_file}' im Manifest referenziert, "
+                        f"aber nicht im Paket enthalten.",
+                        None,
+                    )
+
+                return True, "Paket ist gültig.", manifest
+
+        except Exception as e:
+            return False, f"Fehler beim Lesen des Pakets: {e}", None
+
+    # ── Backup ────────────────────────────────────────────────────────────
+
+    def create_backup(self) -> Path:
+        """
+        Erstellt ein vollständiges Datenbank-Backup.
+        Führt vorher einen WAL-Checkpoint durch, um Datenkonsistenz zu gewährleisten.
+        Gibt den Pfad zur Backup-Datei zurück.
+        """
+        BACKUPS_DIR.mkdir(parents=True, exist_ok=True)
+        self._wal_checkpoint()
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        backup_name = f"backup_{timestamp}_v{APP_VERSION}.db"
+        backup_path = BACKUPS_DIR / backup_name
+        shutil.copy2(DB_PATH, backup_path)
+        self._cleanup_old_backups()
+        return backup_path
+
+    def _wal_checkpoint(self) -> None:
+        """WAL-Checkpoint vor Backup für Datenkonsistenz."""
+        try:
+            from database.db import get_connection
+            with get_connection() as conn:
+                conn.execute("PRAGMA wal_checkpoint(FULL)")
+        except Exception:
+            pass
+
+    def _cleanup_old_backups(self) -> None:
+        backups = sorted(
+            BACKUPS_DIR.glob("backup_*.db"),
+            key=lambda p: p.stat().st_mtime,
+            reverse=True,
+        )
+        for old in backups[_MAX_BACKUPS:]:
+            try:
+                old.unlink()
+            except Exception:
+                pass
+
+    def list_backups(self) -> list[dict]:
+        backups = sorted(
+            BACKUPS_DIR.glob("backup_*.db"),
+            key=lambda p: p.stat().st_mtime,
+            reverse=True,
+        )
+        result = []
+        for bp in backups:
+            stat = bp.stat()
+            result.append({
+                "path": str(bp),
+                "name": bp.name,
+                "size_kb": round(stat.st_size / 1024, 1),
+                "created": datetime.fromtimestamp(stat.st_mtime).strftime("%d.%m.%Y %H:%M:%S"),
+            })
+        return result
+
+    # ── Wiederherstellung ──────────────────────────────────────────────────
+
+    def restore_backup(self, backup_path: Path) -> tuple[bool, str]:
+        """
+        Stellt die Datenbank aus einem Backup wieder her.
+        Erstellt vorher ein Sicherheits-Backup des aktuellen Zustands.
+        ACHTUNG: Die Anwendung muss nach der Wiederherstellung neu gestartet werden.
+        """
+        if not backup_path.exists():
+            return False, f"Backup-Datei nicht gefunden: {backup_path}"
+        try:
+            self._wal_checkpoint()
+            safety_name = f"pre_restore_{datetime.now().strftime('%Y%m%d_%H%M%S')}.db"
+            shutil.copy2(DB_PATH, BACKUPS_DIR / safety_name)
+            shutil.copy2(backup_path, DB_PATH)
+            self._log_audit(
+                action="BACKUP_RESTORED",
+                details=f"Datenbank aus Backup '{backup_path.name}' wiederhergestellt.",
+            )
+            return True, (
+                f"Datenbank aus '{backup_path.name}' wiederhergestellt.\n"
+                f"Sicherheits-Backup des vorherigen Zustands: {safety_name}\n\n"
+                "Die Anwendung muss jetzt neu gestartet werden."
+            )
+        except Exception as e:
+            return False, f"Wiederherstellung fehlgeschlagen: {e}"
+
+    # ── Update einspielen ──────────────────────────────────────────────────
+
+    def apply_update(self, package_path: Path, user_id: int = None) -> UpdateResult:
+        """
+        Vollständiger, sicherer Update-Ablauf:
+          1. Paket validieren
+          2. Datenbank-Backup erstellen
+          3. Migrationen ausführen (idempotent, additive)
+          4. Update in update_history protokollieren
+          5. Installer starten (falls enthalten) und Anwendung beenden
+        """
+        # Schritt 1: Validierung
+        ok, msg, manifest = self.validate_package(package_path)
+        if not ok:
+            self._record_failure(version=None, error=msg, user_id=user_id)
+            return UpdateResult(success=False, message=f"Validierung fehlgeschlagen:\n{msg}")
+
+        # Schritt 2: Backup
+        try:
+            backup_path = self.create_backup()
+        except Exception as e:
+            err = f"Backup konnte nicht erstellt werden: {e}"
+            self._record_failure(version=manifest.version, error=err, user_id=user_id)
+            return UpdateResult(success=False, message=err)
+
+        # Schritt 3 & 4: Paket entpacken, Migrationen ausführen
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+
+            try:
+                with zipfile.ZipFile(package_path, "r") as zf:
+                    zf.extractall(tmp)
+            except Exception as e:
+                err = f"Paket konnte nicht entpackt werden: {e}"
+                self._record_failure(manifest.version, err, user_id)
+                return UpdateResult(
+                    success=False,
+                    message=err + f"\n\nBackup gesichert unter:\n{backup_path}",
+                    backup_path=str(backup_path),
+                )
+
+            applied_migrations: list[str] = []
+            for migration_file in manifest.migrations:
+                migration_path = tmp / migration_file
+                ok, err = self._apply_migration(migration_path, manifest.version)
+                if not ok:
+                    msg = f"Migration '{migration_file}' fehlgeschlagen:\n{err}"
+                    self._record_failure(manifest.version, msg, user_id)
+                    return UpdateResult(
+                        success=False,
+                        message=(
+                            msg
+                            + f"\n\nDie Datenbank wurde NICHT verändert, sofern die Migration "
+                            f"atomar fehlgeschlagen ist.\n"
+                            f"Backup verfügbar unter:\n{backup_path}"
+                        ),
+                        backup_path=str(backup_path),
+                    )
+                applied_migrations.append(migration_file)
+
+            # Schritt 4: Erfolg protokollieren
+            self._record_success(
+                version=manifest.version,
+                changelog=manifest.changelog,
+                backup_path=str(backup_path),
+                migrations=applied_migrations,
+                user_id=user_id,
+            )
+
+            # Schritt 5: Installer starten (falls vorhanden)
+            if manifest.installer_file:
+                installer_src = tmp / manifest.installer_file
+                if installer_src.exists():
+                    perm_installer = UPDATES_DIR / manifest.installer_file
+                    shutil.copy2(installer_src, perm_installer)
+                    try:
+                        subprocess.Popen(
+                            [str(perm_installer), "/SILENT"],
+                            creationflags=subprocess.DETACHED_PROCESS,
+                        )
+                        import sys
+                        sys.exit(0)
+                    except Exception as e:
+                        return UpdateResult(
+                            success=True,
+                            message=(
+                                f"Migrationen erfolgreich auf Version {manifest.version}.\n\n"
+                                f"Installer konnte nicht automatisch gestartet werden:\n{e}\n\n"
+                                f"Bitte manuell ausführen:\n{perm_installer}"
+                            ),
+                            backup_path=str(backup_path),
+                        )
+
+        return UpdateResult(
+            success=True,
+            message=(
+                f"Update auf Version {manifest.version} erfolgreich eingespielt.\n"
+                f"Angewendete Migrationen: {len(applied_migrations)}\n"
+                f"Backup: {backup_path}"
+            ),
+            backup_path=str(backup_path),
+        )
+
+    # ── Migration ─────────────────────────────────────────────────────────
+
+    def _apply_migration(self, migration_path: Path, version: str) -> tuple[bool, str]:
+        """
+        Führt eine einzelne SQL-Migrationsdatei idempotent aus.
+        Migrationen werden nur einmalig angewendet (Prüfung via update_migrations-Tabelle).
+        Nur additive SQL-Operationen (ALTER TABLE ADD COLUMN, CREATE TABLE IF NOT EXISTS)
+        sind erlaubt. Destruktive Operationen (DROP, DELETE ohne WHERE) führen zu einem Fehler.
+        """
+        try:
+            sql = migration_path.read_text(encoding="utf-8")
+
+            # Sicherheitsprüfung: destruktive Operationen blockieren
+            blocked = self._check_destructive_sql(sql)
+            if blocked:
+                return False, (
+                    f"Migration enthält potenziell destruktive SQL-Anweisung: '{blocked}'. "
+                    "Update abgebrochen. Bitte Migrationsskript prüfen."
+                )
+
+            from database.db import get_connection
+            with get_connection() as conn:
+                self._ensure_update_tables(conn)
+
+                already_applied = conn.execute(
+                    "SELECT id FROM update_migrations WHERE migration_file = ?",
+                    (migration_path.name,),
+                ).fetchone()
+                if already_applied:
+                    return True, ""
+
+                conn.executescript(sql)
+
+                conn.execute(
+                    "INSERT INTO update_migrations (version, migration_file, applied_at) "
+                    "VALUES (?, ?, ?)",
+                    (version, migration_path.name, datetime.now().isoformat()),
+                )
+                conn.commit()
+
+            return True, ""
+        except Exception as e:
+            return False, str(e)
+
+    @staticmethod
+    def _check_destructive_sql(sql: str) -> str:
+        """
+        Einfache Prüfung auf destruktive SQL-Anweisungen.
+        Gibt den gefundenen blockierten Begriff zurück, sonst leeren String.
+        """
+        import re
+        normalized = sql.upper()
+        patterns = [
+            r"\bDROP\s+TABLE\b",
+            r"\bDROP\s+COLUMN\b",
+            r"\bTRUNCATE\b",
+            r"\bDELETE\s+FROM\s+\w+\s*;",    # DELETE ohne WHERE
+            r"\bUPDATE\s+\w+\s+SET\b(?!.*\bWHERE\b)",  # UPDATE ohne WHERE
+        ]
+        for pat in patterns:
+            if re.search(pat, normalized):
+                match = re.search(pat, normalized)
+                return match.group(0).strip() if match else pat
+        return ""
+
+    @staticmethod
+    def _ensure_update_tables(conn) -> None:
+        """Stellt sicher, dass die Update-Tracking-Tabellen existieren (Safety-Net)."""
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS update_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                version TEXT NOT NULL,
+                status TEXT NOT NULL DEFAULT 'SUCCESS',
+                changelog TEXT,
+                backup_path TEXT,
+                applied_migrations TEXT,
+                error_message TEXT,
+                applied_by INTEGER,
+                applied_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS update_migrations (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                version TEXT NOT NULL,
+                migration_file TEXT NOT NULL UNIQUE,
+                applied_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+    # ── Update-Verlauf ─────────────────────────────────────────────────────
+
+    def get_update_history(self) -> list[dict]:
+        try:
+            from database.db import get_connection
+            with get_connection() as conn:
+                self._ensure_update_tables(conn)
+                rows = conn.execute(
+                    "SELECT * FROM update_history ORDER BY applied_at DESC LIMIT 100"
+                ).fetchall()
+                return [dict(r) for r in rows]
+        except Exception:
+            return []
+
+    def get_applied_migrations(self) -> list[dict]:
+        try:
+            from database.db import get_connection
+            with get_connection() as conn:
+                self._ensure_update_tables(conn)
+                rows = conn.execute(
+                    "SELECT * FROM update_migrations ORDER BY applied_at DESC"
+                ).fetchall()
+                return [dict(r) for r in rows]
+        except Exception:
+            return []
+
+    def get_last_successful_update(self) -> Optional[dict]:
+        try:
+            from database.db import get_connection
+            with get_connection() as conn:
+                self._ensure_update_tables(conn)
+                row = conn.execute(
+                    "SELECT * FROM update_history WHERE status = 'SUCCESS' "
+                    "ORDER BY applied_at DESC LIMIT 1"
+                ).fetchone()
+                return dict(row) if row else None
+        except Exception:
+            return None
+
+    # ── Protokollierung ────────────────────────────────────────────────────
+
+    def _record_success(self, version: str, changelog: str, backup_path: str,
+                        migrations: list[str], user_id: int = None) -> None:
+        try:
+            from database.db import get_connection
+            with get_connection() as conn:
+                self._ensure_update_tables(conn)
+                conn.execute(
+                    """INSERT INTO update_history
+                       (version, status, changelog, backup_path, applied_migrations,
+                        applied_by, applied_at)
+                       VALUES (?, 'SUCCESS', ?, ?, ?, ?, ?)""",
+                    (
+                        version, changelog, backup_path,
+                        json.dumps(migrations), user_id,
+                        datetime.now().isoformat(),
+                    ),
+                )
+                conn.commit()
+        except Exception:
+            pass
+        self._log_audit(
+            action="UPDATE_APPLIED",
+            details=f"Update auf Version {version} erfolgreich. Migrationen: {len(migrations)}. Backup: {backup_path}",
+            user_id=user_id,
+        )
+
+    def _record_failure(self, version: Optional[str], error: str, user_id: int = None) -> None:
+        try:
+            from database.db import get_connection
+            with get_connection() as conn:
+                self._ensure_update_tables(conn)
+                conn.execute(
+                    """INSERT INTO update_history
+                       (version, status, changelog, backup_path, applied_migrations,
+                        error_message, applied_by, applied_at)
+                       VALUES (?, 'FAILED', '', '', '[]', ?, ?, ?)""",
+                    (
+                        version or "unbekannt",
+                        error[:2000],
+                        user_id,
+                        datetime.now().isoformat(),
+                    ),
+                )
+                conn.commit()
+        except Exception:
+            pass
+        self._log_audit(
+            action="UPDATE_FAILED",
+            details=f"Update fehlgeschlagen (Version {version or 'unbekannt'}): {error[:500]}",
+            user_id=user_id,
+        )
+
+    def _log_audit(self, action: str, details: str, user_id: int = None) -> None:
+        if self.audit_service:
+            try:
+                self.audit_service.log(
+                    user_id=user_id,
+                    action=action,
+                    object_type="system",
+                    object_id=None,
+                    details=details,
+                )
+            except Exception:
+                pass
+
+    # ── Hilfsmethoden ──────────────────────────────────────────────────────
 
     @staticmethod
     def _is_newer(remote: str, local: str) -> bool:
         try:
-            r = tuple(int(x) for x in remote.split("."))
-            l = tuple(int(x) for x in local.split("."))
+            r = tuple(int(x) for x in remote.strip().split("."))
+            l = tuple(int(x) for x in local.strip().split("."))
             return r > l
         except Exception:
             return False
+
+    @staticmethod
+    def _is_version_gte(version: str, minimum: str) -> bool:
+        try:
+            v = tuple(int(x) for x in version.strip().split("."))
+            m = tuple(int(x) for x in minimum.strip().split("."))
+            return v >= m
+        except Exception:
+            return True

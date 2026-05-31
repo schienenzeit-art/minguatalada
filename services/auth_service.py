@@ -40,6 +40,15 @@ class AuthService:
                 "user": None,
             }
 
+        # Rollen ohne Systemzugang können sich nie einloggen
+        from core.constants import NON_LOGIN_ROLES
+        if user.get("role_name", "") in NON_LOGIN_ROLES:
+            return {
+                "success": False,
+                "message": "Dieser Eintrag ist für keinen Systemzugang vorgesehen.",
+                "user": None,
+            }
+
         # check account lockout
         locked_until = user.get("locked_until")
         if locked_until:

@@ -240,6 +240,8 @@ class CardRepository:
         status: str | None = None,
         statuses: list[str] | None = None,
         location_id: int | None = None,
+        issued_from: str | None = None,
+        issued_to: str | None = None,
     ) -> int:
         query = ["SELECT COUNT(*) AS total FROM cards c"]
         params: list = []
@@ -256,10 +258,17 @@ class CardRepository:
             filters.append("c.status = ?")
             params.append(status)
 
+        if issued_from is not None:
+            filters.append("DATE(c.issue_date) >= DATE(?)")
+            params.append(issued_from)
+
+        if issued_to is not None:
+            filters.append("DATE(c.issue_date) <= DATE(?)")
+            params.append(issued_to)
+
         if filters:
             query.append("WHERE " + " AND ".join(filters))
 
-        query.append("ORDER BY c.created_at DESC")
         sql = " ".join(query)
 
         with get_connection() as connection:

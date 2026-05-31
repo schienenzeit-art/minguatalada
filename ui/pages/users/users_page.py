@@ -1,5 +1,3 @@
-from datetime import datetime, timedelta
-
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton,
@@ -8,7 +6,10 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import QDateTime
 
+from PyQt6.QtGui import QColor
+
 from ui.components.table_widget import TableWidget
+from core.constants import NON_LOGIN_ROLES
 from services.user_service import UserService, USERMGMT_ALLOWED_ROLES
 from ui.components.page_header import PageHeader
 from ui.components.action_button import ActionButton
@@ -63,8 +64,8 @@ class UsersPage(QWidget):
         toolbar.addWidget(self.filter_button)
         layout.addLayout(toolbar)
 
-        self.table = TableWidget(7)
-        self.table.setHorizontalHeaderLabels(["Name", "Benutzername", "Rolle", "Standort", "Status", "PW ändern", "Gesperrt bis"])
+        self.table = TableWidget(8)
+        self.table.setHorizontalHeaderLabels(["Name", "Benutzername", "Rolle", "Typ", "Standort", "Status", "PW ändern", "Gesperrt bis"])
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.table.verticalHeader().hide()
         self.table.setEditTriggers(TableWidget.EditTrigger.NoEditTriggers)
@@ -96,6 +97,9 @@ class UsersPage(QWidget):
         layout.addLayout(action_bar)
 
         self.table.selectionModel().selectionChanged.connect(self._on_selection_changed)
+
+        # Sperren/Entsperren nicht für Freiwillige
+        self.table.selectionModel().selectionChanged.connect(self._update_lock_buttons)
         self.setLayout(layout)
 
     def _current_user_id(self) -> int | None:
@@ -109,6 +113,18 @@ class UsersPage(QWidget):
         has_sel = bool(self.table.selectionModel().selectedRows())
         self.lock_button.setEnabled(has_sel)
         self.unlock_button.setEnabled(has_sel)
+
+    def _update_lock_buttons(self) -> None:
+        rows = self.table.selectionModel().selectedRows()
+        if not rows:
+            self.lock_button.setEnabled(False)
+            self.unlock_button.setEnabled(False)
+            return
+        # Sperren/Entsperren für Freiwillige deaktivieren
+        role_item = self.table.item(rows[0].row(), 2)
+        is_volunteer = role_item and role_item.text() in NON_LOGIN_ROLES
+        self.lock_button.setEnabled(not is_volunteer)
+        self.unlock_button.setEnabled(not is_volunteer)
 
     def lock_selected_user(self) -> None:
         user_id = self._current_user_id()
@@ -139,7 +155,6 @@ class UsersPage(QWidget):
         self.load_users()
 
     def load_users(self) -> None:
-        search_text = self.search_input.text().strip().lower()
         users = self.user_service.get_all_users()
 
         self.table.setRowCount(0)
@@ -147,20 +162,35 @@ class UsersPage(QWidget):
             display_name = user.get("full_name", "-")
             username = user.get("username", "-")
             role = user.get("role_name", "-")
+            is_volunteer = role in NON_LOGIN_ROLES
+            user_type = "Freiwillige/r" if is_volunteer else "Systembenutzer"
             location = user.get("location_name", "-") or "-"
             status = "Aktiv" if user.get("is_active") else "Inaktiv"
-            pw_flag = "Ja" if user.get("must_change_password") else "Nein"
-            locked_until = (user.get("locked_until") or "")[:16].replace("T", " ") or "–"
+            pw_flag = "–" if is_volunteer else ("Ja" if user.get("must_change_password") else "Nein")
+            locked_until = "–" if is_volunteer else ((user.get("locked_until") or "")[:16].replace("T", " ") or "–")
+
             row = self.table.rowCount()
             self.table.insertRow(row)
             self.table.setItem(row, 0, QTableWidgetItem(display_name))
             self.table.setItem(row, 1, QTableWidgetItem(username))
             self.table.setItem(row, 2, QTableWidgetItem(role))
-            self.table.setItem(row, 3, QTableWidgetItem(location))
-            self.table.setItem(row, 4, QTableWidgetItem(status))
-            self.table.setItem(row, 5, QTableWidgetItem(pw_flag))
-            self.table.setItem(row, 6, QTableWidgetItem(locked_until))
+            self.table.setItem(row, 3, QTableWidgetItem(user_type))
+            self.table.setItem(row, 4, QTableWidgetItem(location))
+            self.table.setItem(row, 5, QTableWidgetItem(status))
+            self.table.setItem(row, 6, QTableWidgetItem(pw_flag))
+            self.table.setItem(row, 7, QTableWidgetItem(locked_until))
             self.table.item(row, 0).setData(Qt.ItemDataRole.UserRole, user.get("id"))
+
+            # Freiwillige optisch hervorheben (gedämpfte Farbe)
+            if is_volunteer:
+                for col in range(8):
+                    item = self.table.item(row, col)
+                    if item:
+                        item.setForeground(QColor("#888"))
+                type_item = self.table.item(row, 3)
+                if type_item:
+                    type_item.setForeground(QColor("#e67e22"))
+                    type_item.setToolTip("Freiwillige erhalten keinen Systemzugang.")
 
     def open_add_user_dialog(self) -> None:
         roles = self.user_service.get_roles()
@@ -183,18 +213,26 @@ class UsersPage(QWidget):
             QMessageBox.warning(self, "Fehler", result["message"])
             return
 
-        # Initialpasswort für Weitergabe anzeigen
-        QMessageBox.information(
-            self, "Benutzer angelegt",
-            f"Benutzer «{user_data['full_name']}» wurde erfolgreich angelegt.\n\n"
-            f"Benutzername: {user_data['username']}\n"
-            f"Initialpasswort: {user_data['password']}\n\n"
-            "Das Passwort muss bei der ersten Anmeldung geändert werden.\n"
-            "Bitte geben Sie diese Login-Daten persönlich an den Mitarbeiter weiter.",
-        )
+        if user_data.get("is_volunteer"):
+            QMessageBox.information(
+                self, "Freiwillige/r angelegt",
+                f"Freiwillige/r «{user_data['full_name']}» wurde erfolgreich angelegt.\n\n"
+                f"Benutzername: {user_data['username']}\n\n"
+                "Freiwillige erhalten keinen Systemzugang.\n"
+                "Der Datensatz dient der Verwaltung und Kartenzuordnung.",
+            )
+        else:
+            QMessageBox.information(
+                self, "Benutzer angelegt",
+                f"Benutzer «{user_data['full_name']}» wurde erfolgreich angelegt.\n\n"
+                f"Benutzername: {user_data['username']}\n"
+                f"Initialpasswort: {user_data['password']}\n\n"
+                "Das Passwort muss bei der ersten Anmeldung geändert werden.\n"
+                "Bitte geben Sie diese Login-Daten persönlich an den Mitarbeiter weiter.",
+            )
         self.load_users()
 
-    def on_user_row_double_clicked(self, row: int, column: int) -> None:
+    def on_user_row_double_clicked(self, row: int, _column: int) -> None:
         user_id = self.table.item(row, 0).data(Qt.ItemDataRole.UserRole)
         if not user_id:
             return

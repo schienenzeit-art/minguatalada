@@ -443,15 +443,13 @@ class ClaimDetailPage(QDialog):
     def _tb_print_action(self):
         try:
             from services.document_package_service import DocumentPackageService
-            import os, sys
+            from PyQt6.QtCore import QUrl
+            from PyQt6.QtGui import QDesktopServices
             pkgs = DocumentPackageService().build_package_for_claim_id(
                 self.claim_id, self.claim_service
             )
             for p in pkgs:
-                if sys.platform == "win32":
-                    os.startfile(p, "print")
-                else:
-                    os.startfile(p) if hasattr(os, "startfile") else None
+                QDesktopServices.openUrl(QUrl.fromLocalFile(str(p)))
         except Exception as exc:
             from PyQt6.QtWidgets import QMessageBox
             QMessageBox.critical(self, "Fehler", str(exc))

@@ -5,11 +5,10 @@ Zeigt statusabhängige Aktionen: Drucken, PDF, E-Mail, Karte, Wiedervorlage.
 """
 from __future__ import annotations
 
-import os
-import sys
 from pathlib import Path
 
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QUrl
+from PyQt6.QtGui import QDesktopServices
 from PyQt6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QGroupBox, QMessageBox, QSizePolicy, QFrame,
@@ -20,22 +19,17 @@ from core.claim_status import ClaimStatus
 
 def _open_file(path: str) -> None:
     """Öffnet eine Datei mit dem Standard-Programm des Betriebssystems."""
-    if sys.platform == "win32":
-        os.startfile(path)
-    elif sys.platform == "darwin":
-        import subprocess
-        subprocess.Popen(["open", path])
-    else:
-        import subprocess
-        subprocess.Popen(["xdg-open", path])
+    QDesktopServices.openUrl(QUrl.fromLocalFile(str(path)))
 
 
 def _print_file(path: str) -> None:
-    """Druckt eine Datei über den Standarddrucker."""
-    if sys.platform == "win32":
-        os.startfile(path, "print")
-    else:
-        _open_file(path)
+    """
+    Öffnet die PDF im Standard-Viewer.
+    Hinweis: os.startfile(path, "print") schlägt auf modernen Windows-Systemen
+    mit WinError 1155 fehl, wenn kein Shell-Print-Verb für .pdf registriert ist
+    (z. B. bei Edge als einzigem PDF-Viewer). QDesktopServices ist zuverlässiger.
+    """
+    QDesktopServices.openUrl(QUrl.fromLocalFile(str(path)))
 
 
 class PostEvaluationPanel(QDialog):

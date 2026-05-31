@@ -16,27 +16,30 @@ _NAV_GROUPS = [
         ],
     },
     {
-        "title": "Stammdaten",
+        "title": "Einstellungen",
+        "items": [
+            ("Alle Einstellungen",  "settings"),
+            ("Prüfungslimits",      "settings_pruefung"),
+            ("SMTP & E-Mail",       "smtp_settings"),
+            ("Systemparameter",     "settings_system"),
+        ],
+    },
+    {
+        "title": "Stammdaten & Import",
         "items": [
             ("Standorte",           "locations"),
-            ("Einstellungen",       "settings"),
-            ("SMTP / E-Mail",       "smtp_settings"),
             ("Daten-Import",        "import"),
+            ("Dokumentvorlagen",    "document_templates"),
+            ("Unterlagen-Checklisten", "checklist_templates"),
+            ("Serienbriefe",        "serial_letters"),
         ],
     },
     {
-        "title": "Vorlagen & Listen",
+        "title": "Compliance & Updates",
         "items": [
-            ("Dokumentvorlagen",        "document_templates"),
-            ("Unterlagen-Checklisten",  "checklist_templates"),
-            ("Serienbriefe",            "serial_letters"),
-        ],
-    },
-    {
-        "title": "Compliance & Audit",
-        "items": [
-            ("Archiv-Regeln",   "archive_rules"),
-            ("Audit-Protokoll", "audit_log"),
+            ("Archiv-Regeln",          "archive_rules"),
+            ("Audit-Protokoll",        "audit_log"),
+            ("Software-Update-Center", "software_update"),
         ],
     },
 ]

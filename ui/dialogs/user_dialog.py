@@ -4,7 +4,6 @@ from PyQt6.QtWidgets import (
     QDialog,
     QDialogButtonBox,
     QFormLayout,
-    QHBoxLayout,
     QLabel,
     QLineEdit,
     QMessageBox,
@@ -12,11 +11,12 @@ from PyQt6.QtWidgets import (
     QCheckBox,
 )
 
+from core.constants import NON_LOGIN_ROLES
+
 
 class AddUserDialog(QDialog):
     def __init__(self, roles: list[dict], locations: list[dict], user: dict | None = None):
         super().__init__()
-        # allow minimize / maximize on opened dialogs
         flags = self.windowFlags()
         flags |= Qt.WindowType.Window
         flags |= Qt.WindowType.WindowMinimizeButtonHint
@@ -31,29 +31,68 @@ class AddUserDialog(QDialog):
     def setup_ui(self):
         title = "Neuen Benutzer anlegen" if self.user is None else "Benutzer bearbeiten"
         self.setWindowTitle(title)
-        self.setMinimumWidth(360)
+        self.setMinimumWidth(440)
 
-        layout = QVBoxLayout()
-        form_layout = QFormLayout()
+        layout = QVBoxLayout(self)
+        layout.setSpacing(12)
 
+        self._form = QFormLayout()
+        self._form.setLabelAlignment(Qt.AlignmentFlag.AlignLeft)
+        self._form.setHorizontalSpacing(24)
+        self._form.setVerticalSpacing(10)
+
+        # ── Felder ────────────────────────────────────────────────────────────
         self.full_name_input = QLineEdit()
+        self._form.addRow("Vollständiger Name *", self.full_name_input)
+
         self.username_input = QLineEdit()
+        self._form.addRow("Benutzername *", self.username_input)
+
         self.password_input = QLineEdit()
         self.password_input.setEchoMode(QLineEdit.EchoMode.Password)
+        self._form.addRow("Passwort *", self.password_input)
 
         self.role_combo = QComboBox()
         self.role_combo.addItem("Bitte Rolle wählen", None)
         for role in self.roles:
             self.role_combo.addItem(role["name"], role["id"])
+        self._form.addRow("Rolle *", self.role_combo)
 
         self.location_combo = QComboBox()
         self.location_combo.addItem("Kein Standort", None)
         for location in self.locations:
             self.location_combo.addItem(location["name"], location["id"])
+        self._form.addRow("Standort", self.location_combo)
 
         self.active_checkbox = QCheckBox("Aktiv")
         self.active_checkbox.setChecked(True)
+        self._form.addRow("", self.active_checkbox)
 
+        layout.addLayout(self._form)
+
+        # ── Info-Banner für Freiwillige (initial versteckt) ───────────────────
+        self._volunteer_info = QLabel(
+            "Freiwillige erhalten keinen Systemzugang und benötigen kein Passwort.\n"
+            "Der Datensatz dient ausschliesslich der Verwaltung und Kartenzuordnung."
+        )
+        self._volunteer_info.setWordWrap(True)
+        self._volunteer_info.setStyleSheet(
+            "background: #fff8e1; color: #7a5c00; border: 1px solid #ffe082; "
+            "border-radius: 6px; padding: 10px 14px; font-size: 12px;"
+        )
+        self._volunteer_info.setVisible(False)
+        layout.addWidget(self._volunteer_info)
+
+        # ── Buttons ────���──────────────────────────────────────────────────────
+        buttons = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel,
+            Qt.Orientation.Horizontal,
+        )
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+        layout.addWidget(buttons)
+
+        # ── Bestehenden Benutzer laden ───────────────────────────────────────��
         if self.user is not None:
             self.full_name_input.setText(self.user.get("full_name", ""))
             self.username_input.setText(self.user.get("username", ""))
@@ -61,39 +100,43 @@ class AddUserDialog(QDialog):
 
             role_id = self.user.get("role_id")
             if role_id is not None:
-                role_index = self.role_combo.findData(role_id)
-                if role_index >= 0:
-                    self.role_combo.setCurrentIndex(role_index)
+                idx = self.role_combo.findData(role_id)
+                if idx >= 0:
+                    self.role_combo.setCurrentIndex(idx)
 
             location_id = self.user.get("location_id")
             if location_id is not None:
-                location_index = self.location_combo.findData(location_id)
-                if location_index >= 0:
-                    self.location_combo.setCurrentIndex(location_index)
+                idx = self.location_combo.findData(location_id)
+                if idx >= 0:
+                    self.location_combo.setCurrentIndex(idx)
 
-        form_layout.addRow(QLabel("Vollständiger Name"), self.full_name_input)
-        form_layout.addRow(QLabel("Benutzername"), self.username_input)
-        form_layout.addRow(QLabel("Passwort"), self.password_input)
-        form_layout.addRow(QLabel("Rolle"), self.role_combo)
-        form_layout.addRow(QLabel("Standort"), self.location_combo)
-        form_layout.addRow(self.active_checkbox)
+        # Rolle-Änderungs-Handler verbinden + initialen Zustand setzen
+        self.role_combo.currentIndexChanged.connect(self._on_role_changed)
+        self._on_role_changed()
 
-        buttons = QDialogButtonBox(
-            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel,
-            Qt.Orientation.Horizontal,
-        )
-        buttons.accepted.connect(self.accept)
-        buttons.rejected.connect(self.reject)
+    # ── Rolle-Wechsel ────────��────────────────────────────────────────────────
 
-        layout.addLayout(form_layout)
-        layout.addWidget(buttons)
-        self.setLayout(layout)
+    def _is_volunteer_selected(self) -> bool:
+        return self.role_combo.currentText() in NON_LOGIN_ROLES
+
+    def _on_role_changed(self) -> None:
+        is_volunteer = self._is_volunteer_selected()
+        # Passwort-Zeile ein-/ausblenden (QFormLayout.setRowVisible – Qt 5.12+)
+        try:
+            self._form.setRowVisible(self.password_input, not is_volunteer)
+        except AttributeError:
+            # Fallback für ältere Qt-Versionen
+            self.password_input.setVisible(not is_volunteer)
+        self._volunteer_info.setVisible(is_volunteer)
+
+    # ── Validierung & Speichern ──��────────────────────────────────────────────
 
     def accept(self) -> None:
         full_name = self.full_name_input.text().strip()
         username = self.username_input.text().strip()
         password = self.password_input.text().strip()
         role_id = self.role_combo.currentData()
+        is_volunteer = self._is_volunteer_selected()
 
         if not full_name or not username or role_id is None:
             QMessageBox.warning(
@@ -103,22 +146,24 @@ class AddUserDialog(QDialog):
             )
             return
 
-        if self.user is None and not password:
+        # Passwort ist nur für reguläre Benutzer (nicht Freiwillige) Pflicht
+        if not is_volunteer and self.user is None and not password:
             QMessageBox.warning(
                 self,
-                "Ungültige Eingabe",
-                "Bitte geben Sie ein Passwort ein.",
+                "Passwort erforderlich",
+                "Bitte vergeben Sie ein Passwort für diesen Benutzer.",
             )
             return
 
         location_id = self.location_combo.currentData()
         self.user_data = {
-            "full_name": full_name,
-            "username": username,
-            "password": password if password else None,
-            "role_id": role_id,
-            "location_id": location_id,
-            "is_active": bool(self.active_checkbox.isChecked()),
+            "full_name":    full_name,
+            "username":     username,
+            "password":     password if not is_volunteer else "",
+            "role_id":      role_id,
+            "location_id":  location_id,
+            "is_active":    bool(self.active_checkbox.isChecked()),
+            "is_volunteer": is_volunteer,
         }
         super().accept()
 

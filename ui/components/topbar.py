@@ -131,13 +131,11 @@ class TopBar(QWidget):
             return
         try:
             from services.document_package_service import DocumentPackageService
-            import os, sys
+            from PyQt6.QtCore import QUrl
+            from PyQt6.QtGui import QDesktopServices
             pkgs = DocumentPackageService().build_package(claim)
             for p in pkgs:
-                if sys.platform == "win32":
-                    os.startfile(p, "print")
-                else:
-                    os.startfile(p) if hasattr(os, "startfile") else None
+                QDesktopServices.openUrl(QUrl.fromLocalFile(str(p)))
         except Exception as exc:
             from PyQt6.QtWidgets import QMessageBox
             QMessageBox.warning(self, "Fehler", str(exc))

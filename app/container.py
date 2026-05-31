@@ -174,7 +174,7 @@ def build_service_container() -> ServiceContainer:
     age_alert_service        = AgeAlertService()
     household_service        = HouseholdService()
     ocr_service              = OcrService()
-    update_service           = UpdateService(settings_service=settings_service)
+    update_service           = UpdateService(settings_service=settings_service, audit_service=audit_service_early)
     user_mail_service        = UserMailService(repo=UserMailConfigRepository())
     wiedervorlage_service    = WiedervorlageService(repo=WiedervorlageRepository())
     document_package_service = DocumentPackageService(

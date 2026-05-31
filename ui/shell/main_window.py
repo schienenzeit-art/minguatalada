@@ -154,10 +154,31 @@ class MainWindow(QMainWindow):
             title="Standorte",
             parent_app="administration",
         )
+        from services.manual_service import ManualService
         self.register_route(
             "settings",
-            SettingsPage(settings_service=self.services.settings_service),
+            SettingsPage(
+                settings_service=self.services.settings_service,
+                navigate_callback=self.route_to,
+                manual_service=ManualService(),
+            ),
             title="Einstellungen",
+            parent_app="administration",
+        )
+
+        # ── Einstellungs-Unterseiten ──────────────────────────────────────────
+        from ui.pages.settings.pruefungslimits_page import PruefungslimitsPage
+        from ui.pages.settings.system_settings_page import SystemSettingsPage
+        self.register_route(
+            "settings_pruefung",
+            PruefungslimitsPage(settings_service=self.services.settings_service),
+            title="Prüfungslimits",
+            parent_app="administration",
+        )
+        self.register_route(
+            "settings_system",
+            SystemSettingsPage(settings_service=self.services.settings_service),
+            title="Systemparameter",
             parent_app="administration",
         )
         self.register_route(
@@ -292,6 +313,15 @@ class MainWindow(QMainWindow):
                 pdf_service=self.services.pdf_service,
             ),
             title="Serienbriefe",
+            parent_app="administration",
+        )
+
+        # ── Software-Update-Center ────────────────────────────────────────────
+        from ui.pages.update_page import UpdatePage
+        self.register_route(
+            "software_update",
+            UpdatePage(update_service=self.services.update_service),
+            title="Software-Update-Center",
             parent_app="administration",
         )
 

@@ -932,6 +932,13 @@ def initialize_database() -> None:
         except Exception:
             pass
 
+        # ── Migration: Freiwillige-Rolle (kein Systemzugang) ─────────────────
+        try:
+            connection.execute("INSERT OR IGNORE INTO roles (name) VALUES (?)", ("Freiwillige",))
+            connection.commit()
+        except Exception:
+            pass
+
         # ── M9: Unterlagen-Checklisten ────────────────────────────────────────
         try:
             connection.execute("""
@@ -965,6 +972,34 @@ def initialize_database() -> None:
                     sort_order INTEGER NOT NULL DEFAULT 0,
                     FOREIGN KEY (claim_id) REFERENCES claims(id) ON DELETE CASCADE,
                     FOREIGN KEY (checked_by) REFERENCES users(id) ON DELETE SET NULL
+                )
+            """)
+            connection.commit()
+        except Exception:
+            pass
+
+        # ── Software-Update-Verlauf ───────────────────────────────────────────
+        try:
+            connection.execute("""
+                CREATE TABLE IF NOT EXISTS update_history (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    version TEXT NOT NULL,
+                    status TEXT NOT NULL DEFAULT 'SUCCESS',
+                    changelog TEXT,
+                    backup_path TEXT,
+                    applied_migrations TEXT,
+                    error_message TEXT,
+                    applied_by INTEGER,
+                    applied_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (applied_by) REFERENCES users(id) ON DELETE SET NULL
+                )
+            """)
+            connection.execute("""
+                CREATE TABLE IF NOT EXISTS update_migrations (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    version TEXT NOT NULL,
+                    migration_file TEXT NOT NULL UNIQUE,
+                    applied_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
                 )
             """)
             connection.commit()
