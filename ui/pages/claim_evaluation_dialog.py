@@ -122,6 +122,7 @@ class ClaimEvaluationDialog(QDialog):
             "Medikamente",
             "Autoversicherung",
             "Handy-Abo",
+            "GIS/ORF Gebühr",
             "Sonstige Ausgaben 1",
             "Sonstige Ausgaben 2",
             "Sonstige Ausgaben 3",

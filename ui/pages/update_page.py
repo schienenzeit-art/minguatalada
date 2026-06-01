@@ -51,8 +51,14 @@ class UpdatePage(QWidget):
         self._selected_package: Path | None = None
         self._validated_manifest = None
         self._worker = None
+        # Label-Referenzen mit None vorinitialisieren –
+        # werden nur gesetzt wenn der Benutzer Admin-Rechte hat.
+        self._lbl_version      = None
+        self._lbl_last_update  = None
+        self._lbl_backup_count = None
         self.setup_ui()
-        self._refresh_status()
+        # _refresh_status wird am Ende von setup_ui() aufgerufen,
+        # sobald die Labels tatsächlich existieren.
 
     def setup_ui(self):
         self.setObjectName("updatePage")
@@ -88,6 +94,9 @@ class UpdatePage(QWidget):
         tabs.addTab(self._build_backup_tab(), "Backup-Verwaltung")
         root.addWidget(tabs, 1)
 
+        # Labels existieren jetzt – Status laden
+        self._refresh_status()
+
     # ── Status-Karten ──────────────────────────────────────────────────────
 
     def _build_status_bar(self) -> QFrame:
@@ -118,16 +127,22 @@ class UpdatePage(QWidget):
         return val
 
     def _refresh_status(self):
-        last = self.update_service.get_last_successful_update()
-        if last:
-            self._lbl_last_update.setText(
-                f"v{last['version']}  ({last['applied_at'][:10]})"
-            )
-        else:
-            self._lbl_last_update.setText("Noch kein Update")
+        # Sicherheitsabfrage: Labels existieren nur im Admin-Modus
+        if self._lbl_last_update is None or self._lbl_backup_count is None:
+            return
+        try:
+            last = self.update_service.get_last_successful_update()
+            if last:
+                self._lbl_last_update.setText(
+                    f"v{last['version']}  ({last['applied_at'][:10]})"
+                )
+            else:
+                self._lbl_last_update.setText("Noch kein Update")
 
-        backups = self.update_service.list_backups()
-        self._lbl_backup_count.setText(str(len(backups)))
+            backups = self.update_service.list_backups()
+            self._lbl_backup_count.setText(str(len(backups)))
+        except Exception:
+            pass
 
     # ── Tab 1: Lokales Update ──────────────────────────────────────────────
 

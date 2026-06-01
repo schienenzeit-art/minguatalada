@@ -31,7 +31,7 @@ from typing import Optional
 
 from app.config import DATA_DIR, DB_PATH
 
-APP_VERSION = "1.0.0"
+APP_VERSION = "1.0.3"
 
 BACKUPS_DIR = Path(DATA_DIR) / "backups"
 UPDATES_DIR = Path(DATA_DIR) / "updates"
@@ -158,9 +158,30 @@ class UpdateService:
                     return False, "manifest.json fehlt im Paket.", None
 
                 try:
-                    manifest_data = json.loads(zf.read("manifest.json").decode("utf-8"))
+                    # utf-8-sig entfernt automatisch ein vorhandenes UTF-8 BOM
+                    # (z. B. erzeugt von PowerShell Out-File -Encoding utf8)
+                    # und akzeptiert gleichzeitig normales UTF-8 ohne BOM.
+                    raw = zf.read("manifest.json").decode("utf-8-sig").strip()
+                    manifest_data = json.loads(raw)
                 except json.JSONDecodeError as e:
-                    return False, f"manifest.json ist ungültig (JSON-Fehler): {e}", None
+                    return (
+                        False,
+                        f"manifest.json konnte nicht gelesen werden.\n\n"
+                        f"Technischer Fehler: {e}\n\n"
+                        f"Mögliche Ursachen:\n"
+                        f"  • Datei wurde mit BOM-Encoding gespeichert (z. B. Windows-Editor)\n"
+                        f"  • Datei enthält ungültiges JSON (fehlende Anführungszeichen, Kommas)\n"
+                        f"  • Datei ist leer oder beschädigt",
+                        None,
+                    )
+                except UnicodeDecodeError as e:
+                    return (
+                        False,
+                        f"manifest.json hat ein unbekanntes Textformat.\n\n"
+                        f"Technischer Fehler: {e}\n\n"
+                        f"Bitte manifest.json als UTF-8 speichern.",
+                        None,
+                    )
 
                 manifest = UpdateManifest(manifest_data)
 

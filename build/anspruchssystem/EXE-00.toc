@@ -3,7 +3,7 @@
  False,
  True,
  ['C:\\Users\\Projektleiter\\Desktop\\anspruchssystem\\assets/logo.ico'],
- versioninfo.VSVersionInfo(ffi=versioninfo.FixedFileInfo(filevers=(1, 0, 0, 0), prodvers=(1, 0, 0, 0), mask=0x3f, flags=0x0, OS=0x40004, fileType=1, subtype=0x0, date=(0, 0)), kids=[versioninfo.StringFileInfo([versioninfo.StringTable('040704b0', [versioninfo.StringStruct('CompanyName', 'Nexaris Software Engineering'), versioninfo.StringStruct('FileDescription', 'Min Guata Lada – Anspruchsverwaltung Tischlein Deck Dich Vorarlberg'), versioninfo.StringStruct('FileVersion', '1.0.0.0'), versioninfo.StringStruct('InternalName', 'MinGuataLada'), versioninfo.StringStruct('LegalCopyright', 'Copyright © 2025 Nexaris Software Engineering'), versioninfo.StringStruct('OriginalFilename', 'MinGuataLada.exe'), versioninfo.StringStruct('ProductName', 'Min Guata Lada'), versioninfo.StringStruct('ProductVersion', '1.0.0')])]), versioninfo.VarFileInfo([versioninfo.VarStruct('Translation', [1031, 1200])])]),
+ versioninfo.VSVersionInfo(ffi=versioninfo.FixedFileInfo(filevers=(1, 0, 3, 0), prodvers=(1, 0, 3, 0), mask=0x3f, flags=0x0, OS=0x40004, fileType=1, subtype=0x0, date=(0, 0)), kids=[versioninfo.StringFileInfo([versioninfo.StringTable('040704b0', [versioninfo.StringStruct('CompanyName', 'Nexaris Software Engineering'), versioninfo.StringStruct('FileDescription', 'Min Guata Lada – Anspruchsverwaltung Tischlein Deck Dich Vorarlberg'), versioninfo.StringStruct('FileVersion', '1.0.3.0'), versioninfo.StringStruct('InternalName', 'MinGuataLada'), versioninfo.StringStruct('LegalCopyright', 'Copyright © 2025 Nexaris Software Engineering'), versioninfo.StringStruct('OriginalFilename', 'MinGuataLada.exe'), versioninfo.StringStruct('ProductName', 'Min Guata Lada'), versioninfo.StringStruct('ProductVersion', '1.0.3')])]), versioninfo.VarFileInfo([versioninfo.VarStruct('Translation', [1031, 1200])])]),
  False,
  False,
  b'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<assembly xmlns='
@@ -70,7 +70,7 @@
  [],
  False,
  False,
- 1779945362,
+ 1780234248,
  [('runw.exe',
    'C:\\Users\\Projektleiter\\Desktop\\anspruchssystem\\.venv\\Lib\\site-packages\\PyInstaller\\bootloader\\Windows-64bit-intel\\runw.exe',
    'EXECUTABLE')],

@@ -30,12 +30,15 @@ imports:
  &#8226;   <a href="#app.container">app.container</a>
  &#8226;   <a href="#app.ports">app.ports</a>
  &#8226;   <a href="#app.session">app.session</a>
+ &#8226;   <a href="#app.web_api">app.web_api</a>
  &#8226;   <a href="#bcrypt">bcrypt</a>
  &#8226;   <a href="#bcrypt._bcrypt">bcrypt._bcrypt</a>
+ &#8226;   <a href="#calendar">calendar</a>
  &#8226;   <a href="#codecs">codecs</a>
  &#8226;   <a href="#collections">collections</a>
  &#8226;   <a href="#copyreg">copyreg</a>
  &#8226;   <a href="#core.card_status">core.card_status</a>
+ &#8226;   <a href="#core.case_context">core.case_context</a>
  &#8226;   <a href="#core.claim_status">core.claim_status</a>
  &#8226;   <a href="#core.constants">core.constants</a>
  &#8226;   <a href="#core.document_status">core.document_status</a>
@@ -44,6 +47,7 @@ imports:
  &#8226;   <a href="#core.task_source_type">core.task_source_type</a>
  &#8226;   <a href="#core.task_status">core.task_status</a>
  &#8226;   <a href="#core.task_type">core.task_type</a>
+ &#8226;   <a href="#csv">csv</a>
  &#8226;   <a href="#database.db">database.db</a>
  &#8226;   <a href="#database.repositories.appointment_repository">database.repositories.appointment_repository</a>
  &#8226;   <a href="#database.repositories.approval_repository">database.repositories.approval_repository</a>
@@ -60,16 +64,25 @@ imports:
  &#8226;   <a href="#database.repositories.document_type_repository">database.repositories.document_type_repository</a>
  &#8226;   <a href="#database.repositories.expense_repository">database.repositories.expense_repository</a>
  &#8226;   <a href="#database.repositories.filter_preset_repository">database.repositories.filter_preset_repository</a>
+ &#8226;   <a href="#database.repositories.household_member_repository">database.repositories.household_member_repository</a>
  &#8226;   <a href="#database.repositories.income_repository">database.repositories.income_repository</a>
  &#8226;   <a href="#database.repositories.location_repository">database.repositories.location_repository</a>
  &#8226;   <a href="#database.repositories.mandant_repository">database.repositories.mandant_repository</a>
  &#8226;   <a href="#database.repositories.notification_repository">database.repositories.notification_repository</a>
  &#8226;   <a href="#database.repositories.person_note_repository">database.repositories.person_note_repository</a>
  &#8226;   <a href="#database.repositories.person_repository">database.repositories.person_repository</a>
+ &#8226;   <a href="#database.repositories.re_evaluation_repository">database.repositories.re_evaluation_repository</a>
  &#8226;   <a href="#database.repositories.role_repository">database.repositories.role_repository</a>
  &#8226;   <a href="#database.repositories.setting_repository">database.repositories.setting_repository</a>
  &#8226;   <a href="#database.repositories.task_repository">database.repositories.task_repository</a>
+ &#8226;   <a href="#database.repositories.user_mail_config_repository">database.repositories.user_mail_config_repository</a>
  &#8226;   <a href="#database.repositories.user_repository">database.repositories.user_repository</a>
+ &#8226;   <a href="#database.repositories.wiedervorlage_repository">database.repositories.wiedervorlage_repository</a>
+ &#8226;   <a href="#domain.categories">domain.categories</a>
+ &#8226;   <a href="#email.encoders">email.encoders</a>
+ &#8226;   <a href="#email.mime.base">email.mime.base</a>
+ &#8226;   <a href="#email.mime.multipart">email.mime.multipart</a>
+ &#8226;   <a href="#email.mime.text">email.mime.text</a>
  &#8226;   <a href="#encodings">encodings</a>
  &#8226;   <a href="#encodings._win_cp_codecs">encodings._win_cp_codecs</a>
  &#8226;   <a href="#encodings.aliases">encodings.aliases</a>
@@ -196,8 +209,10 @@ imports:
  &#8226;   <a href="#enum">enum</a>
  &#8226;   <a href="#functools">functools</a>
  &#8226;   <a href="#genericpath">genericpath</a>
+ &#8226;   <a href="#hashlib">hashlib</a>
  &#8226;   <a href="#heapq">heapq</a>
  &#8226;   <a href="#io">io</a>
+ &#8226;   <a href="#json">json</a>
  &#8226;   <a href="#keyword">keyword</a>
  &#8226;   <a href="#linecache">linecache</a>
  &#8226;   <a href="#locale">locale</a>
@@ -564,6 +579,8 @@ imports:
  &#8226;   <a href="#reportlab.rl_config">reportlab.rl_config</a>
  &#8226;   <a href="#reportlab.rl_settings">reportlab.rl_settings</a>
  &#8226;   <a href="#reprlib">reprlib</a>
+ &#8226;   <a href="#secrets">secrets</a>
+ &#8226;   <a href="#services.age_alert_service">services.age_alert_service</a>
  &#8226;   <a href="#services.appointment_service">services.appointment_service</a>
  &#8226;   <a href="#services.approval_service">services.approval_service</a>
  &#8226;   <a href="#services.archive_service">services.archive_service</a>
@@ -575,28 +592,41 @@ imports:
  &#8226;   <a href="#services.checklist_service">services.checklist_service</a>
  &#8226;   <a href="#services.claim_service">services.claim_service</a>
  &#8226;   <a href="#services.dashboard_service">services.dashboard_service</a>
+ &#8226;   <a href="#services.document_package_service">services.document_package_service</a>
  &#8226;   <a href="#services.document_service">services.document_service</a>
  &#8226;   <a href="#services.document_template_service">services.document_template_service</a>
  &#8226;   <a href="#services.excel_service">services.excel_service</a>
  &#8226;   <a href="#services.filter_preset_service">services.filter_preset_service</a>
+ &#8226;   <a href="#services.household_service">services.household_service</a>
  &#8226;   <a href="#services.location_service">services.location_service</a>
+ &#8226;   <a href="#services.mail_service">services.mail_service</a>
  &#8226;   <a href="#services.mandant_service">services.mandant_service</a>
+ &#8226;   <a href="#services.manual_service">services.manual_service</a>
  &#8226;   <a href="#services.notification_service">services.notification_service</a>
+ &#8226;   <a href="#services.ocr_service">services.ocr_service</a>
  &#8226;   <a href="#services.password_service">services.password_service</a>
  &#8226;   <a href="#services.pdf_service">services.pdf_service</a>
  &#8226;   <a href="#services.person_note_service">services.person_note_service</a>
  &#8226;   <a href="#services.person_service">services.person_service</a>
  &#8226;   <a href="#services.pruefung_service">services.pruefung_service</a>
+ &#8226;   <a href="#services.re_evaluation_service">services.re_evaluation_service</a>
  &#8226;   <a href="#services.report_service">services.report_service</a>
  &#8226;   <a href="#services.role_service">services.role_service</a>
  &#8226;   <a href="#services.search_service">services.search_service</a>
  &#8226;   <a href="#services.settings_service">services.settings_service</a>
  &#8226;   <a href="#services.task_service">services.task_service</a>
+ &#8226;   <a href="#services.update_service">services.update_service</a>
+ &#8226;   <a href="#services.user_mail_service">services.user_mail_service</a>
  &#8226;   <a href="#services.user_service">services.user_service</a>
+ &#8226;   <a href="#services.wiedervorlage_service">services.wiedervorlage_service</a>
+ &#8226;   <a href="#shutil">shutil</a>
+ &#8226;   <a href="#smtplib">smtplib</a>
+ &#8226;   <a href="#sqlite3">sqlite3</a>
  &#8226;   <a href="#sre_compile">sre_compile</a>
  &#8226;   <a href="#sre_constants">sre_constants</a>
  &#8226;   <a href="#sre_parse">sre_parse</a>
  &#8226;   <a href="#stat">stat</a>
+ &#8226;   <a href="#tempfile">tempfile</a>
  &#8226;   <a href="#traceback">traceback</a>
  &#8226;   <a href="#types">types</a>
  &#8226;   <a href="#ui.components.action_button">ui.components.action_button</a>
@@ -606,14 +636,17 @@ imports:
  &#8226;   <a href="#ui.components.card_container">ui.components.card_container</a>
  &#8226;   <a href="#ui.components.checklist_widget">ui.components.checklist_widget</a>
  &#8226;   <a href="#ui.components.empty_state">ui.components.empty_state</a>
+ &#8226;   <a href="#ui.components.header">ui.components.header</a>
  &#8226;   <a href="#ui.components.page_header">ui.components.page_header</a>
  &#8226;   <a href="#ui.components.sidebar">ui.components.sidebar</a>
  &#8226;   <a href="#ui.components.stat_card">ui.components.stat_card</a>
  &#8226;   <a href="#ui.components.table_widget">ui.components.table_widget</a>
  &#8226;   <a href="#ui.components.topbar">ui.components.topbar</a>
  &#8226;   <a href="#ui.dialogs.force_password_dialog">ui.dialogs.force_password_dialog</a>
+ &#8226;   <a href="#ui.dialogs.letter_wizard_dialog">ui.dialogs.letter_wizard_dialog</a>
  &#8226;   <a href="#ui.dialogs.search_result_dialog">ui.dialogs.search_result_dialog</a>
  &#8226;   <a href="#ui.dialogs.user_dialog">ui.dialogs.user_dialog</a>
+ &#8226;   <a href="#ui.dialogs.wiedervorlage_dialog">ui.dialogs.wiedervorlage_dialog</a>
  &#8226;   <a href="#ui.login.login_window">ui.login.login_window</a>
  &#8226;   <a href="#ui.navigation.navigation_controller">ui.navigation.navigation_controller</a>
  &#8226;   <a href="#ui.pages.appointments.appointments_page">ui.pages.appointments.appointments_page</a>
@@ -639,17 +672,28 @@ imports:
  &#8226;   <a href="#ui.pages.mandants.mandants_page">ui.pages.mandants.mandants_page</a>
  &#8226;   <a href="#ui.pages.person_dossier_dialog">ui.pages.person_dossier_dialog</a>
  &#8226;   <a href="#ui.pages.person_dossier_page">ui.pages.person_dossier_page</a>
+ &#8226;   <a href="#ui.pages.personal.personal_page">ui.pages.personal.personal_page</a>
+ &#8226;   <a href="#ui.pages.personal.staff_form_dialog">ui.pages.personal.staff_form_dialog</a>
+ &#8226;   <a href="#ui.pages.post_evaluation_panel">ui.pages.post_evaluation_panel</a>
+ &#8226;   <a href="#ui.pages.re_evaluation_page">ui.pages.re_evaluation_page</a>
  &#8226;   <a href="#ui.pages.reports_page">ui.pages.reports_page</a>
+ &#8226;   <a href="#ui.pages.reports_web_page">ui.pages.reports_web_page</a>
  &#8226;   <a href="#ui.pages.role_management">ui.pages.role_management</a>
+ &#8226;   <a href="#ui.pages.serial_letters_page">ui.pages.serial_letters_page</a>
+ &#8226;   <a href="#ui.pages.settings.pruefungslimits_page">ui.pages.settings.pruefungslimits_page</a>
  &#8226;   <a href="#ui.pages.settings.settings_page">ui.pages.settings.settings_page</a>
+ &#8226;   <a href="#ui.pages.settings.smtp_settings_page">ui.pages.settings.smtp_settings_page</a>
+ &#8226;   <a href="#ui.pages.settings.system_settings_page">ui.pages.settings.system_settings_page</a>
  &#8226;   <a href="#ui.pages.tasks.task_dialog">ui.pages.tasks.task_dialog</a>
  &#8226;   <a href="#ui.pages.tasks.tasks_page">ui.pages.tasks.tasks_page</a>
+ &#8226;   <a href="#ui.pages.update_page">ui.pages.update_page</a>
  &#8226;   <a href="#ui.pages.user_management">ui.pages.user_management</a>
  &#8226;   <a href="#ui.pages.users.users_page">ui.pages.users.users_page</a>
  &#8226;   <a href="#ui.shell.main_window">ui.shell.main_window</a>
  &#8226;   <a href="#ui.shell.workspace_host">ui.shell.workspace_host</a>
  &#8226;   <a href="#warnings">warnings</a>
  &#8226;   <a href="#weakref">weakref</a>
+ &#8226;   <a href="#zipfile">zipfile</a>
 
   </div>
 
@@ -730,6 +774,17 @@ imported by:
 </div>
 
 <div class="node">
+  <a name="'PyQt6.QtWebEngineWidgets'"></a>
+  <a target="code" href="" type="text/plain"><tt>'PyQt6.QtWebEngineWidgets'</tt></a>
+<span class="moduletype">MissingModule</span>  <div class="import">
+imported by:
+    <a href="#ui.web.web_view_page">ui.web.web_view_page</a>
+
+  </div>
+
+</div>
+
+<div class="node">
   <a name="'collections.abc'"></a>
   <a target="code" href="" type="text/plain"><tt>'collections.abc'</tt></a>
 <span class="moduletype">MissingModule</span>  <div class="import">
@@ -754,6 +809,9 @@ imported by:
  &#8226;   <a href="#http.client">http.client</a>
  &#8226;   <a href="#importlib.resources.readers">importlib.resources.readers</a>
  &#8226;   <a href="#inspect">inspect</a>
+ &#8226;   <a href="#jwt.api_jwk">jwt.api_jwk</a>
+ &#8226;   <a href="#jwt.api_jws">jwt.api_jws</a>
+ &#8226;   <a href="#jwt.api_jwt">jwt.api_jwt</a>
  &#8226;   <a href="#logging">logging</a>
  &#8226;   <a href="#multiprocessing.managers">multiprocessing.managers</a>
  &#8226;   <a href="#selectors">selectors</a>
@@ -761,7 +819,31 @@ imported by:
  &#8226;   <a href="#traceback">traceback</a>
  &#8226;   <a href="#tracemalloc">tracemalloc</a>
  &#8226;   <a href="#typing">typing</a>
+ &#8226;   <a href="#typing_extensions">typing_extensions</a>
  &#8226;   <a href="#xml.etree.ElementTree">xml.etree.ElementTree</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="'cryptography.exceptions'"></a>
+  <a target="code" href="" type="text/plain"><tt>'cryptography.exceptions'</tt></a>
+<span class="moduletype">MissingModule</span>  <div class="import">
+imported by:
+    <a href="#jwt.algorithms">jwt.algorithms</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="'cryptography.hazmat'"></a>
+  <a target="code" href="" type="text/plain"><tt>'cryptography.hazmat'</tt></a>
+<span class="moduletype">MissingModule</span>  <div class="import">
+imported by:
+    <a href="#jwt.algorithms">jwt.algorithms</a>
+ &#8226;   <a href="#jwt.utils">jwt.utils</a>
 
   </div>
 
@@ -773,6 +855,28 @@ imported by:
 <span class="moduletype">MissingModule</span>  <div class="import">
 imported by:
     <a href="#openpyxl.xml.functions">openpyxl.xml.functions</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="'fastapi.responses'"></a>
+  <a target="code" href="" type="text/plain"><tt>'fastapi.responses'</tt></a>
+<span class="moduletype">MissingModule</span>  <div class="import">
+imported by:
+    <a href="#app.web_api">app.web_api</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="'fastapi.security'"></a>
+  <a target="code" href="" type="text/plain"><tt>'fastapi.security'</tt></a>
+<span class="moduletype">MissingModule</span>  <div class="import">
+imported by:
+    <a href="#app.web_api">app.web_api</a>
 
   </div>
 
@@ -795,6 +899,17 @@ imported by:
 <span class="moduletype">MissingModule</span>  <div class="import">
 imported by:
     <a href="#openpyxl.xml.functions">openpyxl.xml.functions</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="'numpy.typing'"></a>
+  <a target="code" href="" type="text/plain"><tt>'numpy.typing'</tt></a>
+<span class="moduletype">MissingModule</span>  <div class="import">
+imported by:
+    <a href="#PIL._typing">PIL._typing</a>
 
   </div>
 
@@ -1042,6 +1157,7 @@ imported by:
  &#8226;   <a href="#openpyxl.drawing.image">openpyxl.drawing.image</a>
  &#8226;   <a href="#reportlab.graphics.renderPM">reportlab.graphics.renderPM</a>
  &#8226;   <a href="#reportlab.lib.utils">reportlab.lib.utils</a>
+ &#8226;   <a href="#services.ocr_service">services.ocr_service</a>
 
   </div>
 
@@ -1725,6 +1841,7 @@ imported by:
  &#8226;   <a href="#openpyxl.drawing.image">openpyxl.drawing.image</a>
  &#8226;   <a href="#reportlab.graphics.renderPM">reportlab.graphics.renderPM</a>
  &#8226;   <a href="#reportlab.lib.utils">reportlab.lib.utils</a>
+ &#8226;   <a href="#services.ocr_service">services.ocr_service</a>
 
   </div>
 
@@ -3076,10 +3193,10 @@ imported by:
 <span class="moduletype">SourceModule</span>  <div class="import">
 imports:
     <a href="#'collections.abc'">'collections.abc'</a>
+ &#8226;   <a href="#'numpy.typing'">'numpy.typing'</a>
  &#8226;   <a href="#PIL">PIL</a>
  &#8226;   <a href="#__future__">__future__</a>
  &#8226;   <a href="#numbers">numbers</a>
- &#8226;   <a href="#numpy">numpy</a>
  &#8226;   <a href="#os">os</a>
  &#8226;   <a href="#sys">sys</a>
  &#8226;   <a href="#types">types</a>
@@ -3213,6 +3330,7 @@ imported by:
  &#8226;   <a href="#PyQt6.QtGui">PyQt6.QtGui</a>
  &#8226;   <a href="#PyQt6.QtPrintSupport">PyQt6.QtPrintSupport</a>
  &#8226;   <a href="#PyQt6.QtSvg">PyQt6.QtSvg</a>
+ &#8226;   <a href="#PyQt6.QtWebChannel">PyQt6.QtWebChannel</a>
  &#8226;   <a href="#PyQt6.QtWidgets">PyQt6.QtWidgets</a>
  &#8226;   <a href="#PyQt6.sip">PyQt6.sip</a>
 
@@ -3240,7 +3358,9 @@ imported by:
  &#8226;   <a href="#PyQt6.QtGui">PyQt6.QtGui</a>
  &#8226;   <a href="#PyQt6.QtPrintSupport">PyQt6.QtPrintSupport</a>
  &#8226;   <a href="#PyQt6.QtSvg">PyQt6.QtSvg</a>
+ &#8226;   <a href="#PyQt6.QtWebChannel">PyQt6.QtWebChannel</a>
  &#8226;   <a href="#PyQt6.QtWidgets">PyQt6.QtWidgets</a>
+ &#8226;   <a href="#services.manual_service">services.manual_service</a>
  &#8226;   <a href="#ui.components.app_card">ui.components.app_card</a>
  &#8226;   <a href="#ui.components.app_navigation">ui.components.app_navigation</a>
  &#8226;   <a href="#ui.components.app_tile">ui.components.app_tile</a>
@@ -3251,8 +3371,10 @@ imported by:
  &#8226;   <a href="#ui.components.table_widget">ui.components.table_widget</a>
  &#8226;   <a href="#ui.components.topbar">ui.components.topbar</a>
  &#8226;   <a href="#ui.dialogs.force_password_dialog">ui.dialogs.force_password_dialog</a>
+ &#8226;   <a href="#ui.dialogs.letter_wizard_dialog">ui.dialogs.letter_wizard_dialog</a>
  &#8226;   <a href="#ui.dialogs.search_result_dialog">ui.dialogs.search_result_dialog</a>
  &#8226;   <a href="#ui.dialogs.user_dialog">ui.dialogs.user_dialog</a>
+ &#8226;   <a href="#ui.dialogs.wiedervorlage_dialog">ui.dialogs.wiedervorlage_dialog</a>
  &#8226;   <a href="#ui.login.login_window">ui.login.login_window</a>
  &#8226;   <a href="#ui.pages.appointments.appointments_page">ui.pages.appointments.appointments_page</a>
  &#8226;   <a href="#ui.pages.approval_page">ui.pages.approval_page</a>
@@ -3276,13 +3398,24 @@ imported by:
  &#8226;   <a href="#ui.pages.mandants.mandants_page">ui.pages.mandants.mandants_page</a>
  &#8226;   <a href="#ui.pages.person_dossier_dialog">ui.pages.person_dossier_dialog</a>
  &#8226;   <a href="#ui.pages.person_dossier_page">ui.pages.person_dossier_page</a>
+ &#8226;   <a href="#ui.pages.personal.personal_page">ui.pages.personal.personal_page</a>
+ &#8226;   <a href="#ui.pages.personal.staff_form_dialog">ui.pages.personal.staff_form_dialog</a>
+ &#8226;   <a href="#ui.pages.post_evaluation_panel">ui.pages.post_evaluation_panel</a>
+ &#8226;   <a href="#ui.pages.re_evaluation_page">ui.pages.re_evaluation_page</a>
  &#8226;   <a href="#ui.pages.reports_page">ui.pages.reports_page</a>
  &#8226;   <a href="#ui.pages.role_management">ui.pages.role_management</a>
+ &#8226;   <a href="#ui.pages.serial_letters_page">ui.pages.serial_letters_page</a>
+ &#8226;   <a href="#ui.pages.settings.pruefungslimits_page">ui.pages.settings.pruefungslimits_page</a>
  &#8226;   <a href="#ui.pages.settings.settings_page">ui.pages.settings.settings_page</a>
+ &#8226;   <a href="#ui.pages.settings.smtp_settings_page">ui.pages.settings.smtp_settings_page</a>
+ &#8226;   <a href="#ui.pages.settings.system_settings_page">ui.pages.settings.system_settings_page</a>
  &#8226;   <a href="#ui.pages.tasks.task_dialog">ui.pages.tasks.task_dialog</a>
  &#8226;   <a href="#ui.pages.tasks.tasks_page">ui.pages.tasks.tasks_page</a>
+ &#8226;   <a href="#ui.pages.update_page">ui.pages.update_page</a>
  &#8226;   <a href="#ui.pages.user_management">ui.pages.user_management</a>
  &#8226;   <a href="#ui.pages.users.users_page">ui.pages.users.users_page</a>
+ &#8226;   <a href="#ui.web.reports.bridge">ui.web.reports.bridge</a>
+ &#8226;   <a href="#ui.web.web_view_page">ui.web.web_view_page</a>
 
   </div>
 
@@ -3310,17 +3443,25 @@ imported by:
  &#8226;   <a href="#PyQt6.QtSvg">PyQt6.QtSvg</a>
  &#8226;   <a href="#PyQt6.QtWidgets">PyQt6.QtWidgets</a>
  &#8226;   <a href="#app.bootstrap">app.bootstrap</a>
+ &#8226;   <a href="#services.manual_service">services.manual_service</a>
  &#8226;   <a href="#ui.components.stat_card">ui.components.stat_card</a>
  &#8226;   <a href="#ui.components.topbar">ui.components.topbar</a>
+ &#8226;   <a href="#ui.dialogs.letter_wizard_dialog">ui.dialogs.letter_wizard_dialog</a>
  &#8226;   <a href="#ui.login.login_window">ui.login.login_window</a>
  &#8226;   <a href="#ui.pages.cards_page">ui.pages.cards_page</a>
+ &#8226;   <a href="#ui.pages.claim_detail_page">ui.pages.claim_detail_page</a>
  &#8226;   <a href="#ui.pages.claim_evaluation_dialog">ui.pages.claim_evaluation_dialog</a>
  &#8226;   <a href="#ui.pages.dashboard.dashboard_page">ui.pages.dashboard.dashboard_page</a>
+ &#8226;   <a href="#ui.pages.document_templates_page">ui.pages.document_templates_page</a>
  &#8226;   <a href="#ui.pages.documents.documents_page">ui.pages.documents.documents_page</a>
  &#8226;   <a href="#ui.pages.person_dossier_dialog">ui.pages.person_dossier_dialog</a>
+ &#8226;   <a href="#ui.pages.post_evaluation_panel">ui.pages.post_evaluation_panel</a>
  &#8226;   <a href="#ui.pages.reports_page">ui.pages.reports_page</a>
+ &#8226;   <a href="#ui.pages.serial_letters_page">ui.pages.serial_letters_page</a>
  &#8226;   <a href="#ui.pages.tasks.tasks_page">ui.pages.tasks.tasks_page</a>
+ &#8226;   <a href="#ui.pages.users.users_page">ui.pages.users.users_page</a>
  &#8226;   <a href="#ui.shell.main_window">ui.shell.main_window</a>
+ &#8226;   <a href="#ui.web.reports.bridge">ui.web.reports.bridge</a>
 
   </div>
 
@@ -3376,6 +3517,28 @@ imported by:
 </div>
 
 <div class="node">
+  <a name="PyQt6.QtWebChannel"></a>
+  <tt>PyQt6.QtWebChannel</tt> <span class="moduletype"><tt>C:\Users\Projektleiter\Desktop\anspruchssystem\.venv\Lib\site-packages\PyQt6\QtWebChannel.pyd</tt></span>  <div class="import">
+imports:
+    <a href="#PyQt6">PyQt6</a>
+ &#8226;   <a href="#PyQt6.QtCore">PyQt6.QtCore</a>
+ &#8226;   <a href="#PyQt6.sip">PyQt6.sip</a>
+ &#8226;   <a href="#collections">collections</a>
+ &#8226;   <a href="#datetime">datetime</a>
+ &#8226;   <a href="#re">re</a>
+ &#8226;   <a href="#typing">typing</a>
+ &#8226;   <a href="#warnings">warnings</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#ui.web.web_view_page">ui.web.web_view_page</a>
+
+  </div>
+
+</div>
+
+<div class="node">
   <a name="PyQt6.QtWidgets"></a>
   <tt>PyQt6.QtWidgets</tt> <span class="moduletype"><tt>C:\Users\Projektleiter\Desktop\anspruchssystem\.venv\Lib\site-packages\PyQt6\QtWidgets.pyd</tt></span>  <div class="import">
 imports:
@@ -3402,14 +3565,17 @@ imported by:
  &#8226;   <a href="#ui.components.card_container">ui.components.card_container</a>
  &#8226;   <a href="#ui.components.checklist_widget">ui.components.checklist_widget</a>
  &#8226;   <a href="#ui.components.empty_state">ui.components.empty_state</a>
+ &#8226;   <a href="#ui.components.header">ui.components.header</a>
  &#8226;   <a href="#ui.components.page_header">ui.components.page_header</a>
  &#8226;   <a href="#ui.components.sidebar">ui.components.sidebar</a>
  &#8226;   <a href="#ui.components.stat_card">ui.components.stat_card</a>
  &#8226;   <a href="#ui.components.table_widget">ui.components.table_widget</a>
  &#8226;   <a href="#ui.components.topbar">ui.components.topbar</a>
  &#8226;   <a href="#ui.dialogs.force_password_dialog">ui.dialogs.force_password_dialog</a>
+ &#8226;   <a href="#ui.dialogs.letter_wizard_dialog">ui.dialogs.letter_wizard_dialog</a>
  &#8226;   <a href="#ui.dialogs.search_result_dialog">ui.dialogs.search_result_dialog</a>
  &#8226;   <a href="#ui.dialogs.user_dialog">ui.dialogs.user_dialog</a>
+ &#8226;   <a href="#ui.dialogs.wiedervorlage_dialog">ui.dialogs.wiedervorlage_dialog</a>
  &#8226;   <a href="#ui.login.login_window">ui.login.login_window</a>
  &#8226;   <a href="#ui.navigation.navigation_controller">ui.navigation.navigation_controller</a>
  &#8226;   <a href="#ui.pages.appointments.appointments_page">ui.pages.appointments.appointments_page</a>
@@ -3435,15 +3601,26 @@ imported by:
  &#8226;   <a href="#ui.pages.mandants.mandants_page">ui.pages.mandants.mandants_page</a>
  &#8226;   <a href="#ui.pages.person_dossier_dialog">ui.pages.person_dossier_dialog</a>
  &#8226;   <a href="#ui.pages.person_dossier_page">ui.pages.person_dossier_page</a>
+ &#8226;   <a href="#ui.pages.personal.personal_page">ui.pages.personal.personal_page</a>
+ &#8226;   <a href="#ui.pages.personal.staff_form_dialog">ui.pages.personal.staff_form_dialog</a>
+ &#8226;   <a href="#ui.pages.post_evaluation_panel">ui.pages.post_evaluation_panel</a>
+ &#8226;   <a href="#ui.pages.re_evaluation_page">ui.pages.re_evaluation_page</a>
  &#8226;   <a href="#ui.pages.reports_page">ui.pages.reports_page</a>
  &#8226;   <a href="#ui.pages.role_management">ui.pages.role_management</a>
+ &#8226;   <a href="#ui.pages.serial_letters_page">ui.pages.serial_letters_page</a>
+ &#8226;   <a href="#ui.pages.settings.pruefungslimits_page">ui.pages.settings.pruefungslimits_page</a>
  &#8226;   <a href="#ui.pages.settings.settings_page">ui.pages.settings.settings_page</a>
+ &#8226;   <a href="#ui.pages.settings.smtp_settings_page">ui.pages.settings.smtp_settings_page</a>
+ &#8226;   <a href="#ui.pages.settings.system_settings_page">ui.pages.settings.system_settings_page</a>
  &#8226;   <a href="#ui.pages.tasks.task_dialog">ui.pages.tasks.task_dialog</a>
  &#8226;   <a href="#ui.pages.tasks.tasks_page">ui.pages.tasks.tasks_page</a>
+ &#8226;   <a href="#ui.pages.update_page">ui.pages.update_page</a>
  &#8226;   <a href="#ui.pages.user_management">ui.pages.user_management</a>
  &#8226;   <a href="#ui.pages.users.users_page">ui.pages.users.users_page</a>
  &#8226;   <a href="#ui.shell.main_window">ui.shell.main_window</a>
  &#8226;   <a href="#ui.shell.workspace_host">ui.shell.workspace_host</a>
+ &#8226;   <a href="#ui.web.reports.bridge">ui.web.reports.bridge</a>
+ &#8226;   <a href="#ui.web.web_view_page">ui.web.web_view_page</a>
 
   </div>
 
@@ -3464,6 +3641,7 @@ imported by:
  &#8226;   <a href="#PyQt6.QtGui">PyQt6.QtGui</a>
  &#8226;   <a href="#PyQt6.QtPrintSupport">PyQt6.QtPrintSupport</a>
  &#8226;   <a href="#PyQt6.QtSvg">PyQt6.QtSvg</a>
+ &#8226;   <a href="#PyQt6.QtWebChannel">PyQt6.QtWebChannel</a>
  &#8226;   <a href="#PyQt6.QtWidgets">PyQt6.QtWidgets</a>
  &#8226;   <a href="#main.py">main.py</a>
 
@@ -3580,15 +3758,23 @@ imported by:
  &#8226;   <a href="#importlib.metadata">importlib.metadata</a>
  &#8226;   <a href="#importlib.metadata._meta">importlib.metadata._meta</a>
  &#8226;   <a href="#importlib.resources.readers">importlib.resources.readers</a>
+ &#8226;   <a href="#jwt.algorithms">jwt.algorithms</a>
+ &#8226;   <a href="#jwt.api_jwk">jwt.api_jwk</a>
+ &#8226;   <a href="#jwt.api_jws">jwt.api_jws</a>
+ &#8226;   <a href="#jwt.api_jwt">jwt.api_jwt</a>
+ &#8226;   <a href="#jwt.jwks_client">jwt.jwks_client</a>
  &#8226;   <a href="#pydoc">pydoc</a>
  &#8226;   <a href="#reportlab.graphics.barcode.usps4s">reportlab.graphics.barcode.usps4s</a>
+ &#8226;   <a href="#services.document_package_service">services.document_package_service</a>
  &#8226;   <a href="#services.document_service">services.document_service</a>
  &#8226;   <a href="#services.excel_service">services.excel_service</a>
  &#8226;   <a href="#services.filter_preset_service">services.filter_preset_service</a>
+ &#8226;   <a href="#services.manual_service">services.manual_service</a>
  &#8226;   <a href="#services.pdf_service">services.pdf_service</a>
  &#8226;   <a href="#services.search_service">services.search_service</a>
  &#8226;   <a href="#services.settings_service">services.settings_service</a>
  &#8226;   <a href="#ui.dialogs.search_result_dialog">ui.dialogs.search_result_dialog</a>
+ &#8226;   <a href="#ui.pages.post_evaluation_panel">ui.pages.post_evaluation_panel</a>
 
   </div>
 
@@ -4601,6 +4787,7 @@ imported by:
   <tt>_socket</tt> <span class="moduletype"><tt>C:\Users\Projektleiter\AppData\Local\Python\pythoncore-3.14-64\DLLs\_socket.pyd</tt></span>  <div class="import">
 imported by:
     <a href="#socket">socket</a>
+ &#8226;   <a href="#typing_extensions">typing_extensions</a>
 
   </div>
 
@@ -4933,6 +5120,7 @@ imported by:
  &#8226;   <a href="#importlib.resources.abc">importlib.resources.abc</a>
  &#8226;   <a href="#inspect">inspect</a>
  &#8226;   <a href="#io">io</a>
+ &#8226;   <a href="#jwt.algorithms">jwt.algorithms</a>
  &#8226;   <a href="#main.py">main.py</a>
  &#8226;   <a href="#multiprocessing.reduction">multiprocessing.reduction</a>
  &#8226;   <a href="#numbers">numbers</a>
@@ -4941,6 +5129,7 @@ imported by:
  &#8226;   <a href="#os">os</a>
  &#8226;   <a href="#selectors">selectors</a>
  &#8226;   <a href="#typing">typing</a>
+ &#8226;   <a href="#typing_extensions">typing_extensions</a>
 
   </div>
 
@@ -4969,6 +5158,7 @@ imported by:
  &#8226;   <a href="#inspect">inspect</a>
  &#8226;   <a href="#pydoc">pydoc</a>
  &#8226;   <a href="#typing">typing</a>
+ &#8226;   <a href="#typing_extensions">typing_extensions</a>
 
   </div>
 
@@ -4985,6 +5175,7 @@ imported by:
  &#8226;   <a href="#app.container">app.container</a>
  &#8226;   <a href="#app.ports">app.ports</a>
  &#8226;   <a href="#app.session">app.session</a>
+ &#8226;   <a href="#app.web_api">app.web_api</a>
 
   </div>
 
@@ -5054,11 +5245,14 @@ imports:
   <div class="import">
 imported by:
     <a href="#app.bootstrap">app.bootstrap</a>
+ &#8226;   <a href="#app.web_api">app.web_api</a>
  &#8226;   <a href="#database.db">database.db</a>
  &#8226;   <a href="#main.py">main.py</a>
  &#8226;   <a href="#services.document_service">services.document_service</a>
  &#8226;   <a href="#services.excel_service">services.excel_service</a>
+ &#8226;   <a href="#services.manual_service">services.manual_service</a>
  &#8226;   <a href="#services.pdf_service">services.pdf_service</a>
+ &#8226;   <a href="#services.update_service">services.update_service</a>
  &#8226;   <a href="#ui.shell.main_window">ui.shell.main_window</a>
 
   </div>
@@ -5081,13 +5275,18 @@ imports:
  &#8226;   <a href="#database.repositories.claim_repository">database.repositories.claim_repository</a>
  &#8226;   <a href="#database.repositories.document_template_repository">database.repositories.document_template_repository</a>
  &#8226;   <a href="#database.repositories.expense_repository">database.repositories.expense_repository</a>
+ &#8226;   <a href="#database.repositories.household_member_repository">database.repositories.household_member_repository</a>
  &#8226;   <a href="#database.repositories.income_repository">database.repositories.income_repository</a>
  &#8226;   <a href="#database.repositories.location_repository">database.repositories.location_repository</a>
  &#8226;   <a href="#database.repositories.notification_repository">database.repositories.notification_repository</a>
  &#8226;   <a href="#database.repositories.person_note_repository">database.repositories.person_note_repository</a>
  &#8226;   <a href="#database.repositories.person_repository">database.repositories.person_repository</a>
+ &#8226;   <a href="#database.repositories.re_evaluation_repository">database.repositories.re_evaluation_repository</a>
+ &#8226;   <a href="#database.repositories.user_mail_config_repository">database.repositories.user_mail_config_repository</a>
  &#8226;   <a href="#database.repositories.user_repository">database.repositories.user_repository</a>
+ &#8226;   <a href="#database.repositories.wiedervorlage_repository">database.repositories.wiedervorlage_repository</a>
  &#8226;   <a href="#dataclasses">dataclasses</a>
+ &#8226;   <a href="#services.age_alert_service">services.age_alert_service</a>
  &#8226;   <a href="#services.appointment_service">services.appointment_service</a>
  &#8226;   <a href="#services.approval_service">services.approval_service</a>
  &#8226;   <a href="#services.archive_service">services.archive_service</a>
@@ -5099,22 +5298,29 @@ imports:
  &#8226;   <a href="#services.checklist_service">services.checklist_service</a>
  &#8226;   <a href="#services.claim_service">services.claim_service</a>
  &#8226;   <a href="#services.dashboard_service">services.dashboard_service</a>
+ &#8226;   <a href="#services.document_package_service">services.document_package_service</a>
  &#8226;   <a href="#services.document_service">services.document_service</a>
  &#8226;   <a href="#services.document_template_service">services.document_template_service</a>
  &#8226;   <a href="#services.filter_preset_service">services.filter_preset_service</a>
+ &#8226;   <a href="#services.household_service">services.household_service</a>
  &#8226;   <a href="#services.location_service">services.location_service</a>
  &#8226;   <a href="#services.mandant_service">services.mandant_service</a>
  &#8226;   <a href="#services.notification_service">services.notification_service</a>
+ &#8226;   <a href="#services.ocr_service">services.ocr_service</a>
  &#8226;   <a href="#services.pdf_service">services.pdf_service</a>
  &#8226;   <a href="#services.person_note_service">services.person_note_service</a>
  &#8226;   <a href="#services.person_service">services.person_service</a>
  &#8226;   <a href="#services.pruefung_service">services.pruefung_service</a>
+ &#8226;   <a href="#services.re_evaluation_service">services.re_evaluation_service</a>
  &#8226;   <a href="#services.report_service">services.report_service</a>
  &#8226;   <a href="#services.role_service">services.role_service</a>
  &#8226;   <a href="#services.search_service">services.search_service</a>
  &#8226;   <a href="#services.settings_service">services.settings_service</a>
  &#8226;   <a href="#services.task_service">services.task_service</a>
+ &#8226;   <a href="#services.update_service">services.update_service</a>
+ &#8226;   <a href="#services.user_mail_service">services.user_mail_service</a>
  &#8226;   <a href="#services.user_service">services.user_service</a>
+ &#8226;   <a href="#services.wiedervorlage_service">services.wiedervorlage_service</a>
 
   </div>
   <div class="import">
@@ -5157,6 +5363,31 @@ imported by:
 imports:
     <a href="#app">app</a>
  &#8226;   <a href="#core.session">core.session</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#main.py">main.py</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="app.web_api"></a>
+  <a target="code" href="///C:/Users/Projektleiter/Desktop/anspruchssystem/app/web_api.py" type="text/plain"><tt>app.web_api</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#'fastapi.responses'">'fastapi.responses'</a>
+ &#8226;   <a href="#'fastapi.security'">'fastapi.security'</a>
+ &#8226;   <a href="#app">app</a>
+ &#8226;   <a href="#app.config">app.config</a>
+ &#8226;   <a href="#datetime">datetime</a>
+ &#8226;   <a href="#fastapi">fastapi</a>
+ &#8226;   <a href="#jwt">jwt</a>
+ &#8226;   <a href="#services.auth_service">services.auth_service</a>
+ &#8226;   <a href="#services.user_service">services.user_service</a>
+ &#8226;   <a href="#typing">typing</a>
 
   </div>
   <div class="import">
@@ -5507,6 +5738,7 @@ imported by:
  &#8226;   <a href="#asyncio.streams">asyncio.streams</a>
  &#8226;   <a href="#asyncio.tasks">asyncio.tasks</a>
  &#8226;   <a href="#asyncio.unix_events">asyncio.unix_events</a>
+ &#8226;   <a href="#typing_extensions">typing_extensions</a>
 
   </div>
 
@@ -6260,15 +6492,18 @@ imports:
   </div>
   <div class="import">
 imported by:
-    <a href="#email._encoded_words">email._encoded_words</a>
+    <a href="#database.repositories.user_mail_config_repository">database.repositories.user_mail_config_repository</a>
+ &#8226;   <a href="#email._encoded_words">email._encoded_words</a>
  &#8226;   <a href="#email.base64mime">email.base64mime</a>
  &#8226;   <a href="#email.encoders">email.encoders</a>
  &#8226;   <a href="#encodings.base64_codec">encodings.base64_codec</a>
  &#8226;   <a href="#http.server">http.server</a>
+ &#8226;   <a href="#jwt.utils">jwt.utils</a>
  &#8226;   <a href="#multiprocessing.resource_tracker">multiprocessing.resource_tracker</a>
  &#8226;   <a href="#reportlab.graphics.renderSVG">reportlab.graphics.renderSVG</a>
  &#8226;   <a href="#reportlab.lib.utils">reportlab.lib.utils</a>
  &#8226;   <a href="#secrets">secrets</a>
+ &#8226;   <a href="#smtplib">smtplib</a>
  &#8226;   <a href="#ssl">ssl</a>
  &#8226;   <a href="#urllib.request">urllib.request</a>
  &#8226;   <a href="#xmlrpc.client">xmlrpc.client</a>
@@ -6350,6 +6585,8 @@ imported by:
  &#8226;   <a href="#encodings.hex_codec">encodings.hex_codec</a>
  &#8226;   <a href="#encodings.uu_codec">encodings.uu_codec</a>
  &#8226;   <a href="#http.server">http.server</a>
+ &#8226;   <a href="#jwt.api_jws">jwt.api_jws</a>
+ &#8226;   <a href="#jwt.utils">jwt.utils</a>
  &#8226;   <a href="#quopri">quopri</a>
  &#8226;   <a href="#reportlab.lib.pdfencrypt">reportlab.lib.pdfencrypt</a>
  &#8226;   <a href="#reportlab.pdfbase.pdfdoc">reportlab.pdfbase.pdfdoc</a>
@@ -6410,6 +6647,7 @@ imported by:
  &#8226;   <a href="#subprocess">subprocess</a>
  &#8226;   <a href="#tarfile">tarfile</a>
  &#8226;   <a href="#tokenize">tokenize</a>
+ &#8226;   <a href="#typing_extensions">typing_extensions</a>
 
   </div>
 
@@ -6460,6 +6698,8 @@ imported by:
  &#8226;   <a href="#_strptime">_strptime</a>
  &#8226;   <a href="#email._parseaddr">email._parseaddr</a>
  &#8226;   <a href="#http.cookiejar">http.cookiejar</a>
+ &#8226;   <a href="#jwt.api_jwt">jwt.api_jwt</a>
+ &#8226;   <a href="#main.py">main.py</a>
  &#8226;   <a href="#services.report_service">services.report_service</a>
  &#8226;   <a href="#ssl">ssl</a>
 
@@ -6937,6 +7177,7 @@ imported by:
  &#8226;   <a href="#PyQt6.QtGui">PyQt6.QtGui</a>
  &#8226;   <a href="#PyQt6.QtPrintSupport">PyQt6.QtPrintSupport</a>
  &#8226;   <a href="#PyQt6.QtSvg">PyQt6.QtSvg</a>
+ &#8226;   <a href="#PyQt6.QtWebChannel">PyQt6.QtWebChannel</a>
  &#8226;   <a href="#PyQt6.QtWidgets">PyQt6.QtWidgets</a>
  &#8226;   <a href="#_pydecimal">_pydecimal</a>
  &#8226;   <a href="#_pyrepl.utils">_pyrepl.utils</a>
@@ -6993,6 +7234,7 @@ imported by:
  &#8226;   <a href="#threading">threading</a>
  &#8226;   <a href="#tokenize">tokenize</a>
  &#8226;   <a href="#typing">typing</a>
+ &#8226;   <a href="#typing_extensions">typing_extensions</a>
  &#8226;   <a href="#unittest._log">unittest._log</a>
  &#8226;   <a href="#unittest.case">unittest.case</a>
  &#8226;   <a href="#unittest.util">unittest.util</a>
@@ -7391,6 +7633,7 @@ imported by:
  &#8226;   <a href="#subprocess">subprocess</a>
  &#8226;   <a href="#traceback">traceback</a>
  &#8226;   <a href="#typing">typing</a>
+ &#8226;   <a href="#typing_extensions">typing_extensions</a>
  &#8226;   <a href="#unittest.case">unittest.case</a>
  &#8226;   <a href="#urllib.request">urllib.request</a>
  &#8226;   <a href="#xml.etree.ElementTree">xml.etree.ElementTree</a>
@@ -7466,6 +7709,7 @@ imported by:
  &#8226;   <a href="#reportlab.platypus.flowables">reportlab.platypus.flowables</a>
  &#8226;   <a href="#reportlab.platypus.paragraph">reportlab.platypus.paragraph</a>
  &#8226;   <a href="#reportlab.platypus.paraparser">reportlab.platypus.paraparser</a>
+ &#8226;   <a href="#smtplib">smtplib</a>
  &#8226;   <a href="#tarfile">tarfile</a>
  &#8226;   <a href="#weakref">weakref</a>
  &#8226;   <a href="#webbrowser">webbrowser</a>
@@ -7505,6 +7749,7 @@ imported by:
 <span class="moduletype">Package</span>  <div class="import">
 imported by:
     <a href="#core.card_status">core.card_status</a>
+ &#8226;   <a href="#core.case_context">core.case_context</a>
  &#8226;   <a href="#core.claim_status">core.claim_status</a>
  &#8226;   <a href="#core.constants">core.constants</a>
  &#8226;   <a href="#core.document_status">core.document_status</a>
@@ -7542,6 +7787,26 @@ imported by:
 </div>
 
 <div class="node">
+  <a name="core.case_context"></a>
+  <a target="code" href="///C:/Users/Projektleiter/Desktop/anspruchssystem/core/case_context.py" type="text/plain"><tt>core.case_context</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#core">core</a>
+ &#8226;   <a href="#typing">typing</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#main.py">main.py</a>
+ &#8226;   <a href="#ui.components.topbar">ui.components.topbar</a>
+ &#8226;   <a href="#ui.pages.case_create_page">ui.pages.case_create_page</a>
+ &#8226;   <a href="#ui.pages.claim_detail_page">ui.pages.claim_detail_page</a>
+
+  </div>
+
+</div>
+
+<div class="node">
   <a name="core.claim_status"></a>
   <a target="code" href="///C:/Users/Projektleiter/Desktop/anspruchssystem/core/claim_status.py" type="text/plain"><tt>core.claim_status</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
@@ -7560,14 +7825,21 @@ imported by:
  &#8226;   <a href="#services.card_service">services.card_service</a>
  &#8226;   <a href="#services.claim_service">services.claim_service</a>
  &#8226;   <a href="#services.dashboard_service">services.dashboard_service</a>
+ &#8226;   <a href="#services.document_package_service">services.document_package_service</a>
+ &#8226;   <a href="#services.document_template_service">services.document_template_service</a>
  &#8226;   <a href="#services.pdf_service">services.pdf_service</a>
  &#8226;   <a href="#services.report_service">services.report_service</a>
  &#8226;   <a href="#services.task_service">services.task_service</a>
+ &#8226;   <a href="#ui.dialogs.letter_wizard_dialog">ui.dialogs.letter_wizard_dialog</a>
  &#8226;   <a href="#ui.pages.claim_detail_page">ui.pages.claim_detail_page</a>
+ &#8226;   <a href="#ui.pages.claim_evaluation_dialog">ui.pages.claim_evaluation_dialog</a>
  &#8226;   <a href="#ui.pages.claims.claims_page">ui.pages.claims.claims_page</a>
  &#8226;   <a href="#ui.pages.dashboard.dashboard_page">ui.pages.dashboard.dashboard_page</a>
+ &#8226;   <a href="#ui.pages.document_templates_page">ui.pages.document_templates_page</a>
  &#8226;   <a href="#ui.pages.person_dossier_dialog">ui.pages.person_dossier_dialog</a>
  &#8226;   <a href="#ui.pages.person_dossier_page">ui.pages.person_dossier_page</a>
+ &#8226;   <a href="#ui.pages.post_evaluation_panel">ui.pages.post_evaluation_panel</a>
+ &#8226;   <a href="#ui.pages.serial_letters_page">ui.pages.serial_letters_page</a>
 
   </div>
 
@@ -7585,6 +7857,10 @@ imports:
 imported by:
     <a href="#app.bootstrap">app.bootstrap</a>
  &#8226;   <a href="#main.py">main.py</a>
+ &#8226;   <a href="#services.auth_service">services.auth_service</a>
+ &#8226;   <a href="#services.user_service">services.user_service</a>
+ &#8226;   <a href="#ui.dialogs.user_dialog">ui.dialogs.user_dialog</a>
+ &#8226;   <a href="#ui.pages.users.users_page">ui.pages.users.users_page</a>
 
   </div>
 
@@ -7634,10 +7910,16 @@ imported by:
  &#8226;   <a href="#services.document_service">services.document_service</a>
  &#8226;   <a href="#services.document_template_service">services.document_template_service</a>
  &#8226;   <a href="#services.filter_preset_service">services.filter_preset_service</a>
+ &#8226;   <a href="#services.household_service">services.household_service</a>
  &#8226;   <a href="#services.notification_service">services.notification_service</a>
+ &#8226;   <a href="#services.ocr_service">services.ocr_service</a>
  &#8226;   <a href="#services.person_note_service">services.person_note_service</a>
+ &#8226;   <a href="#services.re_evaluation_service">services.re_evaluation_service</a>
  &#8226;   <a href="#services.settings_service">services.settings_service</a>
  &#8226;   <a href="#services.task_service">services.task_service</a>
+ &#8226;   <a href="#services.user_mail_service">services.user_mail_service</a>
+ &#8226;   <a href="#services.user_service">services.user_service</a>
+ &#8226;   <a href="#services.wiedervorlage_service">services.wiedervorlage_service</a>
  &#8226;   <a href="#ui.components.app_navigation">ui.components.app_navigation</a>
  &#8226;   <a href="#ui.components.sidebar">ui.components.sidebar</a>
  &#8226;   <a href="#ui.login.login_window">ui.login.login_window</a>
@@ -7646,9 +7928,15 @@ imported by:
  &#8226;   <a href="#ui.pages.claim_evaluation_dialog">ui.pages.claim_evaluation_dialog</a>
  &#8226;   <a href="#ui.pages.claims_page">ui.pages.claims_page</a>
  &#8226;   <a href="#ui.pages.person_dossier_dialog">ui.pages.person_dossier_dialog</a>
+ &#8226;   <a href="#ui.pages.personal.personal_page">ui.pages.personal.personal_page</a>
+ &#8226;   <a href="#ui.pages.post_evaluation_panel">ui.pages.post_evaluation_panel</a>
  &#8226;   <a href="#ui.pages.reports_page">ui.pages.reports_page</a>
+ &#8226;   <a href="#ui.pages.settings.pruefungslimits_page">ui.pages.settings.pruefungslimits_page</a>
  &#8226;   <a href="#ui.pages.settings.settings_page">ui.pages.settings.settings_page</a>
+ &#8226;   <a href="#ui.pages.settings.system_settings_page">ui.pages.settings.system_settings_page</a>
  &#8226;   <a href="#ui.pages.tasks.tasks_page">ui.pages.tasks.tasks_page</a>
+ &#8226;   <a href="#ui.pages.update_page">ui.pages.update_page</a>
+ &#8226;   <a href="#ui.pages.users.users_page">ui.pages.users.users_page</a>
  &#8226;   <a href="#ui.shell.main_window">ui.shell.main_window</a>
 
   </div>
@@ -7740,6 +8028,17 @@ imported by:
 </div>
 
 <div class="node">
+  <a name="cryptography"></a>
+  <a target="code" href="" type="text/plain"><tt>cryptography</tt></a>
+<span class="moduletype">MissingModule</span>  <div class="import">
+imported by:
+    <a href="#jwt.utils">jwt.utils</a>
+
+  </div>
+
+</div>
+
+<div class="node">
   <a name="csv"></a>
   <a target="code" href="///C:/Users/Projektleiter/AppData/Local/Python/pythoncore-3.14-64/Lib/csv.py" type="text/plain"><tt>csv</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
@@ -7753,6 +8052,7 @@ imports:
   <div class="import">
 imported by:
     <a href="#importlib.metadata">importlib.metadata</a>
+ &#8226;   <a href="#main.py">main.py</a>
  &#8226;   <a href="#ui.pages.claims.claims_page">ui.pages.claims.claims_page</a>
  &#8226;   <a href="#ui.pages.import_page">ui.pages.import_page</a>
 
@@ -8017,22 +8317,30 @@ imported by:
  &#8226;   <a href="#database.repositories.document_type_repository">database.repositories.document_type_repository</a>
  &#8226;   <a href="#database.repositories.expense_repository">database.repositories.expense_repository</a>
  &#8226;   <a href="#database.repositories.filter_preset_repository">database.repositories.filter_preset_repository</a>
+ &#8226;   <a href="#database.repositories.household_member_repository">database.repositories.household_member_repository</a>
  &#8226;   <a href="#database.repositories.income_repository">database.repositories.income_repository</a>
  &#8226;   <a href="#database.repositories.location_repository">database.repositories.location_repository</a>
  &#8226;   <a href="#database.repositories.mandant_repository">database.repositories.mandant_repository</a>
  &#8226;   <a href="#database.repositories.notification_repository">database.repositories.notification_repository</a>
  &#8226;   <a href="#database.repositories.person_note_repository">database.repositories.person_note_repository</a>
  &#8226;   <a href="#database.repositories.person_repository">database.repositories.person_repository</a>
+ &#8226;   <a href="#database.repositories.re_evaluation_repository">database.repositories.re_evaluation_repository</a>
  &#8226;   <a href="#database.repositories.role_repository">database.repositories.role_repository</a>
  &#8226;   <a href="#database.repositories.setting_repository">database.repositories.setting_repository</a>
  &#8226;   <a href="#database.repositories.task_repository">database.repositories.task_repository</a>
+ &#8226;   <a href="#database.repositories.user_mail_config_repository">database.repositories.user_mail_config_repository</a>
  &#8226;   <a href="#database.repositories.user_repository">database.repositories.user_repository</a>
+ &#8226;   <a href="#database.repositories.wiedervorlage_repository">database.repositories.wiedervorlage_repository</a>
  &#8226;   <a href="#main.py">main.py</a>
+ &#8226;   <a href="#services.age_alert_service">services.age_alert_service</a>
  &#8226;   <a href="#services.archive_service">services.archive_service</a>
+ &#8226;   <a href="#services.claim_service">services.claim_service</a>
  &#8226;   <a href="#services.document_service">services.document_service</a>
  &#8226;   <a href="#services.search_service">services.search_service</a>
  &#8226;   <a href="#services.settings_service">services.settings_service</a>
  &#8226;   <a href="#services.task_service">services.task_service</a>
+ &#8226;   <a href="#services.update_service">services.update_service</a>
+ &#8226;   <a href="#ui.pages.document_templates_page">ui.pages.document_templates_page</a>
 
   </div>
 
@@ -8063,16 +8371,20 @@ imported by:
  &#8226;   <a href="#database.repositories.document_type_repository">database.repositories.document_type_repository</a>
  &#8226;   <a href="#database.repositories.expense_repository">database.repositories.expense_repository</a>
  &#8226;   <a href="#database.repositories.filter_preset_repository">database.repositories.filter_preset_repository</a>
+ &#8226;   <a href="#database.repositories.household_member_repository">database.repositories.household_member_repository</a>
  &#8226;   <a href="#database.repositories.income_repository">database.repositories.income_repository</a>
  &#8226;   <a href="#database.repositories.location_repository">database.repositories.location_repository</a>
  &#8226;   <a href="#database.repositories.mandant_repository">database.repositories.mandant_repository</a>
  &#8226;   <a href="#database.repositories.notification_repository">database.repositories.notification_repository</a>
  &#8226;   <a href="#database.repositories.person_note_repository">database.repositories.person_note_repository</a>
  &#8226;   <a href="#database.repositories.person_repository">database.repositories.person_repository</a>
+ &#8226;   <a href="#database.repositories.re_evaluation_repository">database.repositories.re_evaluation_repository</a>
  &#8226;   <a href="#database.repositories.role_repository">database.repositories.role_repository</a>
  &#8226;   <a href="#database.repositories.setting_repository">database.repositories.setting_repository</a>
  &#8226;   <a href="#database.repositories.task_repository">database.repositories.task_repository</a>
+ &#8226;   <a href="#database.repositories.user_mail_config_repository">database.repositories.user_mail_config_repository</a>
  &#8226;   <a href="#database.repositories.user_repository">database.repositories.user_repository</a>
+ &#8226;   <a href="#database.repositories.wiedervorlage_repository">database.repositories.wiedervorlage_repository</a>
 
   </div>
 
@@ -8149,6 +8461,8 @@ imported by:
     <a href="#app.container">app.container</a>
  &#8226;   <a href="#main.py">main.py</a>
  &#8226;   <a href="#services.audit_service">services.audit_service</a>
+ &#8226;   <a href="#services.household_service">services.household_service</a>
+ &#8226;   <a href="#services.ocr_service">services.ocr_service</a>
 
   </div>
 
@@ -8280,6 +8594,7 @@ imported by:
  &#8226;   <a href="#services.card_service">services.card_service</a>
  &#8226;   <a href="#services.claim_service">services.claim_service</a>
  &#8226;   <a href="#services.report_service">services.report_service</a>
+ &#8226;   <a href="#ui.pages.claim_evaluation_dialog">ui.pages.claim_evaluation_dialog</a>
 
   </div>
 
@@ -8379,6 +8694,28 @@ imports:
 imported by:
     <a href="#main.py">main.py</a>
  &#8226;   <a href="#services.filter_preset_service">services.filter_preset_service</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="database.repositories.household_member_repository"></a>
+  <a target="code" href="///C:/Users/Projektleiter/Desktop/anspruchssystem/database/repositories/household_member_repository.py" type="text/plain"><tt>database.repositories.household_member_repository</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#database.db">database.db</a>
+ &#8226;   <a href="#database.repositories">database.repositories</a>
+ &#8226;   <a href="#datetime">datetime</a>
+ &#8226;   <a href="#typing">typing</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#app.container">app.container</a>
+ &#8226;   <a href="#main.py">main.py</a>
+ &#8226;   <a href="#services.age_alert_service">services.age_alert_service</a>
+ &#8226;   <a href="#services.household_service">services.household_service</a>
 
   </div>
 
@@ -8508,6 +8845,25 @@ imported by:
 </div>
 
 <div class="node">
+  <a name="database.repositories.re_evaluation_repository"></a>
+  <a target="code" href="///C:/Users/Projektleiter/Desktop/anspruchssystem/database/repositories/re_evaluation_repository.py" type="text/plain"><tt>database.repositories.re_evaluation_repository</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#database.db">database.db</a>
+ &#8226;   <a href="#database.repositories">database.repositories</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#app.container">app.container</a>
+ &#8226;   <a href="#main.py">main.py</a>
+ &#8226;   <a href="#services.re_evaluation_service">services.re_evaluation_service</a>
+
+  </div>
+
+</div>
+
+<div class="node">
   <a name="database.repositories.role_repository"></a>
   <a target="code" href="///C:/Users/Projektleiter/Desktop/anspruchssystem/database/repositories/role_repository.py" type="text/plain"><tt>database.repositories.role_repository</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
@@ -8570,6 +8926,26 @@ imported by:
 </div>
 
 <div class="node">
+  <a name="database.repositories.user_mail_config_repository"></a>
+  <a target="code" href="///C:/Users/Projektleiter/Desktop/anspruchssystem/database/repositories/user_mail_config_repository.py" type="text/plain"><tt>database.repositories.user_mail_config_repository</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#base64">base64</a>
+ &#8226;   <a href="#database.db">database.db</a>
+ &#8226;   <a href="#database.repositories">database.repositories</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#app.container">app.container</a>
+ &#8226;   <a href="#main.py">main.py</a>
+ &#8226;   <a href="#services.user_mail_service">services.user_mail_service</a>
+
+  </div>
+
+</div>
+
+<div class="node">
   <a name="database.repositories.user_repository"></a>
   <a target="code" href="///C:/Users/Projektleiter/Desktop/anspruchssystem/database/repositories/user_repository.py" type="text/plain"><tt>database.repositories.user_repository</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
@@ -8587,6 +8963,25 @@ imported by:
  &#8226;   <a href="#main.py">main.py</a>
  &#8226;   <a href="#services.auth_service">services.auth_service</a>
  &#8226;   <a href="#services.user_service">services.user_service</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="database.repositories.wiedervorlage_repository"></a>
+  <a target="code" href="///C:/Users/Projektleiter/Desktop/anspruchssystem/database/repositories/wiedervorlage_repository.py" type="text/plain"><tt>database.repositories.wiedervorlage_repository</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#database.db">database.db</a>
+ &#8226;   <a href="#database.repositories">database.repositories</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#app.container">app.container</a>
+ &#8226;   <a href="#main.py">main.py</a>
+ &#8226;   <a href="#services.wiedervorlage_service">services.wiedervorlage_service</a>
 
   </div>
 
@@ -8641,16 +9036,20 @@ imported by:
  &#8226;   <a href="#PyQt6.QtGui">PyQt6.QtGui</a>
  &#8226;   <a href="#PyQt6.QtPrintSupport">PyQt6.QtPrintSupport</a>
  &#8226;   <a href="#PyQt6.QtSvg">PyQt6.QtSvg</a>
+ &#8226;   <a href="#PyQt6.QtWebChannel">PyQt6.QtWebChannel</a>
  &#8226;   <a href="#PyQt6.QtWidgets">PyQt6.QtWidgets</a>
  &#8226;   <a href="#_strptime">_strptime</a>
  &#8226;   <a href="#app.config">app.config</a>
+ &#8226;   <a href="#app.web_api">app.web_api</a>
  &#8226;   <a href="#calendar">calendar</a>
  &#8226;   <a href="#database.db">database.db</a>
  &#8226;   <a href="#database.repositories.card_repository">database.repositories.card_repository</a>
  &#8226;   <a href="#database.repositories.document_repository">database.repositories.document_repository</a>
+ &#8226;   <a href="#database.repositories.household_member_repository">database.repositories.household_member_repository</a>
  &#8226;   <a href="#email.utils">email.utils</a>
  &#8226;   <a href="#http.cookiejar">http.cookiejar</a>
  &#8226;   <a href="#http.server">http.server</a>
+ &#8226;   <a href="#jwt.api_jwt">jwt.api_jwt</a>
  &#8226;   <a href="#openpyxl.cell._writer">openpyxl.cell._writer</a>
  &#8226;   <a href="#openpyxl.cell.cell">openpyxl.cell.cell</a>
  &#8226;   <a href="#openpyxl.compat.strings">openpyxl.compat.strings</a>
@@ -8661,21 +9060,32 @@ imported by:
  &#8226;   <a href="#openpyxl.writer.excel">openpyxl.writer.excel</a>
  &#8226;   <a href="#reportlab.lib.normalDate">reportlab.lib.normalDate</a>
  &#8226;   <a href="#reportlab.lib.utils">reportlab.lib.utils</a>
+ &#8226;   <a href="#services.age_alert_service">services.age_alert_service</a>
  &#8226;   <a href="#services.auth_service">services.auth_service</a>
  &#8226;   <a href="#services.card_service">services.card_service</a>
  &#8226;   <a href="#services.case_service">services.case_service</a>
  &#8226;   <a href="#services.claim_service">services.claim_service</a>
  &#8226;   <a href="#services.dashboard_service">services.dashboard_service</a>
  &#8226;   <a href="#services.document_service">services.document_service</a>
+ &#8226;   <a href="#services.document_template_service">services.document_template_service</a>
  &#8226;   <a href="#services.excel_service">services.excel_service</a>
+ &#8226;   <a href="#services.manual_service">services.manual_service</a>
+ &#8226;   <a href="#services.pdf_service">services.pdf_service</a>
  &#8226;   <a href="#services.report_service">services.report_service</a>
  &#8226;   <a href="#services.task_service">services.task_service</a>
+ &#8226;   <a href="#services.update_service">services.update_service</a>
  &#8226;   <a href="#services.user_service">services.user_service</a>
+ &#8226;   <a href="#smtplib">smtplib</a>
  &#8226;   <a href="#sqlite3.dbapi2">sqlite3.dbapi2</a>
+ &#8226;   <a href="#ui.dialogs.letter_wizard_dialog">ui.dialogs.letter_wizard_dialog</a>
  &#8226;   <a href="#ui.pages.appointments.appointments_page">ui.pages.appointments.appointments_page</a>
  &#8226;   <a href="#ui.pages.document_templates_page">ui.pages.document_templates_page</a>
+ &#8226;   <a href="#ui.pages.import_page">ui.pages.import_page</a>
+ &#8226;   <a href="#ui.pages.post_evaluation_panel">ui.pages.post_evaluation_panel</a>
+ &#8226;   <a href="#ui.pages.reports_page">ui.pages.reports_page</a>
+ &#8226;   <a href="#ui.pages.serial_letters_page">ui.pages.serial_letters_page</a>
+ &#8226;   <a href="#ui.pages.settings.system_settings_page">ui.pages.settings.system_settings_page</a>
  &#8226;   <a href="#ui.pages.tasks.tasks_page">ui.pages.tasks.tasks_page</a>
- &#8226;   <a href="#ui.pages.users.users_page">ui.pages.users.users_page</a>
  &#8226;   <a href="#xmlrpc.client">xmlrpc.client</a>
 
   </div>
@@ -8798,6 +9208,17 @@ imported by:
 </div>
 
 <div class="node">
+  <a name="docx"></a>
+  <a target="code" href="" type="text/plain"><tt>docx</tt></a>
+<span class="moduletype">MissingModule</span>  <div class="import">
+imported by:
+    <a href="#services.document_template_service">services.document_template_service</a>
+
+  </div>
+
+</div>
+
+<div class="node">
   <a name="domain"></a>
   <a target="code" href="-" type="text/plain"><tt>domain</tt></a>
 <span class="moduletype">NamespacePackage</span>  <div class="import">
@@ -8821,6 +9242,8 @@ imports:
 imported by:
     <a href="#database.db">database.db</a>
  &#8226;   <a href="#domain.services.pruefung_service">domain.services.pruefung_service</a>
+ &#8226;   <a href="#main.py">main.py</a>
+ &#8226;   <a href="#services.card_service">services.card_service</a>
 
   </div>
 
@@ -8891,11 +9314,16 @@ imported by:
  &#8226;   <a href="#email.headerregistry">email.headerregistry</a>
  &#8226;   <a href="#email.iterators">email.iterators</a>
  &#8226;   <a href="#email.message">email.message</a>
+ &#8226;   <a href="#email.mime">email.mime</a>
+ &#8226;   <a href="#email.mime.base">email.mime.base</a>
+ &#8226;   <a href="#email.mime.nonmultipart">email.mime.nonmultipart</a>
  &#8226;   <a href="#email.parser">email.parser</a>
  &#8226;   <a href="#email.policy">email.policy</a>
  &#8226;   <a href="#email.quoprimime">email.quoprimime</a>
  &#8226;   <a href="#email.utils">email.utils</a>
  &#8226;   <a href="#importlib.metadata">importlib.metadata</a>
+ &#8226;   <a href="#services.mail_service">services.mail_service</a>
+ &#8226;   <a href="#services.user_mail_service">services.user_mail_service</a>
  &#8226;   <a href="#urllib.request">urllib.request</a>
 
   </div>
@@ -9006,6 +9434,7 @@ imports:
 imported by:
     <a href="#email.charset">email.charset</a>
  &#8226;   <a href="#email.header">email.header</a>
+ &#8226;   <a href="#smtplib">smtplib</a>
 
   </div>
 
@@ -9072,6 +9501,9 @@ imports:
   <div class="import">
 imported by:
     <a href="#email.charset">email.charset</a>
+ &#8226;   <a href="#main.py">main.py</a>
+ &#8226;   <a href="#services.mail_service">services.mail_service</a>
+ &#8226;   <a href="#services.user_mail_service">services.user_mail_service</a>
 
   </div>
 
@@ -9097,6 +9529,7 @@ imported by:
  &#8226;   <a href="#email.header">email.header</a>
  &#8226;   <a href="#email.headerregistry">email.headerregistry</a>
  &#8226;   <a href="#email.message">email.message</a>
+ &#8226;   <a href="#email.mime.nonmultipart">email.mime.nonmultipart</a>
 
   </div>
 
@@ -9143,6 +9576,7 @@ imports:
   <div class="import">
 imported by:
     <a href="#email.message">email.message</a>
+ &#8226;   <a href="#smtplib">smtplib</a>
 
   </div>
 
@@ -9233,10 +9667,111 @@ imports:
 imported by:
     <a href="#email.contentmanager">email.contentmanager</a>
  &#8226;   <a href="#email.feedparser">email.feedparser</a>
+ &#8226;   <a href="#email.mime.base">email.mime.base</a>
  &#8226;   <a href="#email.policy">email.policy</a>
  &#8226;   <a href="#http.client">http.client</a>
  &#8226;   <a href="#importlib.metadata._adapters">importlib.metadata._adapters</a>
  &#8226;   <a href="#pydoc">pydoc</a>
+ &#8226;   <a href="#smtplib">smtplib</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="email.mime"></a>
+  <a target="code" href="///C:/Users/Projektleiter/AppData/Local/Python/pythoncore-3.14-64/Lib/email/mime/__init__.py" type="text/plain"><tt>email.mime</tt></a>
+<span class="moduletype">Package</span>  <div class="import">
+imports:
+    <a href="#email">email</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#email.mime.base">email.mime.base</a>
+ &#8226;   <a href="#email.mime.multipart">email.mime.multipart</a>
+ &#8226;   <a href="#email.mime.nonmultipart">email.mime.nonmultipart</a>
+ &#8226;   <a href="#email.mime.text">email.mime.text</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="email.mime.base"></a>
+  <a target="code" href="///C:/Users/Projektleiter/AppData/Local/Python/pythoncore-3.14-64/Lib/email/mime/base.py" type="text/plain"><tt>email.mime.base</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#email">email</a>
+ &#8226;   <a href="#email.message">email.message</a>
+ &#8226;   <a href="#email.mime">email.mime</a>
+ &#8226;   <a href="#email.policy">email.policy</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#email.mime.multipart">email.mime.multipart</a>
+ &#8226;   <a href="#email.mime.nonmultipart">email.mime.nonmultipart</a>
+ &#8226;   <a href="#main.py">main.py</a>
+ &#8226;   <a href="#services.mail_service">services.mail_service</a>
+ &#8226;   <a href="#services.user_mail_service">services.user_mail_service</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="email.mime.multipart"></a>
+  <a target="code" href="///C:/Users/Projektleiter/AppData/Local/Python/pythoncore-3.14-64/Lib/email/mime/multipart.py" type="text/plain"><tt>email.mime.multipart</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#email.mime">email.mime</a>
+ &#8226;   <a href="#email.mime.base">email.mime.base</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#main.py">main.py</a>
+ &#8226;   <a href="#services.mail_service">services.mail_service</a>
+ &#8226;   <a href="#services.user_mail_service">services.user_mail_service</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="email.mime.nonmultipart"></a>
+  <a target="code" href="///C:/Users/Projektleiter/AppData/Local/Python/pythoncore-3.14-64/Lib/email/mime/nonmultipart.py" type="text/plain"><tt>email.mime.nonmultipart</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#email">email</a>
+ &#8226;   <a href="#email.errors">email.errors</a>
+ &#8226;   <a href="#email.mime">email.mime</a>
+ &#8226;   <a href="#email.mime.base">email.mime.base</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#email.mime.text">email.mime.text</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="email.mime.text"></a>
+  <a target="code" href="///C:/Users/Projektleiter/AppData/Local/Python/pythoncore-3.14-64/Lib/email/mime/text.py" type="text/plain"><tt>email.mime.text</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#email.mime">email.mime</a>
+ &#8226;   <a href="#email.mime.nonmultipart">email.mime.nonmultipart</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#main.py">main.py</a>
+ &#8226;   <a href="#services.mail_service">services.mail_service</a>
+ &#8226;   <a href="#services.user_mail_service">services.user_mail_service</a>
 
   </div>
 
@@ -9280,6 +9815,7 @@ imports:
   <div class="import">
 imported by:
     <a href="#email.message">email.message</a>
+ &#8226;   <a href="#email.mime.base">email.mime.base</a>
 
   </div>
 
@@ -9331,6 +9867,7 @@ imported by:
  &#8226;   <a href="#email.message">email.message</a>
  &#8226;   <a href="#email.policy">email.policy</a>
  &#8226;   <a href="#http.server">http.server</a>
+ &#8226;   <a href="#smtplib">smtplib</a>
  &#8226;   <a href="#urllib.request">urllib.request</a>
 
   </div>
@@ -11907,6 +12444,7 @@ imported by:
  &#8226;   <a href="#signal">signal</a>
  &#8226;   <a href="#socket">socket</a>
  &#8226;   <a href="#ssl">ssl</a>
+ &#8226;   <a href="#typing_extensions">typing_extensions</a>
  &#8226;   <a href="#uuid">uuid</a>
 
   </div>
@@ -11999,6 +12537,17 @@ imports:
 imported by:
     <a href="#et_xmlfile">et_xmlfile</a>
  &#8226;   <a href="#openpyxl.xml.functions">openpyxl.xml.functions</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="fastapi"></a>
+  <a target="code" href="" type="text/plain"><tt>fastapi</tt></a>
+<span class="moduletype">ExcludedModule</span>  <div class="import">
+imported by:
+    <a href="#app.web_api">app.web_api</a>
 
   </div>
 
@@ -12154,6 +12703,7 @@ imported by:
  &#8226;   <a href="#importlib.resources._common">importlib.resources._common</a>
  &#8226;   <a href="#inspect">inspect</a>
  &#8226;   <a href="#ipaddress">ipaddress</a>
+ &#8226;   <a href="#jwt.jwks_client">jwt.jwks_client</a>
  &#8226;   <a href="#locale">locale</a>
  &#8226;   <a href="#main.py">main.py</a>
  &#8226;   <a href="#multiprocessing.reduction">multiprocessing.reduction</a>
@@ -12181,6 +12731,7 @@ imported by:
  &#8226;   <a href="#tracemalloc">tracemalloc</a>
  &#8226;   <a href="#types">types</a>
  &#8226;   <a href="#typing">typing</a>
+ &#8226;   <a href="#typing_extensions">typing_extensions</a>
  &#8226;   <a href="#unittest.case">unittest.case</a>
  &#8226;   <a href="#unittest.loader">unittest.loader</a>
  &#8226;   <a href="#unittest.result">unittest.result</a>
@@ -12362,6 +12913,8 @@ imports:
   <div class="import">
 imported by:
     <a href="#hmac">hmac</a>
+ &#8226;   <a href="#jwt.algorithms">jwt.algorithms</a>
+ &#8226;   <a href="#main.py">main.py</a>
  &#8226;   <a href="#openpyxl.chartsheet.protection">openpyxl.chartsheet.protection</a>
  &#8226;   <a href="#random">random</a>
  &#8226;   <a href="#reportlab.lib.fontfinder">reportlab.lib.fontfinder</a>
@@ -12370,6 +12923,7 @@ imported by:
  &#8226;   <a href="#reportlab.pdfbase.cidfonts">reportlab.pdfbase.cidfonts</a>
  &#8226;   <a href="#reportlab.pdfbase.pdfdoc">reportlab.pdfbase.pdfdoc</a>
  &#8226;   <a href="#reportlab.pdfgen.canvas">reportlab.pdfgen.canvas</a>
+ &#8226;   <a href="#services.update_service">services.update_service</a>
  &#8226;   <a href="#urllib.request">urllib.request</a>
  &#8226;   <a href="#uuid">uuid</a>
 
@@ -12412,8 +12966,10 @@ imports:
   </div>
   <div class="import">
 imported by:
-    <a href="#multiprocessing.connection">multiprocessing.connection</a>
+    <a href="#jwt.algorithms">jwt.algorithms</a>
+ &#8226;   <a href="#multiprocessing.connection">multiprocessing.connection</a>
  &#8226;   <a href="#secrets">secrets</a>
+ &#8226;   <a href="#smtplib">smtplib</a>
 
   </div>
 
@@ -13186,6 +13742,7 @@ imported by:
  &#8226;   <a href="#reportlab.lib.utils">reportlab.lib.utils</a>
  &#8226;   <a href="#rlcompleter">rlcompleter</a>
  &#8226;   <a href="#typing">typing</a>
+ &#8226;   <a href="#typing_extensions">typing_extensions</a>
  &#8226;   <a href="#unittest.async_case">unittest.async_case</a>
  &#8226;   <a href="#unittest.case">unittest.case</a>
 
@@ -13285,7 +13842,9 @@ imported by:
  &#8226;   <a href="#reportlab.pdfbase.pdfutils">reportlab.pdfbase.pdfutils</a>
  &#8226;   <a href="#reportlab.pdfbase.ttfonts">reportlab.pdfbase.ttfonts</a>
  &#8226;   <a href="#runpy">runpy</a>
+ &#8226;   <a href="#services.document_template_service">services.document_template_service</a>
  &#8226;   <a href="#shlex">shlex</a>
+ &#8226;   <a href="#smtplib">smtplib</a>
  &#8226;   <a href="#socket">socket</a>
  &#8226;   <a href="#socketserver">socketserver</a>
  &#8226;   <a href="#subprocess">subprocess</a>
@@ -13293,6 +13852,7 @@ imported by:
  &#8226;   <a href="#tempfile">tempfile</a>
  &#8226;   <a href="#tokenize">tokenize</a>
  &#8226;   <a href="#traceback">traceback</a>
+ &#8226;   <a href="#typing_extensions">typing_extensions</a>
  &#8226;   <a href="#ui.pages.claims.claims_page">ui.pages.claims.claims_page</a>
  &#8226;   <a href="#ui.pages.import_page">ui.pages.import_page</a>
  &#8226;   <a href="#unittest.result">unittest.result</a>
@@ -13425,11 +13985,19 @@ imported by:
  &#8226;   <a href="#json.decoder">json.decoder</a>
  &#8226;   <a href="#json.encoder">json.encoder</a>
  &#8226;   <a href="#json.scanner">json.scanner</a>
+ &#8226;   <a href="#jwt.algorithms">jwt.algorithms</a>
+ &#8226;   <a href="#jwt.api_jwk">jwt.api_jwk</a>
+ &#8226;   <a href="#jwt.api_jws">jwt.api_jws</a>
+ &#8226;   <a href="#jwt.api_jwt">jwt.api_jwt</a>
+ &#8226;   <a href="#jwt.jwks_client">jwt.jwks_client</a>
+ &#8226;   <a href="#main.py">main.py</a>
  &#8226;   <a href="#multiprocessing.resource_tracker">multiprocessing.resource_tracker</a>
  &#8226;   <a href="#pdb">pdb</a>
  &#8226;   <a href="#services.document_service">services.document_service</a>
  &#8226;   <a href="#services.settings_service">services.settings_service</a>
  &#8226;   <a href="#services.task_service">services.task_service</a>
+ &#8226;   <a href="#services.update_service">services.update_service</a>
+ &#8226;   <a href="#ui.pages.update_page">ui.pages.update_page</a>
 
   </div>
 
@@ -13493,6 +14061,288 @@ imported by:
 </div>
 
 <div class="node">
+  <a name="jwt"></a>
+  <a target="code" href="///C:/Users/Projektleiter/Desktop/anspruchssystem/.venv/Lib/site-packages/jwt/__init__.py" type="text/plain"><tt>jwt</tt></a>
+<span class="moduletype">Package</span>  <div class="import">
+imports:
+    <a href="#jwt.api_jwk">jwt.api_jwk</a>
+ &#8226;   <a href="#jwt.api_jws">jwt.api_jws</a>
+ &#8226;   <a href="#jwt.api_jwt">jwt.api_jwt</a>
+ &#8226;   <a href="#jwt.exceptions">jwt.exceptions</a>
+ &#8226;   <a href="#jwt.jwks_client">jwt.jwks_client</a>
+ &#8226;   <a href="#jwt.warnings">jwt.warnings</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#app.web_api">app.web_api</a>
+ &#8226;   <a href="#jwt.algorithms">jwt.algorithms</a>
+ &#8226;   <a href="#jwt.api_jwk">jwt.api_jwk</a>
+ &#8226;   <a href="#jwt.api_jws">jwt.api_jws</a>
+ &#8226;   <a href="#jwt.api_jwt">jwt.api_jwt</a>
+ &#8226;   <a href="#jwt.exceptions">jwt.exceptions</a>
+ &#8226;   <a href="#jwt.jwk_set_cache">jwt.jwk_set_cache</a>
+ &#8226;   <a href="#jwt.jwks_client">jwt.jwks_client</a>
+ &#8226;   <a href="#jwt.types">jwt.types</a>
+ &#8226;   <a href="#jwt.utils">jwt.utils</a>
+ &#8226;   <a href="#jwt.warnings">jwt.warnings</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="jwt.algorithms"></a>
+  <a target="code" href="///C:/Users/Projektleiter/Desktop/anspruchssystem/.venv/Lib/site-packages/jwt/algorithms.py" type="text/plain"><tt>jwt.algorithms</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#'cryptography.exceptions'">'cryptography.exceptions'</a>
+ &#8226;   <a href="#'cryptography.hazmat'">'cryptography.hazmat'</a>
+ &#8226;   <a href="#__future__">__future__</a>
+ &#8226;   <a href="#abc">abc</a>
+ &#8226;   <a href="#hashlib">hashlib</a>
+ &#8226;   <a href="#hmac">hmac</a>
+ &#8226;   <a href="#json">json</a>
+ &#8226;   <a href="#jwt">jwt</a>
+ &#8226;   <a href="#jwt.exceptions">jwt.exceptions</a>
+ &#8226;   <a href="#jwt.types">jwt.types</a>
+ &#8226;   <a href="#jwt.utils">jwt.utils</a>
+ &#8226;   <a href="#os">os</a>
+ &#8226;   <a href="#sys">sys</a>
+ &#8226;   <a href="#typing">typing</a>
+ &#8226;   <a href="#typing_extensions">typing_extensions</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#jwt.api_jwk">jwt.api_jwk</a>
+ &#8226;   <a href="#jwt.api_jws">jwt.api_jws</a>
+ &#8226;   <a href="#jwt.api_jwt">jwt.api_jwt</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="jwt.api_jwk"></a>
+  <a target="code" href="///C:/Users/Projektleiter/Desktop/anspruchssystem/.venv/Lib/site-packages/jwt/api_jwk.py" type="text/plain"><tt>jwt.api_jwk</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#'collections.abc'">'collections.abc'</a>
+ &#8226;   <a href="#__future__">__future__</a>
+ &#8226;   <a href="#json">json</a>
+ &#8226;   <a href="#jwt">jwt</a>
+ &#8226;   <a href="#jwt.algorithms">jwt.algorithms</a>
+ &#8226;   <a href="#jwt.exceptions">jwt.exceptions</a>
+ &#8226;   <a href="#jwt.types">jwt.types</a>
+ &#8226;   <a href="#time">time</a>
+ &#8226;   <a href="#typing">typing</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#jwt">jwt</a>
+ &#8226;   <a href="#jwt.api_jws">jwt.api_jws</a>
+ &#8226;   <a href="#jwt.api_jwt">jwt.api_jwt</a>
+ &#8226;   <a href="#jwt.jwk_set_cache">jwt.jwk_set_cache</a>
+ &#8226;   <a href="#jwt.jwks_client">jwt.jwks_client</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="jwt.api_jws"></a>
+  <a target="code" href="///C:/Users/Projektleiter/Desktop/anspruchssystem/.venv/Lib/site-packages/jwt/api_jws.py" type="text/plain"><tt>jwt.api_jws</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#'collections.abc'">'collections.abc'</a>
+ &#8226;   <a href="#__future__">__future__</a>
+ &#8226;   <a href="#binascii">binascii</a>
+ &#8226;   <a href="#json">json</a>
+ &#8226;   <a href="#jwt">jwt</a>
+ &#8226;   <a href="#jwt.algorithms">jwt.algorithms</a>
+ &#8226;   <a href="#jwt.api_jwk">jwt.api_jwk</a>
+ &#8226;   <a href="#jwt.exceptions">jwt.exceptions</a>
+ &#8226;   <a href="#jwt.types">jwt.types</a>
+ &#8226;   <a href="#jwt.utils">jwt.utils</a>
+ &#8226;   <a href="#jwt.warnings">jwt.warnings</a>
+ &#8226;   <a href="#typing">typing</a>
+ &#8226;   <a href="#warnings">warnings</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#jwt">jwt</a>
+ &#8226;   <a href="#jwt.api_jwt">jwt.api_jwt</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="jwt.api_jwt"></a>
+  <a target="code" href="///C:/Users/Projektleiter/Desktop/anspruchssystem/.venv/Lib/site-packages/jwt/api_jwt.py" type="text/plain"><tt>jwt.api_jwt</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#'collections.abc'">'collections.abc'</a>
+ &#8226;   <a href="#__future__">__future__</a>
+ &#8226;   <a href="#calendar">calendar</a>
+ &#8226;   <a href="#datetime">datetime</a>
+ &#8226;   <a href="#json">json</a>
+ &#8226;   <a href="#jwt">jwt</a>
+ &#8226;   <a href="#jwt.algorithms">jwt.algorithms</a>
+ &#8226;   <a href="#jwt.api_jwk">jwt.api_jwk</a>
+ &#8226;   <a href="#jwt.api_jws">jwt.api_jws</a>
+ &#8226;   <a href="#jwt.exceptions">jwt.exceptions</a>
+ &#8226;   <a href="#jwt.types">jwt.types</a>
+ &#8226;   <a href="#jwt.warnings">jwt.warnings</a>
+ &#8226;   <a href="#os">os</a>
+ &#8226;   <a href="#sys">sys</a>
+ &#8226;   <a href="#typing">typing</a>
+ &#8226;   <a href="#typing_extensions">typing_extensions</a>
+ &#8226;   <a href="#warnings">warnings</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#jwt">jwt</a>
+ &#8226;   <a href="#jwt.jwks_client">jwt.jwks_client</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="jwt.exceptions"></a>
+  <a target="code" href="///C:/Users/Projektleiter/Desktop/anspruchssystem/.venv/Lib/site-packages/jwt/exceptions.py" type="text/plain"><tt>jwt.exceptions</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#jwt">jwt</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#jwt">jwt</a>
+ &#8226;   <a href="#jwt.algorithms">jwt.algorithms</a>
+ &#8226;   <a href="#jwt.api_jwk">jwt.api_jwk</a>
+ &#8226;   <a href="#jwt.api_jws">jwt.api_jws</a>
+ &#8226;   <a href="#jwt.api_jwt">jwt.api_jwt</a>
+ &#8226;   <a href="#jwt.jwks_client">jwt.jwks_client</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="jwt.jwk_set_cache"></a>
+  <a target="code" href="///C:/Users/Projektleiter/Desktop/anspruchssystem/.venv/Lib/site-packages/jwt/jwk_set_cache.py" type="text/plain"><tt>jwt.jwk_set_cache</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#jwt">jwt</a>
+ &#8226;   <a href="#jwt.api_jwk">jwt.api_jwk</a>
+ &#8226;   <a href="#time">time</a>
+ &#8226;   <a href="#typing">typing</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#jwt.jwks_client">jwt.jwks_client</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="jwt.jwks_client"></a>
+  <a target="code" href="///C:/Users/Projektleiter/Desktop/anspruchssystem/.venv/Lib/site-packages/jwt/jwks_client.py" type="text/plain"><tt>jwt.jwks_client</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#__future__">__future__</a>
+ &#8226;   <a href="#functools">functools</a>
+ &#8226;   <a href="#json">json</a>
+ &#8226;   <a href="#jwt">jwt</a>
+ &#8226;   <a href="#jwt.api_jwk">jwt.api_jwk</a>
+ &#8226;   <a href="#jwt.api_jwt">jwt.api_jwt</a>
+ &#8226;   <a href="#jwt.exceptions">jwt.exceptions</a>
+ &#8226;   <a href="#jwt.jwk_set_cache">jwt.jwk_set_cache</a>
+ &#8226;   <a href="#ssl">ssl</a>
+ &#8226;   <a href="#typing">typing</a>
+ &#8226;   <a href="#urllib.error">urllib.error</a>
+ &#8226;   <a href="#urllib.parse">urllib.parse</a>
+ &#8226;   <a href="#urllib.request">urllib.request</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#jwt">jwt</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="jwt.types"></a>
+  <a target="code" href="///C:/Users/Projektleiter/Desktop/anspruchssystem/.venv/Lib/site-packages/jwt/types.py" type="text/plain"><tt>jwt.types</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#jwt">jwt</a>
+ &#8226;   <a href="#typing">typing</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#jwt.algorithms">jwt.algorithms</a>
+ &#8226;   <a href="#jwt.api_jwk">jwt.api_jwk</a>
+ &#8226;   <a href="#jwt.api_jws">jwt.api_jws</a>
+ &#8226;   <a href="#jwt.api_jwt">jwt.api_jwt</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="jwt.utils"></a>
+  <a target="code" href="///C:/Users/Projektleiter/Desktop/anspruchssystem/.venv/Lib/site-packages/jwt/utils.py" type="text/plain"><tt>jwt.utils</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#'cryptography.hazmat'">'cryptography.hazmat'</a>
+ &#8226;   <a href="#base64">base64</a>
+ &#8226;   <a href="#binascii">binascii</a>
+ &#8226;   <a href="#cryptography">cryptography</a>
+ &#8226;   <a href="#jwt">jwt</a>
+ &#8226;   <a href="#re">re</a>
+ &#8226;   <a href="#typing">typing</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#jwt.algorithms">jwt.algorithms</a>
+ &#8226;   <a href="#jwt.api_jws">jwt.api_jws</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="jwt.warnings"></a>
+  <a target="code" href="///C:/Users/Projektleiter/Desktop/anspruchssystem/.venv/Lib/site-packages/jwt/warnings.py" type="text/plain"><tt>jwt.warnings</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#jwt">jwt</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#jwt">jwt</a>
+ &#8226;   <a href="#jwt.api_jws">jwt.api_jws</a>
+ &#8226;   <a href="#jwt.api_jwt">jwt.api_jwt</a>
+
+  </div>
+
+</div>
+
+<div class="node">
   <a name="keyword"></a>
   <a target="code" href="///C:/Users/Projektleiter/AppData/Local/Python/pythoncore-3.14-64/Lib/keyword.py" type="text/plain"><tt>keyword</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
@@ -13506,6 +14356,7 @@ imported by:
  &#8226;   <a href="#openpyxl.descriptors.serialisable">openpyxl.descriptors.serialisable</a>
  &#8226;   <a href="#rlcompleter">rlcompleter</a>
  &#8226;   <a href="#traceback">traceback</a>
+ &#8226;   <a href="#typing_extensions">typing_extensions</a>
 
   </div>
 
@@ -14695,10 +15546,9 @@ imported by:
 <div class="node">
   <a name="numpy"></a>
   <a target="code" href="" type="text/plain"><tt>numpy</tt></a>
-<span class="moduletype">MissingModule</span>  <div class="import">
+<span class="moduletype">ExcludedModule</span>  <div class="import">
 imported by:
-    <a href="#PIL._typing">PIL._typing</a>
- &#8226;   <a href="#openpyxl.compat.numbers">openpyxl.compat.numbers</a>
+    <a href="#openpyxl.compat.numbers">openpyxl.compat.numbers</a>
  &#8226;   <a href="#openpyxl.utils.dataframe">openpyxl.utils.dataframe</a>
 
   </div>
@@ -14775,6 +15625,7 @@ imported by:
  &#8226;   <a href="#openpyxl.xml.functions">openpyxl.xml.functions</a>
  &#8226;   <a href="#services.excel_service">services.excel_service</a>
  &#8226;   <a href="#ui.pages.import_page">ui.pages.import_page</a>
+ &#8226;   <a href="#ui.pages.reports_page">ui.pages.reports_page</a>
 
   </div>
 
@@ -17926,6 +18777,7 @@ imported by:
  &#8226;   <a href="#openpyxl.styles.table">openpyxl.styles.table</a>
  &#8226;   <a href="#openpyxl.utils.inference">openpyxl.utils.inference</a>
  &#8226;   <a href="#services.excel_service">services.excel_service</a>
+ &#8226;   <a href="#ui.pages.reports_page">ui.pages.reports_page</a>
 
   </div>
 
@@ -19983,6 +20835,7 @@ imported by:
  &#8226;   <a href="#reportlab.platypus.paragraph">reportlab.platypus.paragraph</a>
  &#8226;   <a href="#statistics">statistics</a>
  &#8226;   <a href="#typing">typing</a>
+ &#8226;   <a href="#typing_extensions">typing_extensions</a>
 
   </div>
 
@@ -20083,6 +20936,8 @@ imported by:
  &#8226;   <a href="#importlib.resources._common">importlib.resources._common</a>
  &#8226;   <a href="#importlib.resources.abc">importlib.resources.abc</a>
  &#8226;   <a href="#inspect">inspect</a>
+ &#8226;   <a href="#jwt.algorithms">jwt.algorithms</a>
+ &#8226;   <a href="#jwt.api_jwt">jwt.api_jwt</a>
  &#8226;   <a href="#linecache">linecache</a>
  &#8226;   <a href="#locale">locale</a>
  &#8226;   <a href="#logging">logging</a>
@@ -20161,6 +21016,7 @@ imported by:
  &#8226;   <a href="#tarfile">tarfile</a>
  &#8226;   <a href="#tempfile">tempfile</a>
  &#8226;   <a href="#threading">threading</a>
+ &#8226;   <a href="#ui.web.reports.bridge">ui.web.reports.bridge</a>
  &#8226;   <a href="#unittest.loader">unittest.loader</a>
  &#8226;   <a href="#unittest.main">unittest.main</a>
  &#8226;   <a href="#urllib.request">urllib.request</a>
@@ -20205,7 +21061,7 @@ imported by:
 <div class="node">
   <a name="pandas"></a>
   <a target="code" href="" type="text/plain"><tt>pandas</tt></a>
-<span class="moduletype">MissingModule</span>  <div class="import">
+<span class="moduletype">ExcludedModule</span>  <div class="import">
 imported by:
     <a href="#openpyxl.utils.dataframe">openpyxl.utils.dataframe</a>
 
@@ -20249,15 +21105,25 @@ imported by:
  &#8226;   <a href="#importlib.resources.abc">importlib.resources.abc</a>
  &#8226;   <a href="#importlib.resources.readers">importlib.resources.readers</a>
  &#8226;   <a href="#pathlib._os">pathlib._os</a>
+ &#8226;   <a href="#services.document_package_service">services.document_package_service</a>
  &#8226;   <a href="#services.document_service">services.document_service</a>
  &#8226;   <a href="#services.excel_service">services.excel_service</a>
+ &#8226;   <a href="#services.mail_service">services.mail_service</a>
+ &#8226;   <a href="#services.manual_service">services.manual_service</a>
+ &#8226;   <a href="#services.ocr_service">services.ocr_service</a>
  &#8226;   <a href="#services.pdf_service">services.pdf_service</a>
+ &#8226;   <a href="#services.update_service">services.update_service</a>
+ &#8226;   <a href="#services.user_mail_service">services.user_mail_service</a>
  &#8226;   <a href="#ui.login.login_window">ui.login.login_window</a>
  &#8226;   <a href="#ui.pages.case_create_page">ui.pages.case_create_page</a>
  &#8226;   <a href="#ui.pages.claim_evaluation_dialog">ui.pages.claim_evaluation_dialog</a>
  &#8226;   <a href="#ui.pages.dashboard.dashboard_page">ui.pages.dashboard.dashboard_page</a>
  &#8226;   <a href="#ui.pages.import_page">ui.pages.import_page</a>
  &#8226;   <a href="#ui.pages.person_dossier_dialog">ui.pages.person_dossier_dialog</a>
+ &#8226;   <a href="#ui.pages.post_evaluation_panel">ui.pages.post_evaluation_panel</a>
+ &#8226;   <a href="#ui.pages.update_page">ui.pages.update_page</a>
+ &#8226;   <a href="#ui.web.reports.bridge">ui.web.reports.bridge</a>
+ &#8226;   <a href="#ui.web.web_view_page">ui.web.web_view_page</a>
  &#8226;   <a href="#zipfile._path">zipfile._path</a>
 
   </div>
@@ -20733,11 +21599,33 @@ imported by:
 </div>
 
 <div class="node">
+  <a name="pypdf"></a>
+  <a target="code" href="" type="text/plain"><tt>pypdf</tt></a>
+<span class="moduletype">MissingModule</span>  <div class="import">
+imported by:
+    <a href="#services.document_package_service">services.document_package_service</a>
+
+  </div>
+
+</div>
+
+<div class="node">
   <a name="pyphen"></a>
   <a target="code" href="" type="text/plain"><tt>pyphen</tt></a>
 <span class="moduletype">MissingModule</span>  <div class="import">
 imported by:
     <a href="#reportlab.platypus.paragraph">reportlab.platypus.paragraph</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="pytesseract"></a>
+  <a target="code" href="" type="text/plain"><tt>pytesseract</tt></a>
+<span class="moduletype">MissingModule</span>  <div class="import">
+imported by:
+    <a href="#services.ocr_service">services.ocr_service</a>
 
   </div>
 
@@ -20862,6 +21750,7 @@ imported by:
  &#8226;   <a href="#PyQt6.QtGui">PyQt6.QtGui</a>
  &#8226;   <a href="#PyQt6.QtPrintSupport">PyQt6.QtPrintSupport</a>
  &#8226;   <a href="#PyQt6.QtSvg">PyQt6.QtSvg</a>
+ &#8226;   <a href="#PyQt6.QtWebChannel">PyQt6.QtWebChannel</a>
  &#8226;   <a href="#PyQt6.QtWidgets">PyQt6.QtWidgets</a>
  &#8226;   <a href="#_markupbase">_markupbase</a>
  &#8226;   <a href="#_py_warnings">_py_warnings</a>
@@ -20913,6 +21802,7 @@ imported by:
  &#8226;   <a href="#json.decoder">json.decoder</a>
  &#8226;   <a href="#json.encoder">json.encoder</a>
  &#8226;   <a href="#json.scanner">json.scanner</a>
+ &#8226;   <a href="#jwt.utils">jwt.utils</a>
  &#8226;   <a href="#locale">locale</a>
  &#8226;   <a href="#logging">logging</a>
  &#8226;   <a href="#main.py">main.py</a>
@@ -20966,6 +21856,10 @@ imported by:
  &#8226;   <a href="#rlcompleter">rlcompleter</a>
  &#8226;   <a href="#services.document_service">services.document_service</a>
  &#8226;   <a href="#services.document_template_service">services.document_template_service</a>
+ &#8226;   <a href="#services.mail_service">services.mail_service</a>
+ &#8226;   <a href="#services.update_service">services.update_service</a>
+ &#8226;   <a href="#services.user_mail_service">services.user_mail_service</a>
+ &#8226;   <a href="#smtplib">smtplib</a>
  &#8226;   <a href="#sre_compile">sre_compile</a>
  &#8226;   <a href="#sre_constants">sre_constants</a>
  &#8226;   <a href="#sre_parse">sre_parse</a>
@@ -23227,7 +24121,9 @@ imported by:
  &#8226;   <a href="#reportlab.platypus.tables">reportlab.platypus.tables</a>
  &#8226;   <a href="#reportlab.platypus.xpreformatted">reportlab.platypus.xpreformatted</a>
  &#8226;   <a href="#reportlab.rl_config">reportlab.rl_config</a>
+ &#8226;   <a href="#services.manual_service">services.manual_service</a>
  &#8226;   <a href="#services.pdf_service">services.pdf_service</a>
+ &#8226;   <a href="#ui.pages.reports_page">ui.pages.reports_page</a>
 
   </div>
 
@@ -23455,7 +24351,9 @@ imported by:
  &#8226;   <a href="#reportlab.platypus.paragraph">reportlab.platypus.paragraph</a>
  &#8226;   <a href="#reportlab.platypus.paraparser">reportlab.platypus.paraparser</a>
  &#8226;   <a href="#reportlab.platypus.tables">reportlab.platypus.tables</a>
+ &#8226;   <a href="#services.manual_service">services.manual_service</a>
  &#8226;   <a href="#services.pdf_service">services.pdf_service</a>
+ &#8226;   <a href="#ui.pages.reports_page">ui.pages.reports_page</a>
 
   </div>
 
@@ -23676,7 +24574,9 @@ imported by:
  &#8226;   <a href="#reportlab.graphics.barcode.lto">reportlab.graphics.barcode.lto</a>
  &#8226;   <a href="#reportlab.lib">reportlab.lib</a>
  &#8226;   <a href="#reportlab.rl_config">reportlab.rl_config</a>
+ &#8226;   <a href="#services.manual_service">services.manual_service</a>
  &#8226;   <a href="#services.pdf_service">services.pdf_service</a>
+ &#8226;   <a href="#ui.pages.reports_page">ui.pages.reports_page</a>
 
   </div>
 
@@ -23923,7 +24823,9 @@ imported by:
  &#8226;   <a href="#reportlab.platypus.tableofcontents">reportlab.platypus.tableofcontents</a>
  &#8226;   <a href="#reportlab.platypus.tables">reportlab.platypus.tables</a>
  &#8226;   <a href="#reportlab.platypus.xpreformatted">reportlab.platypus.xpreformatted</a>
+ &#8226;   <a href="#services.manual_service">services.manual_service</a>
  &#8226;   <a href="#services.pdf_service">services.pdf_service</a>
+ &#8226;   <a href="#ui.pages.reports_page">ui.pages.reports_page</a>
 
   </div>
 
@@ -24018,6 +24920,9 @@ imported by:
  &#8226;   <a href="#reportlab.platypus.paragraph">reportlab.platypus.paragraph</a>
  &#8226;   <a href="#reportlab.platypus.paraparser">reportlab.platypus.paraparser</a>
  &#8226;   <a href="#reportlab.platypus.tableofcontents">reportlab.platypus.tableofcontents</a>
+ &#8226;   <a href="#services.manual_service">services.manual_service</a>
+ &#8226;   <a href="#services.pdf_service">services.pdf_service</a>
+ &#8226;   <a href="#ui.pages.reports_page">ui.pages.reports_page</a>
 
   </div>
 
@@ -25041,6 +25946,7 @@ imported by:
  &#8226;   <a href="#reportlab.platypus.doctemplate">reportlab.platypus.doctemplate</a>
  &#8226;   <a href="#reportlab.platypus.para">reportlab.platypus.para</a>
  &#8226;   <a href="#reportlab.platypus.tableofcontents">reportlab.platypus.tableofcontents</a>
+ &#8226;   <a href="#services.pdf_service">services.pdf_service</a>
 
   </div>
 
@@ -25092,6 +25998,7 @@ imported by:
  &#8226;   <a href="#reportlab.platypus.figures">reportlab.platypus.figures</a>
  &#8226;   <a href="#reportlab.platypus.para">reportlab.platypus.para</a>
  &#8226;   <a href="#reportlab.platypus.tableofcontents">reportlab.platypus.tableofcontents</a>
+ &#8226;   <a href="#services.pdf_service">services.pdf_service</a>
 
   </div>
 
@@ -25232,7 +26139,9 @@ imported by:
  &#8226;   <a href="#reportlab.platypus.tableofcontents">reportlab.platypus.tableofcontents</a>
  &#8226;   <a href="#reportlab.platypus.tables">reportlab.platypus.tables</a>
  &#8226;   <a href="#reportlab.platypus.xpreformatted">reportlab.platypus.xpreformatted</a>
+ &#8226;   <a href="#services.manual_service">services.manual_service</a>
  &#8226;   <a href="#services.pdf_service">services.pdf_service</a>
+ &#8226;   <a href="#ui.pages.reports_page">ui.pages.reports_page</a>
 
   </div>
 
@@ -25850,8 +26759,10 @@ imports:
   </div>
   <div class="import">
 imported by:
-    <a href="#multiprocessing.shared_memory">multiprocessing.shared_memory</a>
+    <a href="#main.py">main.py</a>
+ &#8226;   <a href="#multiprocessing.shared_memory">multiprocessing.shared_memory</a>
  &#8226;   <a href="#services.password_service">services.password_service</a>
+ &#8226;   <a href="#services.user_service">services.user_service</a>
 
   </div>
 
@@ -25903,7 +26814,8 @@ imported by:
   <a target="code" href="///C:/Users/Projektleiter/Desktop/anspruchssystem/services/__init__.py" type="text/plain"><tt>services</tt></a>
 <span class="moduletype">Package</span>  <div class="import">
 imported by:
-    <a href="#services.appointment_service">services.appointment_service</a>
+    <a href="#services.age_alert_service">services.age_alert_service</a>
+ &#8226;   <a href="#services.appointment_service">services.appointment_service</a>
  &#8226;   <a href="#services.approval_service">services.approval_service</a>
  &#8226;   <a href="#services.archive_service">services.archive_service</a>
  &#8226;   <a href="#services.audit_service">services.audit_service</a>
@@ -25914,24 +26826,55 @@ imported by:
  &#8226;   <a href="#services.checklist_service">services.checklist_service</a>
  &#8226;   <a href="#services.claim_service">services.claim_service</a>
  &#8226;   <a href="#services.dashboard_service">services.dashboard_service</a>
+ &#8226;   <a href="#services.document_package_service">services.document_package_service</a>
  &#8226;   <a href="#services.document_service">services.document_service</a>
  &#8226;   <a href="#services.document_template_service">services.document_template_service</a>
  &#8226;   <a href="#services.excel_service">services.excel_service</a>
  &#8226;   <a href="#services.filter_preset_service">services.filter_preset_service</a>
+ &#8226;   <a href="#services.household_service">services.household_service</a>
  &#8226;   <a href="#services.location_service">services.location_service</a>
+ &#8226;   <a href="#services.mail_service">services.mail_service</a>
  &#8226;   <a href="#services.mandant_service">services.mandant_service</a>
+ &#8226;   <a href="#services.manual_service">services.manual_service</a>
  &#8226;   <a href="#services.notification_service">services.notification_service</a>
+ &#8226;   <a href="#services.ocr_service">services.ocr_service</a>
  &#8226;   <a href="#services.password_service">services.password_service</a>
  &#8226;   <a href="#services.pdf_service">services.pdf_service</a>
  &#8226;   <a href="#services.person_note_service">services.person_note_service</a>
  &#8226;   <a href="#services.person_service">services.person_service</a>
  &#8226;   <a href="#services.pruefung_service">services.pruefung_service</a>
+ &#8226;   <a href="#services.re_evaluation_service">services.re_evaluation_service</a>
  &#8226;   <a href="#services.report_service">services.report_service</a>
  &#8226;   <a href="#services.role_service">services.role_service</a>
  &#8226;   <a href="#services.search_service">services.search_service</a>
  &#8226;   <a href="#services.settings_service">services.settings_service</a>
  &#8226;   <a href="#services.task_service">services.task_service</a>
+ &#8226;   <a href="#services.update_service">services.update_service</a>
+ &#8226;   <a href="#services.user_mail_service">services.user_mail_service</a>
  &#8226;   <a href="#services.user_service">services.user_service</a>
+ &#8226;   <a href="#services.wiedervorlage_service">services.wiedervorlage_service</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="services.age_alert_service"></a>
+  <a target="code" href="///C:/Users/Projektleiter/Desktop/anspruchssystem/services/age_alert_service.py" type="text/plain"><tt>services.age_alert_service</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#database.db">database.db</a>
+ &#8226;   <a href="#database.repositories.household_member_repository">database.repositories.household_member_repository</a>
+ &#8226;   <a href="#datetime">datetime</a>
+ &#8226;   <a href="#services">services</a>
+ &#8226;   <a href="#typing">typing</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#app.container">app.container</a>
+ &#8226;   <a href="#main.py">main.py</a>
+ &#8226;   <a href="#ui.pages.dashboard.dashboard_page">ui.pages.dashboard.dashboard_page</a>
 
   </div>
 
@@ -26011,7 +26954,10 @@ imports:
 imported by:
     <a href="#app.container">app.container</a>
  &#8226;   <a href="#main.py">main.py</a>
+ &#8226;   <a href="#services.claim_service">services.claim_service</a>
+ &#8226;   <a href="#services.re_evaluation_service">services.re_evaluation_service</a>
  &#8226;   <a href="#ui.pages.audit_log_page">ui.pages.audit_log_page</a>
+ &#8226;   <a href="#ui.pages.claim_evaluation_dialog">ui.pages.claim_evaluation_dialog</a>
 
   </div>
 
@@ -26023,6 +26969,7 @@ imported by:
 <span class="moduletype">SourceModule</span>  <div class="import">
 imports:
     <a href="#app.ports">app.ports</a>
+ &#8226;   <a href="#core.constants">core.constants</a>
  &#8226;   <a href="#database.repositories.user_repository">database.repositories.user_repository</a>
  &#8226;   <a href="#datetime">datetime</a>
  &#8226;   <a href="#services">services</a>
@@ -26032,6 +26979,7 @@ imports:
   <div class="import">
 imported by:
     <a href="#app.container">app.container</a>
+ &#8226;   <a href="#app.web_api">app.web_api</a>
  &#8226;   <a href="#main.py">main.py</a>
  &#8226;   <a href="#services.user_service">services.user_service</a>
  &#8226;   <a href="#ui.login.login_window">ui.login.login_window</a>
@@ -26050,6 +26998,7 @@ imports:
  &#8226;   <a href="#database.repositories.card_repository">database.repositories.card_repository</a>
  &#8226;   <a href="#database.repositories.claim_repository">database.repositories.claim_repository</a>
  &#8226;   <a href="#datetime">datetime</a>
+ &#8226;   <a href="#domain.categories">domain.categories</a>
  &#8226;   <a href="#services">services</a>
  &#8226;   <a href="#typing">typing</a>
 
@@ -26064,6 +27013,7 @@ imported by:
  &#8226;   <a href="#ui.pages.claim_detail_page">ui.pages.claim_detail_page</a>
  &#8226;   <a href="#ui.pages.claims.claims_page">ui.pages.claims.claims_page</a>
  &#8226;   <a href="#ui.pages.claims_page">ui.pages.claims_page</a>
+ &#8226;   <a href="#ui.pages.post_evaluation_panel">ui.pages.post_evaluation_panel</a>
 
   </div>
 
@@ -26081,6 +27031,7 @@ imports:
  &#8226;   <a href="#database.repositories.person_repository">database.repositories.person_repository</a>
  &#8226;   <a href="#datetime">datetime</a>
  &#8226;   <a href="#services">services</a>
+ &#8226;   <a href="#services.notification_service">services.notification_service</a>
  &#8226;   <a href="#typing">typing</a>
 
   </div>
@@ -26136,6 +27087,7 @@ imported by:
  &#8226;   <a href="#main.py">main.py</a>
  &#8226;   <a href="#ui.components.checklist_widget">ui.components.checklist_widget</a>
  &#8226;   <a href="#ui.pages.checklist_templates_page">ui.pages.checklist_templates_page</a>
+ &#8226;   <a href="#ui.pages.claim_evaluation_dialog">ui.pages.claim_evaluation_dialog</a>
 
   </div>
 
@@ -26149,13 +27101,17 @@ imports:
     <a href="#app.ports">app.ports</a>
  &#8226;   <a href="#core.claim_status">core.claim_status</a>
  &#8226;   <a href="#core.session">core.session</a>
+ &#8226;   <a href="#database.db">database.db</a>
  &#8226;   <a href="#database.repositories.claim_note_repository">database.repositories.claim_note_repository</a>
  &#8226;   <a href="#database.repositories.claim_repository">database.repositories.claim_repository</a>
  &#8226;   <a href="#database.repositories.expense_repository">database.repositories.expense_repository</a>
  &#8226;   <a href="#database.repositories.income_repository">database.repositories.income_repository</a>
  &#8226;   <a href="#datetime">datetime</a>
  &#8226;   <a href="#services">services</a>
+ &#8226;   <a href="#services.audit_service">services.audit_service</a>
+ &#8226;   <a href="#services.notification_service">services.notification_service</a>
  &#8226;   <a href="#services.pruefung_service">services.pruefung_service</a>
+ &#8226;   <a href="#services.re_evaluation_service">services.re_evaluation_service</a>
  &#8226;   <a href="#services.settings_service">services.settings_service</a>
  &#8226;   <a href="#typing">typing</a>
 
@@ -26165,8 +27121,10 @@ imported by:
     <a href="#app.container">app.container</a>
  &#8226;   <a href="#main.py">main.py</a>
  &#8226;   <a href="#services.dashboard_service">services.dashboard_service</a>
+ &#8226;   <a href="#services.document_package_service">services.document_package_service</a>
  &#8226;   <a href="#services.pdf_service">services.pdf_service</a>
  &#8226;   <a href="#services.task_service">services.task_service</a>
+ &#8226;   <a href="#ui.dialogs.letter_wizard_dialog">ui.dialogs.letter_wizard_dialog</a>
  &#8226;   <a href="#ui.pages.cards_page">ui.pages.cards_page</a>
  &#8226;   <a href="#ui.pages.case_create_page">ui.pages.case_create_page</a>
  &#8226;   <a href="#ui.pages.claim_detail_page">ui.pages.claim_detail_page</a>
@@ -26201,6 +27159,34 @@ imported by:
     <a href="#app.container">app.container</a>
  &#8226;   <a href="#main.py">main.py</a>
  &#8226;   <a href="#ui.pages.dashboard.dashboard_page">ui.pages.dashboard.dashboard_page</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="services.document_package_service"></a>
+  <a target="code" href="///C:/Users/Projektleiter/Desktop/anspruchssystem/services/document_package_service.py" type="text/plain"><tt>services.document_package_service</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#__future__">__future__</a>
+ &#8226;   <a href="#core.claim_status">core.claim_status</a>
+ &#8226;   <a href="#pathlib">pathlib</a>
+ &#8226;   <a href="#pypdf">pypdf</a>
+ &#8226;   <a href="#services">services</a>
+ &#8226;   <a href="#services.claim_service">services.claim_service</a>
+ &#8226;   <a href="#services.document_template_service">services.document_template_service</a>
+ &#8226;   <a href="#services.pdf_service">services.pdf_service</a>
+ &#8226;   <a href="#typing">typing</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#app.container">app.container</a>
+ &#8226;   <a href="#main.py">main.py</a>
+ &#8226;   <a href="#ui.components.topbar">ui.components.topbar</a>
+ &#8226;   <a href="#ui.pages.claim_detail_page">ui.pages.claim_detail_page</a>
+ &#8226;   <a href="#ui.pages.claim_evaluation_dialog">ui.pages.claim_evaluation_dialog</a>
 
   </div>
 
@@ -26249,8 +27235,12 @@ imported by:
   <a target="code" href="///C:/Users/Projektleiter/Desktop/anspruchssystem/services/document_template_service.py" type="text/plain"><tt>services.document_template_service</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
 imports:
-    <a href="#core.session">core.session</a>
+    <a href="#core.claim_status">core.claim_status</a>
+ &#8226;   <a href="#core.session">core.session</a>
  &#8226;   <a href="#database.repositories.document_template_repository">database.repositories.document_template_repository</a>
+ &#8226;   <a href="#datetime">datetime</a>
+ &#8226;   <a href="#docx">docx</a>
+ &#8226;   <a href="#io">io</a>
  &#8226;   <a href="#re">re</a>
  &#8226;   <a href="#services">services</a>
 
@@ -26259,7 +27249,11 @@ imports:
 imported by:
     <a href="#app.container">app.container</a>
  &#8226;   <a href="#main.py">main.py</a>
+ &#8226;   <a href="#services.document_package_service">services.document_package_service</a>
+ &#8226;   <a href="#services.pdf_service">services.pdf_service</a>
+ &#8226;   <a href="#ui.dialogs.letter_wizard_dialog">ui.dialogs.letter_wizard_dialog</a>
  &#8226;   <a href="#ui.pages.document_templates_page">ui.pages.document_templates_page</a>
+ &#8226;   <a href="#ui.pages.serial_letters_page">ui.pages.serial_letters_page</a>
 
   </div>
 
@@ -26283,6 +27277,7 @@ imports:
   <div class="import">
 imported by:
     <a href="#main.py">main.py</a>
+ &#8226;   <a href="#ui.web.reports.bridge">ui.web.reports.bridge</a>
 
   </div>
 
@@ -26304,6 +27299,28 @@ imported by:
     <a href="#app.container">app.container</a>
  &#8226;   <a href="#main.py">main.py</a>
  &#8226;   <a href="#ui.pages.claims.claims_page">ui.pages.claims.claims_page</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="services.household_service"></a>
+  <a target="code" href="///C:/Users/Projektleiter/Desktop/anspruchssystem/services/household_service.py" type="text/plain"><tt>services.household_service</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#core.session">core.session</a>
+ &#8226;   <a href="#database.repositories.audit_repository">database.repositories.audit_repository</a>
+ &#8226;   <a href="#database.repositories.household_member_repository">database.repositories.household_member_repository</a>
+ &#8226;   <a href="#services">services</a>
+ &#8226;   <a href="#typing">typing</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#app.container">app.container</a>
+ &#8226;   <a href="#main.py">main.py</a>
+ &#8226;   <a href="#ui.pages.case_create_page">ui.pages.case_create_page</a>
 
   </div>
 
@@ -26332,8 +27349,38 @@ imported by:
  &#8226;   <a href="#ui.pages.import_page">ui.pages.import_page</a>
  &#8226;   <a href="#ui.pages.locations.locations_page">ui.pages.locations.locations_page</a>
  &#8226;   <a href="#ui.pages.person_dossier_page">ui.pages.person_dossier_page</a>
+ &#8226;   <a href="#ui.pages.personal.staff_form_dialog">ui.pages.personal.staff_form_dialog</a>
  &#8226;   <a href="#ui.pages.tasks.task_dialog">ui.pages.tasks.task_dialog</a>
  &#8226;   <a href="#ui.pages.tasks.tasks_page">ui.pages.tasks.tasks_page</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="services.mail_service"></a>
+  <a target="code" href="///C:/Users/Projektleiter/Desktop/anspruchssystem/services/mail_service.py" type="text/plain"><tt>services.mail_service</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#email">email</a>
+ &#8226;   <a href="#email.encoders">email.encoders</a>
+ &#8226;   <a href="#email.mime.base">email.mime.base</a>
+ &#8226;   <a href="#email.mime.multipart">email.mime.multipart</a>
+ &#8226;   <a href="#email.mime.text">email.mime.text</a>
+ &#8226;   <a href="#pathlib">pathlib</a>
+ &#8226;   <a href="#re">re</a>
+ &#8226;   <a href="#services">services</a>
+ &#8226;   <a href="#services.settings_service">services.settings_service</a>
+ &#8226;   <a href="#smtplib">smtplib</a>
+ &#8226;   <a href="#ssl">ssl</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#main.py">main.py</a>
+ &#8226;   <a href="#services.user_mail_service">services.user_mail_service</a>
+ &#8226;   <a href="#ui.pages.document_templates_page">ui.pages.document_templates_page</a>
+ &#8226;   <a href="#ui.pages.settings.smtp_settings_page">ui.pages.settings.smtp_settings_page</a>
 
   </div>
 
@@ -26359,6 +27406,35 @@ imported by:
 </div>
 
 <div class="node">
+  <a name="services.manual_service"></a>
+  <a target="code" href="///C:/Users/Projektleiter/Desktop/anspruchssystem/services/manual_service.py" type="text/plain"><tt>services.manual_service</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#PyQt6.QtCore">PyQt6.QtCore</a>
+ &#8226;   <a href="#PyQt6.QtGui">PyQt6.QtGui</a>
+ &#8226;   <a href="#__future__">__future__</a>
+ &#8226;   <a href="#app.config">app.config</a>
+ &#8226;   <a href="#datetime">datetime</a>
+ &#8226;   <a href="#pathlib">pathlib</a>
+ &#8226;   <a href="#reportlab.lib">reportlab.lib</a>
+ &#8226;   <a href="#reportlab.lib.colors">reportlab.lib.colors</a>
+ &#8226;   <a href="#reportlab.lib.pagesizes">reportlab.lib.pagesizes</a>
+ &#8226;   <a href="#reportlab.lib.styles">reportlab.lib.styles</a>
+ &#8226;   <a href="#reportlab.lib.units">reportlab.lib.units</a>
+ &#8226;   <a href="#reportlab.platypus">reportlab.platypus</a>
+ &#8226;   <a href="#services">services</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#main.py">main.py</a>
+ &#8226;   <a href="#ui.shell.main_window">ui.shell.main_window</a>
+
+  </div>
+
+</div>
+
+<div class="node">
   <a name="services.notification_service"></a>
   <a target="code" href="///C:/Users/Projektleiter/Desktop/anspruchssystem/services/notification_service.py" type="text/plain"><tt>services.notification_service</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
@@ -26366,6 +27442,34 @@ imports:
     <a href="#core.session">core.session</a>
  &#8226;   <a href="#database.repositories.notification_repository">database.repositories.notification_repository</a>
  &#8226;   <a href="#services">services</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#app.container">app.container</a>
+ &#8226;   <a href="#main.py">main.py</a>
+ &#8226;   <a href="#services.case_service">services.case_service</a>
+ &#8226;   <a href="#services.claim_service">services.claim_service</a>
+ &#8226;   <a href="#ui.pages.case_create_page">ui.pages.case_create_page</a>
+ &#8226;   <a href="#ui.pages.claim_evaluation_dialog">ui.pages.claim_evaluation_dialog</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="services.ocr_service"></a>
+  <a target="code" href="///C:/Users/Projektleiter/Desktop/anspruchssystem/services/ocr_service.py" type="text/plain"><tt>services.ocr_service</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#PIL">PIL</a>
+ &#8226;   <a href="#PIL.Image">PIL.Image</a>
+ &#8226;   <a href="#core.session">core.session</a>
+ &#8226;   <a href="#database.repositories.audit_repository">database.repositories.audit_repository</a>
+ &#8226;   <a href="#pathlib">pathlib</a>
+ &#8226;   <a href="#pytesseract">pytesseract</a>
+ &#8226;   <a href="#services">services</a>
+ &#8226;   <a href="#typing">typing</a>
 
   </div>
   <div class="import">
@@ -26409,17 +27513,22 @@ imports:
  &#8226;   <a href="#core.card_status">core.card_status</a>
  &#8226;   <a href="#core.claim_status">core.claim_status</a>
  &#8226;   <a href="#database.repositories.person_repository">database.repositories.person_repository</a>
+ &#8226;   <a href="#datetime">datetime</a>
  &#8226;   <a href="#pathlib">pathlib</a>
  &#8226;   <a href="#reportlab.lib">reportlab.lib</a>
  &#8226;   <a href="#reportlab.lib.colors">reportlab.lib.colors</a>
  &#8226;   <a href="#reportlab.lib.pagesizes">reportlab.lib.pagesizes</a>
  &#8226;   <a href="#reportlab.lib.styles">reportlab.lib.styles</a>
+ &#8226;   <a href="#reportlab.lib.units">reportlab.lib.units</a>
+ &#8226;   <a href="#reportlab.pdfgen">reportlab.pdfgen</a>
+ &#8226;   <a href="#reportlab.pdfgen.canvas">reportlab.pdfgen.canvas</a>
  &#8226;   <a href="#reportlab.platypus">reportlab.platypus</a>
  &#8226;   <a href="#reportlab.platypus.tables">reportlab.platypus.tables</a>
  &#8226;   <a href="#services">services</a>
  &#8226;   <a href="#services.card_service">services.card_service</a>
  &#8226;   <a href="#services.claim_service">services.claim_service</a>
  &#8226;   <a href="#services.document_service">services.document_service</a>
+ &#8226;   <a href="#services.document_template_service">services.document_template_service</a>
  &#8226;   <a href="#services.report_service">services.report_service</a>
  &#8226;   <a href="#typing">typing</a>
 
@@ -26428,10 +27537,14 @@ imports:
 imported by:
     <a href="#app.container">app.container</a>
  &#8226;   <a href="#main.py">main.py</a>
+ &#8226;   <a href="#services.document_package_service">services.document_package_service</a>
+ &#8226;   <a href="#ui.dialogs.letter_wizard_dialog">ui.dialogs.letter_wizard_dialog</a>
  &#8226;   <a href="#ui.pages.cards_page">ui.pages.cards_page</a>
  &#8226;   <a href="#ui.pages.claim_evaluation_dialog">ui.pages.claim_evaluation_dialog</a>
+ &#8226;   <a href="#ui.pages.document_templates_page">ui.pages.document_templates_page</a>
  &#8226;   <a href="#ui.pages.person_dossier_dialog">ui.pages.person_dossier_dialog</a>
- &#8226;   <a href="#ui.pages.reports_page">ui.pages.reports_page</a>
+ &#8226;   <a href="#ui.pages.post_evaluation_panel">ui.pages.post_evaluation_panel</a>
+ &#8226;   <a href="#ui.web.reports.bridge">ui.web.reports.bridge</a>
 
   </div>
 
@@ -26497,6 +27610,29 @@ imported by:
 </div>
 
 <div class="node">
+  <a name="services.re_evaluation_service"></a>
+  <a target="code" href="///C:/Users/Projektleiter/Desktop/anspruchssystem/services/re_evaluation_service.py" type="text/plain"><tt>services.re_evaluation_service</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#core.session">core.session</a>
+ &#8226;   <a href="#database.repositories.re_evaluation_repository">database.repositories.re_evaluation_repository</a>
+ &#8226;   <a href="#services">services</a>
+ &#8226;   <a href="#services.audit_service">services.audit_service</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#app.container">app.container</a>
+ &#8226;   <a href="#main.py">main.py</a>
+ &#8226;   <a href="#services.claim_service">services.claim_service</a>
+ &#8226;   <a href="#ui.pages.claim_evaluation_dialog">ui.pages.claim_evaluation_dialog</a>
+ &#8226;   <a href="#ui.pages.re_evaluation_page">ui.pages.re_evaluation_page</a>
+
+  </div>
+
+</div>
+
+<div class="node">
   <a name="services.report_service"></a>
   <a target="code" href="///C:/Users/Projektleiter/Desktop/anspruchssystem/services/report_service.py" type="text/plain"><tt>services.report_service</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
@@ -26520,6 +27656,8 @@ imported by:
  &#8226;   <a href="#services.excel_service">services.excel_service</a>
  &#8226;   <a href="#services.pdf_service">services.pdf_service</a>
  &#8226;   <a href="#ui.pages.reports_page">ui.pages.reports_page</a>
+ &#8226;   <a href="#ui.pages.reports_web_page">ui.pages.reports_web_page</a>
+ &#8226;   <a href="#ui.web.reports.bridge">ui.web.reports.bridge</a>
 
   </div>
 
@@ -26539,6 +27677,7 @@ imports:
 imported by:
     <a href="#app.container">app.container</a>
  &#8226;   <a href="#main.py">main.py</a>
+ &#8226;   <a href="#ui.pages.personal.staff_form_dialog">ui.pages.personal.staff_form_dialog</a>
  &#8226;   <a href="#ui.pages.role_management">ui.pages.role_management</a>
 
   </div>
@@ -26576,6 +27715,7 @@ imports:
  &#8226;   <a href="#database.repositories.setting_repository">database.repositories.setting_repository</a>
  &#8226;   <a href="#json">json</a>
  &#8226;   <a href="#services">services</a>
+ &#8226;   <a href="#services.user_service">services.user_service</a>
  &#8226;   <a href="#typing">typing</a>
 
   </div>
@@ -26584,7 +27724,11 @@ imported by:
     <a href="#app.container">app.container</a>
  &#8226;   <a href="#main.py">main.py</a>
  &#8226;   <a href="#services.claim_service">services.claim_service</a>
+ &#8226;   <a href="#services.mail_service">services.mail_service</a>
+ &#8226;   <a href="#ui.pages.settings.pruefungslimits_page">ui.pages.settings.pruefungslimits_page</a>
  &#8226;   <a href="#ui.pages.settings.settings_page">ui.pages.settings.settings_page</a>
+ &#8226;   <a href="#ui.pages.settings.smtp_settings_page">ui.pages.settings.smtp_settings_page</a>
+ &#8226;   <a href="#ui.pages.settings.system_settings_page">ui.pages.settings.system_settings_page</a>
 
   </div>
 
@@ -26624,13 +27768,83 @@ imported by:
 </div>
 
 <div class="node">
+  <a name="services.update_service"></a>
+  <a target="code" href="///C:/Users/Projektleiter/Desktop/anspruchssystem/services/update_service.py" type="text/plain"><tt>services.update_service</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#app.config">app.config</a>
+ &#8226;   <a href="#database.db">database.db</a>
+ &#8226;   <a href="#datetime">datetime</a>
+ &#8226;   <a href="#hashlib">hashlib</a>
+ &#8226;   <a href="#json">json</a>
+ &#8226;   <a href="#pathlib">pathlib</a>
+ &#8226;   <a href="#re">re</a>
+ &#8226;   <a href="#services">services</a>
+ &#8226;   <a href="#shutil">shutil</a>
+ &#8226;   <a href="#subprocess">subprocess</a>
+ &#8226;   <a href="#sys">sys</a>
+ &#8226;   <a href="#tempfile">tempfile</a>
+ &#8226;   <a href="#typing">typing</a>
+ &#8226;   <a href="#urllib.request">urllib.request</a>
+ &#8226;   <a href="#zipfile">zipfile</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#app.container">app.container</a>
+ &#8226;   <a href="#main.py">main.py</a>
+ &#8226;   <a href="#ui.pages.settings.system_settings_page">ui.pages.settings.system_settings_page</a>
+ &#8226;   <a href="#ui.pages.update_page">ui.pages.update_page</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="services.user_mail_service"></a>
+  <a target="code" href="///C:/Users/Projektleiter/Desktop/anspruchssystem/services/user_mail_service.py" type="text/plain"><tt>services.user_mail_service</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#core.session">core.session</a>
+ &#8226;   <a href="#database.repositories.user_mail_config_repository">database.repositories.user_mail_config_repository</a>
+ &#8226;   <a href="#email">email</a>
+ &#8226;   <a href="#email.encoders">email.encoders</a>
+ &#8226;   <a href="#email.mime.base">email.mime.base</a>
+ &#8226;   <a href="#email.mime.multipart">email.mime.multipart</a>
+ &#8226;   <a href="#email.mime.text">email.mime.text</a>
+ &#8226;   <a href="#pathlib">pathlib</a>
+ &#8226;   <a href="#re">re</a>
+ &#8226;   <a href="#services">services</a>
+ &#8226;   <a href="#services.mail_service">services.mail_service</a>
+ &#8226;   <a href="#smtplib">smtplib</a>
+ &#8226;   <a href="#ssl">ssl</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#app.container">app.container</a>
+ &#8226;   <a href="#main.py">main.py</a>
+ &#8226;   <a href="#ui.components.topbar">ui.components.topbar</a>
+ &#8226;   <a href="#ui.dialogs.letter_wizard_dialog">ui.dialogs.letter_wizard_dialog</a>
+ &#8226;   <a href="#ui.pages.claim_detail_page">ui.pages.claim_detail_page</a>
+ &#8226;   <a href="#ui.pages.claim_evaluation_dialog">ui.pages.claim_evaluation_dialog</a>
+ &#8226;   <a href="#ui.pages.post_evaluation_panel">ui.pages.post_evaluation_panel</a>
+
+  </div>
+
+</div>
+
+<div class="node">
   <a name="services.user_service"></a>
   <a target="code" href="///C:/Users/Projektleiter/Desktop/anspruchssystem/services/user_service.py" type="text/plain"><tt>services.user_service</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
 imports:
     <a href="#app.ports">app.ports</a>
+ &#8226;   <a href="#core.constants">core.constants</a>
+ &#8226;   <a href="#core.session">core.session</a>
  &#8226;   <a href="#database.repositories.user_repository">database.repositories.user_repository</a>
  &#8226;   <a href="#datetime">datetime</a>
+ &#8226;   <a href="#secrets">secrets</a>
  &#8226;   <a href="#services">services</a>
  &#8226;   <a href="#services.auth_service">services.auth_service</a>
  &#8226;   <a href="#services.password_service">services.password_service</a>
@@ -26640,7 +27854,9 @@ imports:
   <div class="import">
 imported by:
     <a href="#app.container">app.container</a>
+ &#8226;   <a href="#app.web_api">app.web_api</a>
  &#8226;   <a href="#main.py">main.py</a>
+ &#8226;   <a href="#services.settings_service">services.settings_service</a>
  &#8226;   <a href="#services.task_service">services.task_service</a>
  &#8226;   <a href="#ui.dialogs.force_password_dialog">ui.dialogs.force_password_dialog</a>
  &#8226;   <a href="#ui.login.login_window">ui.login.login_window</a>
@@ -26648,10 +27864,33 @@ imported by:
  &#8226;   <a href="#ui.pages.audit_log_page">ui.pages.audit_log_page</a>
  &#8226;   <a href="#ui.pages.claims_page">ui.pages.claims_page</a>
  &#8226;   <a href="#ui.pages.locations.locations_page">ui.pages.locations.locations_page</a>
+ &#8226;   <a href="#ui.pages.personal.personal_page">ui.pages.personal.personal_page</a>
+ &#8226;   <a href="#ui.pages.personal.staff_form_dialog">ui.pages.personal.staff_form_dialog</a>
  &#8226;   <a href="#ui.pages.tasks.task_dialog">ui.pages.tasks.task_dialog</a>
  &#8226;   <a href="#ui.pages.tasks.tasks_page">ui.pages.tasks.tasks_page</a>
  &#8226;   <a href="#ui.pages.user_management">ui.pages.user_management</a>
  &#8226;   <a href="#ui.pages.users.users_page">ui.pages.users.users_page</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="services.wiedervorlage_service"></a>
+  <a target="code" href="///C:/Users/Projektleiter/Desktop/anspruchssystem/services/wiedervorlage_service.py" type="text/plain"><tt>services.wiedervorlage_service</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#core.session">core.session</a>
+ &#8226;   <a href="#database.repositories.wiedervorlage_repository">database.repositories.wiedervorlage_repository</a>
+ &#8226;   <a href="#services">services</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#app.container">app.container</a>
+ &#8226;   <a href="#main.py">main.py</a>
+ &#8226;   <a href="#ui.dialogs.wiedervorlage_dialog">ui.dialogs.wiedervorlage_dialog</a>
+ &#8226;   <a href="#ui.pages.claim_evaluation_dialog">ui.pages.claim_evaluation_dialog</a>
 
   </div>
 
@@ -26722,11 +27961,14 @@ imported by:
  &#8226;   <a href="#argparse">argparse</a>
  &#8226;   <a href="#ctypes.util">ctypes.util</a>
  &#8226;   <a href="#http.server">http.server</a>
+ &#8226;   <a href="#main.py">main.py</a>
  &#8226;   <a href="#multiprocessing.util">multiprocessing.util</a>
  &#8226;   <a href="#pathlib">pathlib</a>
  &#8226;   <a href="#services.document_service">services.document_service</a>
+ &#8226;   <a href="#services.update_service">services.update_service</a>
  &#8226;   <a href="#tarfile">tarfile</a>
  &#8226;   <a href="#tempfile">tempfile</a>
+ &#8226;   <a href="#ui.pages.post_evaluation_panel">ui.pages.post_evaluation_panel</a>
  &#8226;   <a href="#uuid">uuid</a>
  &#8226;   <a href="#webbrowser">webbrowser</a>
  &#8226;   <a href="#zipfile">zipfile</a>
@@ -26761,6 +28003,36 @@ imported by:
  &#8226;   <a href="#pdb">pdb</a>
  &#8226;   <a href="#subprocess">subprocess</a>
  &#8226;   <a href="#unittest.signals">unittest.signals</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="smtplib"></a>
+  <a target="code" href="///C:/Users/Projektleiter/AppData/Local/Python/pythoncore-3.14-64/Lib/smtplib.py" type="text/plain"><tt>smtplib</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#base64">base64</a>
+ &#8226;   <a href="#copy">copy</a>
+ &#8226;   <a href="#datetime">datetime</a>
+ &#8226;   <a href="#email.base64mime">email.base64mime</a>
+ &#8226;   <a href="#email.generator">email.generator</a>
+ &#8226;   <a href="#email.message">email.message</a>
+ &#8226;   <a href="#email.utils">email.utils</a>
+ &#8226;   <a href="#hmac">hmac</a>
+ &#8226;   <a href="#io">io</a>
+ &#8226;   <a href="#re">re</a>
+ &#8226;   <a href="#socket">socket</a>
+ &#8226;   <a href="#ssl">ssl</a>
+ &#8226;   <a href="#sys">sys</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#main.py">main.py</a>
+ &#8226;   <a href="#services.mail_service">services.mail_service</a>
+ &#8226;   <a href="#services.user_mail_service">services.user_mail_service</a>
 
   </div>
 
@@ -26803,6 +28075,7 @@ imported by:
  &#8226;   <a href="#pdb">pdb</a>
  &#8226;   <a href="#platform">platform</a>
  &#8226;   <a href="#reportlab.lib.utils">reportlab.lib.utils</a>
+ &#8226;   <a href="#smtplib">smtplib</a>
  &#8226;   <a href="#socketserver">socketserver</a>
  &#8226;   <a href="#ssl">ssl</a>
  &#8226;   <a href="#urllib.request">urllib.request</a>
@@ -26855,6 +28128,7 @@ imported by:
  &#8226;   <a href="#database.repositories.setting_repository">database.repositories.setting_repository</a>
  &#8226;   <a href="#database.repositories.task_repository">database.repositories.task_repository</a>
  &#8226;   <a href="#database.repositories.user_repository">database.repositories.user_repository</a>
+ &#8226;   <a href="#main.py">main.py</a>
  &#8226;   <a href="#sqlite3">sqlite3</a>
  &#8226;   <a href="#sqlite3.__main__">sqlite3.__main__</a>
  &#8226;   <a href="#sqlite3.dbapi2">sqlite3.dbapi2</a>
@@ -27018,6 +28292,10 @@ imported by:
  &#8226;   <a href="#ftplib">ftplib</a>
  &#8226;   <a href="#http.client">http.client</a>
  &#8226;   <a href="#http.server">http.server</a>
+ &#8226;   <a href="#jwt.jwks_client">jwt.jwks_client</a>
+ &#8226;   <a href="#services.mail_service">services.mail_service</a>
+ &#8226;   <a href="#services.user_mail_service">services.user_mail_service</a>
+ &#8226;   <a href="#smtplib">smtplib</a>
  &#8226;   <a href="#urllib.request">urllib.request</a>
 
   </div>
@@ -27243,6 +28521,7 @@ imported by:
  &#8226;   <a href="#pyi_rth_multiprocessing.py">pyi_rth_multiprocessing.py</a>
  &#8226;   <a href="#reportlab.lib.rl_accel">reportlab.lib.rl_accel</a>
  &#8226;   <a href="#reportlab.lib.testutils">reportlab.lib.testutils</a>
+ &#8226;   <a href="#services.update_service">services.update_service</a>
  &#8226;   <a href="#uuid">uuid</a>
  &#8226;   <a href="#webbrowser">webbrowser</a>
 
@@ -27342,6 +28621,8 @@ imported by:
  &#8226;   <a href="#importlib.metadata">importlib.metadata</a>
  &#8226;   <a href="#importlib.util">importlib.util</a>
  &#8226;   <a href="#inspect">inspect</a>
+ &#8226;   <a href="#jwt.algorithms">jwt.algorithms</a>
+ &#8226;   <a href="#jwt.api_jwt">jwt.api_jwt</a>
  &#8226;   <a href="#linecache">linecache</a>
  &#8226;   <a href="#locale">locale</a>
  &#8226;   <a href="#logging">logging</a>
@@ -27416,8 +28697,10 @@ imported by:
  &#8226;   <a href="#reprlib">reprlib</a>
  &#8226;   <a href="#runpy">runpy</a>
  &#8226;   <a href="#selectors">selectors</a>
+ &#8226;   <a href="#services.update_service">services.update_service</a>
  &#8226;   <a href="#shlex">shlex</a>
  &#8226;   <a href="#shutil">shutil</a>
+ &#8226;   <a href="#smtplib">smtplib</a>
  &#8226;   <a href="#socket">socket</a>
  &#8226;   <a href="#socketserver">socketserver</a>
  &#8226;   <a href="#sqlite3.__main__">sqlite3.__main__</a>
@@ -27432,6 +28715,7 @@ imported by:
  &#8226;   <a href="#traceback">traceback</a>
  &#8226;   <a href="#types">types</a>
  &#8226;   <a href="#typing">typing</a>
+ &#8226;   <a href="#typing_extensions">typing_extensions</a>
  &#8226;   <a href="#ui.login.login_window">ui.login.login_window</a>
  &#8226;   <a href="#ui.pages.dashboard.dashboard_page">ui.pages.dashboard.dashboard_page</a>
  &#8226;   <a href="#unittest.case">unittest.case</a>
@@ -27549,12 +28833,14 @@ imported by:
  &#8226;   <a href="#_pyrepl.pager">_pyrepl.pager</a>
  &#8226;   <a href="#ctypes.util">ctypes.util</a>
  &#8226;   <a href="#importlib.resources._common">importlib.resources._common</a>
+ &#8226;   <a href="#main.py">main.py</a>
  &#8226;   <a href="#multiprocessing.heap">multiprocessing.heap</a>
  &#8226;   <a href="#multiprocessing.synchronize">multiprocessing.synchronize</a>
  &#8226;   <a href="#multiprocessing.util">multiprocessing.util</a>
  &#8226;   <a href="#openpyxl.worksheet._writer">openpyxl.worksheet._writer</a>
  &#8226;   <a href="#pdb">pdb</a>
  &#8226;   <a href="#reportlab.lib.rltempfile">reportlab.lib.rltempfile</a>
+ &#8226;   <a href="#services.update_service">services.update_service</a>
  &#8226;   <a href="#urllib.request">urllib.request</a>
  &#8226;   <a href="#urllib.response">urllib.response</a>
 
@@ -27685,6 +28971,8 @@ imported by:
  &#8226;   <a href="#gzip">gzip</a>
  &#8226;   <a href="#http.cookiejar">http.cookiejar</a>
  &#8226;   <a href="#http.server">http.server</a>
+ &#8226;   <a href="#jwt.api_jwk">jwt.api_jwk</a>
+ &#8226;   <a href="#jwt.jwk_set_cache">jwt.jwk_set_cache</a>
  &#8226;   <a href="#logging">logging</a>
  &#8226;   <a href="#multiprocessing.connection">multiprocessing.connection</a>
  &#8226;   <a href="#multiprocessing.managers">multiprocessing.managers</a>
@@ -27925,6 +29213,7 @@ imported by:
  &#8226;   <a href="#subprocess">subprocess</a>
  &#8226;   <a href="#tempfile">tempfile</a>
  &#8226;   <a href="#typing">typing</a>
+ &#8226;   <a href="#typing_extensions">typing_extensions</a>
  &#8226;   <a href="#unittest.case">unittest.case</a>
  &#8226;   <a href="#unittest.loader">unittest.loader</a>
  &#8226;   <a href="#urllib.parse">urllib.parse</a>
@@ -28016,6 +29305,7 @@ imported by:
  &#8226;   <a href="#PyQt6.QtGui">PyQt6.QtGui</a>
  &#8226;   <a href="#PyQt6.QtPrintSupport">PyQt6.QtPrintSupport</a>
  &#8226;   <a href="#PyQt6.QtSvg">PyQt6.QtSvg</a>
+ &#8226;   <a href="#PyQt6.QtWebChannel">PyQt6.QtWebChannel</a>
  &#8226;   <a href="#PyQt6.QtWidgets">PyQt6.QtWidgets</a>
  &#8226;   <a href="#PyQt6.sip">PyQt6.sip</a>
  &#8226;   <a href="#_colorize">_colorize</a>
@@ -28025,6 +29315,7 @@ imported by:
  &#8226;   <a href="#annotationlib">annotationlib</a>
  &#8226;   <a href="#app.app_registry">app.app_registry</a>
  &#8226;   <a href="#app.ports">app.ports</a>
+ &#8226;   <a href="#app.web_api">app.web_api</a>
  &#8226;   <a href="#charset_normalizer.api">charset_normalizer.api</a>
  &#8226;   <a href="#charset_normalizer.cd">charset_normalizer.cd</a>
  &#8226;   <a href="#charset_normalizer.legacy">charset_normalizer.legacy</a>
@@ -28033,6 +29324,7 @@ imported by:
  &#8226;   <a href="#charset_normalizer.utils">charset_normalizer.utils</a>
  &#8226;   <a href="#copyreg">copyreg</a>
  &#8226;   <a href="#core.card_status">core.card_status</a>
+ &#8226;   <a href="#core.case_context">core.case_context</a>
  &#8226;   <a href="#core.claim_status">core.claim_status</a>
  &#8226;   <a href="#core.document_status">core.document_status</a>
  &#8226;   <a href="#core.session">core.session</a>
@@ -28049,6 +29341,7 @@ imported by:
  &#8226;   <a href="#database.repositories.document_type_repository">database.repositories.document_type_repository</a>
  &#8226;   <a href="#database.repositories.expense_repository">database.repositories.expense_repository</a>
  &#8226;   <a href="#database.repositories.filter_preset_repository">database.repositories.filter_preset_repository</a>
+ &#8226;   <a href="#database.repositories.household_member_repository">database.repositories.household_member_repository</a>
  &#8226;   <a href="#database.repositories.income_repository">database.repositories.income_repository</a>
  &#8226;   <a href="#database.repositories.location_repository">database.repositories.location_repository</a>
  &#8226;   <a href="#database.repositories.person_repository">database.repositories.person_repository</a>
@@ -28063,21 +29356,35 @@ imported by:
  &#8226;   <a href="#importlib.metadata._meta">importlib.metadata._meta</a>
  &#8226;   <a href="#importlib.resources._common">importlib.resources._common</a>
  &#8226;   <a href="#importlib.resources.abc">importlib.resources.abc</a>
+ &#8226;   <a href="#jwt.algorithms">jwt.algorithms</a>
+ &#8226;   <a href="#jwt.api_jwk">jwt.api_jwk</a>
+ &#8226;   <a href="#jwt.api_jws">jwt.api_jws</a>
+ &#8226;   <a href="#jwt.api_jwt">jwt.api_jwt</a>
+ &#8226;   <a href="#jwt.jwk_set_cache">jwt.jwk_set_cache</a>
+ &#8226;   <a href="#jwt.jwks_client">jwt.jwks_client</a>
+ &#8226;   <a href="#jwt.types">jwt.types</a>
+ &#8226;   <a href="#jwt.utils">jwt.utils</a>
  &#8226;   <a href="#pdb">pdb</a>
+ &#8226;   <a href="#services.age_alert_service">services.age_alert_service</a>
  &#8226;   <a href="#services.card_service">services.card_service</a>
  &#8226;   <a href="#services.case_service">services.case_service</a>
  &#8226;   <a href="#services.category_service">services.category_service</a>
  &#8226;   <a href="#services.claim_service">services.claim_service</a>
  &#8226;   <a href="#services.dashboard_service">services.dashboard_service</a>
+ &#8226;   <a href="#services.document_package_service">services.document_package_service</a>
  &#8226;   <a href="#services.document_service">services.document_service</a>
+ &#8226;   <a href="#services.household_service">services.household_service</a>
  &#8226;   <a href="#services.location_service">services.location_service</a>
+ &#8226;   <a href="#services.ocr_service">services.ocr_service</a>
  &#8226;   <a href="#services.pdf_service">services.pdf_service</a>
  &#8226;   <a href="#services.person_service">services.person_service</a>
  &#8226;   <a href="#services.report_service">services.report_service</a>
  &#8226;   <a href="#services.role_service">services.role_service</a>
  &#8226;   <a href="#services.settings_service">services.settings_service</a>
  &#8226;   <a href="#services.task_service">services.task_service</a>
+ &#8226;   <a href="#services.update_service">services.update_service</a>
  &#8226;   <a href="#services.user_service">services.user_service</a>
+ &#8226;   <a href="#typing_extensions">typing_extensions</a>
  &#8226;   <a href="#ui.components.page_header">ui.components.page_header</a>
  &#8226;   <a href="#ui.navigation.navigation_controller">ui.navigation.navigation_controller</a>
  &#8226;   <a href="#ui.pages.claim_evaluation_dialog">ui.pages.claim_evaluation_dialog</a>
@@ -28088,10 +29395,34 @@ imported by:
 
 <div class="node">
   <a name="typing_extensions"></a>
-  <a target="code" href="" type="text/plain"><tt>typing_extensions</tt></a>
-<span class="moduletype">MissingModule</span>  <div class="import">
+  <a target="code" href="///C:/Users/Projektleiter/Desktop/anspruchssystem/.venv/Lib/site-packages/typing_extensions.py" type="text/plain"><tt>typing_extensions</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#'collections.abc'">'collections.abc'</a>
+ &#8226;   <a href="#_socket">_socket</a>
+ &#8226;   <a href="#abc">abc</a>
+ &#8226;   <a href="#annotationlib">annotationlib</a>
+ &#8226;   <a href="#asyncio.coroutines">asyncio.coroutines</a>
+ &#8226;   <a href="#builtins">builtins</a>
+ &#8226;   <a href="#collections">collections</a>
+ &#8226;   <a href="#contextlib">contextlib</a>
+ &#8226;   <a href="#enum">enum</a>
+ &#8226;   <a href="#functools">functools</a>
+ &#8226;   <a href="#inspect">inspect</a>
+ &#8226;   <a href="#io">io</a>
+ &#8226;   <a href="#keyword">keyword</a>
+ &#8226;   <a href="#operator">operator</a>
+ &#8226;   <a href="#sys">sys</a>
+ &#8226;   <a href="#types">types</a>
+ &#8226;   <a href="#typing">typing</a>
+ &#8226;   <a href="#warnings">warnings</a>
+
+  </div>
+  <div class="import">
 imported by:
     <a href="#charset_normalizer.md">charset_normalizer.md</a>
+ &#8226;   <a href="#jwt.algorithms">jwt.algorithms</a>
+ &#8226;   <a href="#jwt.api_jwt">jwt.api_jwt</a>
 
   </div>
 
@@ -28119,6 +29450,7 @@ imported by:
  &#8226;   <a href="#ui.navigation">ui.navigation</a>
  &#8226;   <a href="#ui.pages">ui.pages</a>
  &#8226;   <a href="#ui.shell">ui.shell</a>
+ &#8226;   <a href="#ui.web">ui.web</a>
 
   </div>
 
@@ -28149,6 +29481,7 @@ imported by:
  &#8226;   <a href="#ui.components.card_container">ui.components.card_container</a>
  &#8226;   <a href="#ui.components.checklist_widget">ui.components.checklist_widget</a>
  &#8226;   <a href="#ui.components.empty_state">ui.components.empty_state</a>
+ &#8226;   <a href="#ui.components.header">ui.components.header</a>
  &#8226;   <a href="#ui.components.page_header">ui.components.page_header</a>
  &#8226;   <a href="#ui.components.sidebar">ui.components.sidebar</a>
  &#8226;   <a href="#ui.components.stat_card">ui.components.stat_card</a>
@@ -28174,7 +29507,6 @@ imported by:
  &#8226;   <a href="#ui.components">ui.components</a>
  &#8226;   <a href="#ui.pages.claims.claims_page">ui.pages.claims.claims_page</a>
  &#8226;   <a href="#ui.pages.locations.locations_page">ui.pages.locations.locations_page</a>
- &#8226;   <a href="#ui.pages.settings.settings_page">ui.pages.settings.settings_page</a>
  &#8226;   <a href="#ui.pages.users.users_page">ui.pages.users.users_page</a>
 
   </div>
@@ -28271,6 +29603,7 @@ imports:
   <div class="import">
 imported by:
     <a href="#main.py">main.py</a>
+ &#8226;   <a href="#ui.pages.claim_evaluation_dialog">ui.pages.claim_evaluation_dialog</a>
 
   </div>
 
@@ -28289,6 +29622,23 @@ imports:
 imported by:
     <a href="#main.py">main.py</a>
  &#8226;   <a href="#ui.components">ui.components</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="ui.components.header"></a>
+  <a target="code" href="///C:/Users/Projektleiter/Desktop/anspruchssystem/ui/components/header.py" type="text/plain"><tt>ui.components.header</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#PyQt6.QtWidgets">PyQt6.QtWidgets</a>
+ &#8226;   <a href="#ui.components">ui.components</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#main.py">main.py</a>
 
   </div>
 
@@ -28324,10 +29674,16 @@ imported by:
  &#8226;   <a href="#ui.pages.locations.locations_page">ui.pages.locations.locations_page</a>
  &#8226;   <a href="#ui.pages.mandants.mandants_page">ui.pages.mandants.mandants_page</a>
  &#8226;   <a href="#ui.pages.person_dossier_page">ui.pages.person_dossier_page</a>
+ &#8226;   <a href="#ui.pages.re_evaluation_page">ui.pages.re_evaluation_page</a>
  &#8226;   <a href="#ui.pages.reports_page">ui.pages.reports_page</a>
  &#8226;   <a href="#ui.pages.role_management">ui.pages.role_management</a>
+ &#8226;   <a href="#ui.pages.serial_letters_page">ui.pages.serial_letters_page</a>
+ &#8226;   <a href="#ui.pages.settings.pruefungslimits_page">ui.pages.settings.pruefungslimits_page</a>
  &#8226;   <a href="#ui.pages.settings.settings_page">ui.pages.settings.settings_page</a>
+ &#8226;   <a href="#ui.pages.settings.smtp_settings_page">ui.pages.settings.smtp_settings_page</a>
+ &#8226;   <a href="#ui.pages.settings.system_settings_page">ui.pages.settings.system_settings_page</a>
  &#8226;   <a href="#ui.pages.tasks.tasks_page">ui.pages.tasks.tasks_page</a>
+ &#8226;   <a href="#ui.pages.update_page">ui.pages.update_page</a>
  &#8226;   <a href="#ui.pages.users.users_page">ui.pages.users.users_page</a>
 
   </div>
@@ -28350,6 +29706,7 @@ imports:
 imported by:
     <a href="#main.py">main.py</a>
  &#8226;   <a href="#ui.components">ui.components</a>
+ &#8226;   <a href="#ui.shell.main_window">ui.shell.main_window</a>
 
   </div>
 
@@ -28398,8 +29755,6 @@ imported by:
  &#8226;   <a href="#ui.pages.mandants.mandants_page">ui.pages.mandants.mandants_page</a>
  &#8226;   <a href="#ui.pages.person_dossier_dialog">ui.pages.person_dossier_dialog</a>
  &#8226;   <a href="#ui.pages.person_dossier_page">ui.pages.person_dossier_page</a>
- &#8226;   <a href="#ui.pages.reports_page">ui.pages.reports_page</a>
- &#8226;   <a href="#ui.pages.settings.settings_page">ui.pages.settings.settings_page</a>
  &#8226;   <a href="#ui.pages.tasks.tasks_page">ui.pages.tasks.tasks_page</a>
  &#8226;   <a href="#ui.pages.user_management">ui.pages.user_management</a>
  &#8226;   <a href="#ui.pages.users.users_page">ui.pages.users.users_page</a>
@@ -28416,7 +29771,14 @@ imports:
     <a href="#PyQt6.QtCore">PyQt6.QtCore</a>
  &#8226;   <a href="#PyQt6.QtGui">PyQt6.QtGui</a>
  &#8226;   <a href="#PyQt6.QtWidgets">PyQt6.QtWidgets</a>
+ &#8226;   <a href="#core.case_context">core.case_context</a>
+ &#8226;   <a href="#services.document_package_service">services.document_package_service</a>
+ &#8226;   <a href="#services.user_mail_service">services.user_mail_service</a>
  &#8226;   <a href="#ui.components">ui.components</a>
+ &#8226;   <a href="#ui.dialogs.letter_wizard_dialog">ui.dialogs.letter_wizard_dialog</a>
+ &#8226;   <a href="#ui.dialogs.wiedervorlage_dialog">ui.dialogs.wiedervorlage_dialog</a>
+ &#8226;   <a href="#ui.pages.post_evaluation_panel">ui.pages.post_evaluation_panel</a>
+ &#8226;   <a href="#ui.pages.serial_letters_page">ui.pages.serial_letters_page</a>
 
   </div>
   <div class="import">
@@ -28440,8 +29802,10 @@ imports:
   <div class="import">
 imported by:
     <a href="#ui.dialogs.force_password_dialog">ui.dialogs.force_password_dialog</a>
+ &#8226;   <a href="#ui.dialogs.letter_wizard_dialog">ui.dialogs.letter_wizard_dialog</a>
  &#8226;   <a href="#ui.dialogs.search_result_dialog">ui.dialogs.search_result_dialog</a>
  &#8226;   <a href="#ui.dialogs.user_dialog">ui.dialogs.user_dialog</a>
+ &#8226;   <a href="#ui.dialogs.wiedervorlage_dialog">ui.dialogs.wiedervorlage_dialog</a>
 
   </div>
 
@@ -28462,6 +29826,33 @@ imports:
 imported by:
     <a href="#main.py">main.py</a>
  &#8226;   <a href="#ui.login.login_window">ui.login.login_window</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="ui.dialogs.letter_wizard_dialog"></a>
+  <a target="code" href="///C:/Users/Projektleiter/Desktop/anspruchssystem/ui/dialogs/letter_wizard_dialog.py" type="text/plain"><tt>ui.dialogs.letter_wizard_dialog</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#PyQt6.QtCore">PyQt6.QtCore</a>
+ &#8226;   <a href="#PyQt6.QtGui">PyQt6.QtGui</a>
+ &#8226;   <a href="#PyQt6.QtWidgets">PyQt6.QtWidgets</a>
+ &#8226;   <a href="#core.claim_status">core.claim_status</a>
+ &#8226;   <a href="#datetime">datetime</a>
+ &#8226;   <a href="#services.claim_service">services.claim_service</a>
+ &#8226;   <a href="#services.document_template_service">services.document_template_service</a>
+ &#8226;   <a href="#services.pdf_service">services.pdf_service</a>
+ &#8226;   <a href="#services.user_mail_service">services.user_mail_service</a>
+ &#8226;   <a href="#ui.dialogs">ui.dialogs</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#main.py">main.py</a>
+ &#8226;   <a href="#ui.components.topbar">ui.components.topbar</a>
+ &#8226;   <a href="#ui.pages.claim_detail_page">ui.pages.claim_detail_page</a>
 
   </div>
 
@@ -28495,6 +29886,7 @@ imported by:
 imports:
     <a href="#PyQt6.QtCore">PyQt6.QtCore</a>
  &#8226;   <a href="#PyQt6.QtWidgets">PyQt6.QtWidgets</a>
+ &#8226;   <a href="#core.constants">core.constants</a>
  &#8226;   <a href="#ui.dialogs">ui.dialogs</a>
 
   </div>
@@ -28503,6 +29895,28 @@ imported by:
     <a href="#main.py">main.py</a>
  &#8226;   <a href="#ui.pages.user_management">ui.pages.user_management</a>
  &#8226;   <a href="#ui.pages.users.users_page">ui.pages.users.users_page</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="ui.dialogs.wiedervorlage_dialog"></a>
+  <a target="code" href="///C:/Users/Projektleiter/Desktop/anspruchssystem/ui/dialogs/wiedervorlage_dialog.py" type="text/plain"><tt>ui.dialogs.wiedervorlage_dialog</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#PyQt6.QtCore">PyQt6.QtCore</a>
+ &#8226;   <a href="#PyQt6.QtWidgets">PyQt6.QtWidgets</a>
+ &#8226;   <a href="#services.wiedervorlage_service">services.wiedervorlage_service</a>
+ &#8226;   <a href="#ui.dialogs">ui.dialogs</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#main.py">main.py</a>
+ &#8226;   <a href="#ui.components.topbar">ui.components.topbar</a>
+ &#8226;   <a href="#ui.pages.claim_detail_page">ui.pages.claim_detail_page</a>
+ &#8226;   <a href="#ui.pages.post_evaluation_panel">ui.pages.post_evaluation_panel</a>
 
   </div>
 
@@ -28617,10 +30031,16 @@ imported by:
  &#8226;   <a href="#ui.pages.mandants">ui.pages.mandants</a>
  &#8226;   <a href="#ui.pages.person_dossier_dialog">ui.pages.person_dossier_dialog</a>
  &#8226;   <a href="#ui.pages.person_dossier_page">ui.pages.person_dossier_page</a>
+ &#8226;   <a href="#ui.pages.personal">ui.pages.personal</a>
+ &#8226;   <a href="#ui.pages.post_evaluation_panel">ui.pages.post_evaluation_panel</a>
+ &#8226;   <a href="#ui.pages.re_evaluation_page">ui.pages.re_evaluation_page</a>
  &#8226;   <a href="#ui.pages.reports_page">ui.pages.reports_page</a>
+ &#8226;   <a href="#ui.pages.reports_web_page">ui.pages.reports_web_page</a>
  &#8226;   <a href="#ui.pages.role_management">ui.pages.role_management</a>
+ &#8226;   <a href="#ui.pages.serial_letters_page">ui.pages.serial_letters_page</a>
  &#8226;   <a href="#ui.pages.settings">ui.pages.settings</a>
  &#8226;   <a href="#ui.pages.tasks">ui.pages.tasks</a>
+ &#8226;   <a href="#ui.pages.update_page">ui.pages.update_page</a>
  &#8226;   <a href="#ui.pages.user_management">ui.pages.user_management</a>
  &#8226;   <a href="#ui.pages.users">ui.pages.users</a>
 
@@ -28827,13 +30247,18 @@ imported by:
 imports:
     <a href="#PyQt6.QtCore">PyQt6.QtCore</a>
  &#8226;   <a href="#PyQt6.QtWidgets">PyQt6.QtWidgets</a>
+ &#8226;   <a href="#core.case_context">core.case_context</a>
  &#8226;   <a href="#core.session">core.session</a>
  &#8226;   <a href="#pathlib">pathlib</a>
  &#8226;   <a href="#services.case_service">services.case_service</a>
  &#8226;   <a href="#services.claim_service">services.claim_service</a>
  &#8226;   <a href="#services.document_service">services.document_service</a>
+ &#8226;   <a href="#services.household_service">services.household_service</a>
+ &#8226;   <a href="#services.notification_service">services.notification_service</a>
  &#8226;   <a href="#ui.pages">ui.pages</a>
+ &#8226;   <a href="#ui.pages.claim_detail_page">ui.pages.claim_detail_page</a>
  &#8226;   <a href="#ui.pages.claim_evaluation_dialog">ui.pages.claim_evaluation_dialog</a>
+ &#8226;   <a href="#ui.pages.personal.staff_form_dialog">ui.pages.personal.staff_form_dialog</a>
 
   </div>
   <div class="import">
@@ -28875,11 +30300,17 @@ imported by:
 <span class="moduletype">SourceModule</span>  <div class="import">
 imports:
     <a href="#PyQt6.QtCore">PyQt6.QtCore</a>
+ &#8226;   <a href="#PyQt6.QtGui">PyQt6.QtGui</a>
  &#8226;   <a href="#PyQt6.QtWidgets">PyQt6.QtWidgets</a>
+ &#8226;   <a href="#core.case_context">core.case_context</a>
  &#8226;   <a href="#core.claim_status">core.claim_status</a>
  &#8226;   <a href="#core.session">core.session</a>
  &#8226;   <a href="#services.card_service">services.card_service</a>
  &#8226;   <a href="#services.claim_service">services.claim_service</a>
+ &#8226;   <a href="#services.document_package_service">services.document_package_service</a>
+ &#8226;   <a href="#services.user_mail_service">services.user_mail_service</a>
+ &#8226;   <a href="#ui.dialogs.letter_wizard_dialog">ui.dialogs.letter_wizard_dialog</a>
+ &#8226;   <a href="#ui.dialogs.wiedervorlage_dialog">ui.dialogs.wiedervorlage_dialog</a>
  &#8226;   <a href="#ui.pages">ui.pages</a>
  &#8226;   <a href="#ui.pages.claim_evaluation_dialog">ui.pages.claim_evaluation_dialog</a>
  &#8226;   <a href="#ui.pages.person_dossier_dialog">ui.pages.person_dossier_dialog</a>
@@ -28889,6 +30320,7 @@ imports:
 imported by:
     <a href="#main.py">main.py</a>
  &#8226;   <a href="#ui.pages.cards_page">ui.pages.cards_page</a>
+ &#8226;   <a href="#ui.pages.case_create_page">ui.pages.case_create_page</a>
  &#8226;   <a href="#ui.pages.claims.claims_page">ui.pages.claims.claims_page</a>
  &#8226;   <a href="#ui.pages.claims_page">ui.pages.claims_page</a>
  &#8226;   <a href="#ui.pages.person_dossier_dialog">ui.pages.person_dossier_dialog</a>
@@ -28906,13 +30338,24 @@ imports:
     <a href="#PyQt6.QtCore">PyQt6.QtCore</a>
  &#8226;   <a href="#PyQt6.QtGui">PyQt6.QtGui</a>
  &#8226;   <a href="#PyQt6.QtWidgets">PyQt6.QtWidgets</a>
+ &#8226;   <a href="#core.claim_status">core.claim_status</a>
  &#8226;   <a href="#core.session">core.session</a>
+ &#8226;   <a href="#database.repositories.claim_repository">database.repositories.claim_repository</a>
  &#8226;   <a href="#pathlib">pathlib</a>
+ &#8226;   <a href="#services.audit_service">services.audit_service</a>
+ &#8226;   <a href="#services.checklist_service">services.checklist_service</a>
  &#8226;   <a href="#services.claim_service">services.claim_service</a>
+ &#8226;   <a href="#services.document_package_service">services.document_package_service</a>
  &#8226;   <a href="#services.document_service">services.document_service</a>
+ &#8226;   <a href="#services.notification_service">services.notification_service</a>
  &#8226;   <a href="#services.pdf_service">services.pdf_service</a>
+ &#8226;   <a href="#services.re_evaluation_service">services.re_evaluation_service</a>
+ &#8226;   <a href="#services.user_mail_service">services.user_mail_service</a>
+ &#8226;   <a href="#services.wiedervorlage_service">services.wiedervorlage_service</a>
  &#8226;   <a href="#typing">typing</a>
+ &#8226;   <a href="#ui.components.checklist_widget">ui.components.checklist_widget</a>
  &#8226;   <a href="#ui.pages">ui.pages</a>
+ &#8226;   <a href="#ui.pages.post_evaluation_panel">ui.pages.post_evaluation_panel</a>
 
   </div>
   <div class="import">
@@ -29049,6 +30492,7 @@ imports:
  &#8226;   <a href="#PyQt6.QtWidgets">PyQt6.QtWidgets</a>
  &#8226;   <a href="#core.claim_status">core.claim_status</a>
  &#8226;   <a href="#pathlib">pathlib</a>
+ &#8226;   <a href="#services.age_alert_service">services.age_alert_service</a>
  &#8226;   <a href="#services.dashboard_service">services.dashboard_service</a>
  &#8226;   <a href="#sys">sys</a>
  &#8226;   <a href="#ui.components.page_header">ui.components.page_header</a>
@@ -29073,10 +30517,15 @@ imported by:
 <span class="moduletype">SourceModule</span>  <div class="import">
 imports:
     <a href="#PyQt6.QtCore">PyQt6.QtCore</a>
+ &#8226;   <a href="#PyQt6.QtGui">PyQt6.QtGui</a>
  &#8226;   <a href="#PyQt6.QtWidgets">PyQt6.QtWidgets</a>
+ &#8226;   <a href="#core.claim_status">core.claim_status</a>
+ &#8226;   <a href="#database.db">database.db</a>
  &#8226;   <a href="#datetime">datetime</a>
  &#8226;   <a href="#services.category_service">services.category_service</a>
  &#8226;   <a href="#services.document_template_service">services.document_template_service</a>
+ &#8226;   <a href="#services.mail_service">services.mail_service</a>
+ &#8226;   <a href="#services.pdf_service">services.pdf_service</a>
  &#8226;   <a href="#ui.components.page_header">ui.components.page_header</a>
  &#8226;   <a href="#ui.pages">ui.pages</a>
 
@@ -29165,6 +30614,7 @@ imports:
  &#8226;   <a href="#PyQt6.QtWidgets">PyQt6.QtWidgets</a>
  &#8226;   <a href="#csv">csv</a>
  &#8226;   <a href="#database.repositories.person_repository">database.repositories.person_repository</a>
+ &#8226;   <a href="#datetime">datetime</a>
  &#8226;   <a href="#io">io</a>
  &#8226;   <a href="#openpyxl">openpyxl</a>
  &#8226;   <a href="#pathlib">pathlib</a>
@@ -29322,6 +30772,120 @@ imported by:
 </div>
 
 <div class="node">
+  <a name="ui.pages.personal"></a>
+  <a target="code" href="///C:/Users/Projektleiter/Desktop/anspruchssystem/ui/pages/personal/__init__.py" type="text/plain"><tt>ui.pages.personal</tt></a>
+<span class="moduletype">Package</span>  <div class="import">
+imports:
+    <a href="#ui.pages">ui.pages</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#ui.pages.personal.personal_page">ui.pages.personal.personal_page</a>
+ &#8226;   <a href="#ui.pages.personal.staff_form_dialog">ui.pages.personal.staff_form_dialog</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="ui.pages.personal.personal_page"></a>
+  <a target="code" href="///C:/Users/Projektleiter/Desktop/anspruchssystem/ui/pages/personal/personal_page.py" type="text/plain"><tt>ui.pages.personal.personal_page</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#PyQt6.QtCore">PyQt6.QtCore</a>
+ &#8226;   <a href="#PyQt6.QtWidgets">PyQt6.QtWidgets</a>
+ &#8226;   <a href="#core.session">core.session</a>
+ &#8226;   <a href="#services.user_service">services.user_service</a>
+ &#8226;   <a href="#ui.pages.personal">ui.pages.personal</a>
+ &#8226;   <a href="#ui.pages.personal.staff_form_dialog">ui.pages.personal.staff_form_dialog</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#main.py">main.py</a>
+ &#8226;   <a href="#ui.shell.main_window">ui.shell.main_window</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="ui.pages.personal.staff_form_dialog"></a>
+  <a target="code" href="///C:/Users/Projektleiter/Desktop/anspruchssystem/ui/pages/personal/staff_form_dialog.py" type="text/plain"><tt>ui.pages.personal.staff_form_dialog</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#PyQt6.QtCore">PyQt6.QtCore</a>
+ &#8226;   <a href="#PyQt6.QtWidgets">PyQt6.QtWidgets</a>
+ &#8226;   <a href="#services.location_service">services.location_service</a>
+ &#8226;   <a href="#services.role_service">services.role_service</a>
+ &#8226;   <a href="#services.user_service">services.user_service</a>
+ &#8226;   <a href="#ui.pages.personal">ui.pages.personal</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#main.py">main.py</a>
+ &#8226;   <a href="#ui.pages.case_create_page">ui.pages.case_create_page</a>
+ &#8226;   <a href="#ui.pages.personal.personal_page">ui.pages.personal.personal_page</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="ui.pages.post_evaluation_panel"></a>
+  <a target="code" href="///C:/Users/Projektleiter/Desktop/anspruchssystem/ui/pages/post_evaluation_panel.py" type="text/plain"><tt>ui.pages.post_evaluation_panel</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#PyQt6.QtCore">PyQt6.QtCore</a>
+ &#8226;   <a href="#PyQt6.QtGui">PyQt6.QtGui</a>
+ &#8226;   <a href="#PyQt6.QtWidgets">PyQt6.QtWidgets</a>
+ &#8226;   <a href="#__future__">__future__</a>
+ &#8226;   <a href="#core.claim_status">core.claim_status</a>
+ &#8226;   <a href="#core.session">core.session</a>
+ &#8226;   <a href="#datetime">datetime</a>
+ &#8226;   <a href="#pathlib">pathlib</a>
+ &#8226;   <a href="#services.card_service">services.card_service</a>
+ &#8226;   <a href="#services.pdf_service">services.pdf_service</a>
+ &#8226;   <a href="#services.user_mail_service">services.user_mail_service</a>
+ &#8226;   <a href="#shutil">shutil</a>
+ &#8226;   <a href="#ui.dialogs.wiedervorlage_dialog">ui.dialogs.wiedervorlage_dialog</a>
+ &#8226;   <a href="#ui.pages">ui.pages</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#main.py">main.py</a>
+ &#8226;   <a href="#ui.components.topbar">ui.components.topbar</a>
+ &#8226;   <a href="#ui.pages.claim_evaluation_dialog">ui.pages.claim_evaluation_dialog</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="ui.pages.re_evaluation_page"></a>
+  <a target="code" href="///C:/Users/Projektleiter/Desktop/anspruchssystem/ui/pages/re_evaluation_page.py" type="text/plain"><tt>ui.pages.re_evaluation_page</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#PyQt6.QtCore">PyQt6.QtCore</a>
+ &#8226;   <a href="#PyQt6.QtWidgets">PyQt6.QtWidgets</a>
+ &#8226;   <a href="#services.re_evaluation_service">services.re_evaluation_service</a>
+ &#8226;   <a href="#ui.components.page_header">ui.components.page_header</a>
+ &#8226;   <a href="#ui.pages">ui.pages</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#main.py">main.py</a>
+ &#8226;   <a href="#ui.shell.main_window">ui.shell.main_window</a>
+
+  </div>
+
+</div>
+
+<div class="node">
   <a name="ui.pages.reports_page"></a>
   <a target="code" href="///C:/Users/Projektleiter/Desktop/anspruchssystem/ui/pages/reports_page.py" type="text/plain"><tt>ui.pages.reports_page</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
@@ -29330,10 +30894,17 @@ imports:
  &#8226;   <a href="#PyQt6.QtGui">PyQt6.QtGui</a>
  &#8226;   <a href="#PyQt6.QtWidgets">PyQt6.QtWidgets</a>
  &#8226;   <a href="#core.session">core.session</a>
- &#8226;   <a href="#services.pdf_service">services.pdf_service</a>
+ &#8226;   <a href="#datetime">datetime</a>
+ &#8226;   <a href="#openpyxl">openpyxl</a>
+ &#8226;   <a href="#openpyxl.styles">openpyxl.styles</a>
+ &#8226;   <a href="#reportlab.lib">reportlab.lib</a>
+ &#8226;   <a href="#reportlab.lib.colors">reportlab.lib.colors</a>
+ &#8226;   <a href="#reportlab.lib.pagesizes">reportlab.lib.pagesizes</a>
+ &#8226;   <a href="#reportlab.lib.styles">reportlab.lib.styles</a>
+ &#8226;   <a href="#reportlab.lib.units">reportlab.lib.units</a>
+ &#8226;   <a href="#reportlab.platypus">reportlab.platypus</a>
  &#8226;   <a href="#services.report_service">services.report_service</a>
  &#8226;   <a href="#ui.components.page_header">ui.components.page_header</a>
- &#8226;   <a href="#ui.components.table_widget">ui.components.table_widget</a>
  &#8226;   <a href="#ui.pages">ui.pages</a>
 
   </div>
@@ -29341,6 +30912,25 @@ imports:
 imported by:
     <a href="#main.py">main.py</a>
  &#8226;   <a href="#ui.shell.main_window">ui.shell.main_window</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="ui.pages.reports_web_page"></a>
+  <a target="code" href="///C:/Users/Projektleiter/Desktop/anspruchssystem/ui/pages/reports_web_page.py" type="text/plain"><tt>ui.pages.reports_web_page</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#services.report_service">services.report_service</a>
+ &#8226;   <a href="#ui.pages">ui.pages</a>
+ &#8226;   <a href="#ui.web.reports.bridge">ui.web.reports.bridge</a>
+ &#8226;   <a href="#ui.web.web_view_page">ui.web.web_view_page</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#main.py">main.py</a>
 
   </div>
 
@@ -29368,6 +30958,31 @@ imported by:
 </div>
 
 <div class="node">
+  <a name="ui.pages.serial_letters_page"></a>
+  <a target="code" href="///C:/Users/Projektleiter/Desktop/anspruchssystem/ui/pages/serial_letters_page.py" type="text/plain"><tt>ui.pages.serial_letters_page</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#PyQt6.QtCore">PyQt6.QtCore</a>
+ &#8226;   <a href="#PyQt6.QtGui">PyQt6.QtGui</a>
+ &#8226;   <a href="#PyQt6.QtWidgets">PyQt6.QtWidgets</a>
+ &#8226;   <a href="#core.claim_status">core.claim_status</a>
+ &#8226;   <a href="#datetime">datetime</a>
+ &#8226;   <a href="#services.document_template_service">services.document_template_service</a>
+ &#8226;   <a href="#ui.components.page_header">ui.components.page_header</a>
+ &#8226;   <a href="#ui.pages">ui.pages</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#main.py">main.py</a>
+ &#8226;   <a href="#ui.components.topbar">ui.components.topbar</a>
+ &#8226;   <a href="#ui.shell.main_window">ui.shell.main_window</a>
+
+  </div>
+
+</div>
+
+<div class="node">
   <a name="ui.pages.settings"></a>
   <a target="code" href="///C:/Users/Projektleiter/Desktop/anspruchssystem/ui/pages/settings/__init__.py" type="text/plain"><tt>ui.pages.settings</tt></a>
 <span class="moduletype">Package</span>  <div class="import">
@@ -29378,7 +30993,32 @@ imports:
   </div>
   <div class="import">
 imported by:
-    <a href="#ui.pages.settings.settings_page">ui.pages.settings.settings_page</a>
+    <a href="#ui.pages.settings.pruefungslimits_page">ui.pages.settings.pruefungslimits_page</a>
+ &#8226;   <a href="#ui.pages.settings.settings_page">ui.pages.settings.settings_page</a>
+ &#8226;   <a href="#ui.pages.settings.smtp_settings_page">ui.pages.settings.smtp_settings_page</a>
+ &#8226;   <a href="#ui.pages.settings.system_settings_page">ui.pages.settings.system_settings_page</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="ui.pages.settings.pruefungslimits_page"></a>
+  <a target="code" href="///C:/Users/Projektleiter/Desktop/anspruchssystem/ui/pages/settings/pruefungslimits_page.py" type="text/plain"><tt>ui.pages.settings.pruefungslimits_page</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#PyQt6.QtCore">PyQt6.QtCore</a>
+ &#8226;   <a href="#PyQt6.QtWidgets">PyQt6.QtWidgets</a>
+ &#8226;   <a href="#core.session">core.session</a>
+ &#8226;   <a href="#services.settings_service">services.settings_service</a>
+ &#8226;   <a href="#ui.components.page_header">ui.components.page_header</a>
+ &#8226;   <a href="#ui.pages.settings">ui.pages.settings</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#main.py">main.py</a>
+ &#8226;   <a href="#ui.shell.main_window">ui.shell.main_window</a>
 
   </div>
 
@@ -29393,9 +31033,7 @@ imports:
  &#8226;   <a href="#PyQt6.QtWidgets">PyQt6.QtWidgets</a>
  &#8226;   <a href="#core.session">core.session</a>
  &#8226;   <a href="#services.settings_service">services.settings_service</a>
- &#8226;   <a href="#ui.components.action_button">ui.components.action_button</a>
  &#8226;   <a href="#ui.components.page_header">ui.components.page_header</a>
- &#8226;   <a href="#ui.components.table_widget">ui.components.table_widget</a>
  &#8226;   <a href="#ui.pages.settings">ui.pages.settings</a>
 
   </div>
@@ -29403,6 +31041,52 @@ imports:
 imported by:
     <a href="#main.py">main.py</a>
  &#8226;   <a href="#ui.pages.settings">ui.pages.settings</a>
+ &#8226;   <a href="#ui.shell.main_window">ui.shell.main_window</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="ui.pages.settings.smtp_settings_page"></a>
+  <a target="code" href="///C:/Users/Projektleiter/Desktop/anspruchssystem/ui/pages/settings/smtp_settings_page.py" type="text/plain"><tt>ui.pages.settings.smtp_settings_page</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#PyQt6.QtCore">PyQt6.QtCore</a>
+ &#8226;   <a href="#PyQt6.QtWidgets">PyQt6.QtWidgets</a>
+ &#8226;   <a href="#services.mail_service">services.mail_service</a>
+ &#8226;   <a href="#services.settings_service">services.settings_service</a>
+ &#8226;   <a href="#ui.components.page_header">ui.components.page_header</a>
+ &#8226;   <a href="#ui.pages.settings">ui.pages.settings</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#main.py">main.py</a>
+ &#8226;   <a href="#ui.shell.main_window">ui.shell.main_window</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="ui.pages.settings.system_settings_page"></a>
+  <a target="code" href="///C:/Users/Projektleiter/Desktop/anspruchssystem/ui/pages/settings/system_settings_page.py" type="text/plain"><tt>ui.pages.settings.system_settings_page</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#PyQt6.QtCore">PyQt6.QtCore</a>
+ &#8226;   <a href="#PyQt6.QtWidgets">PyQt6.QtWidgets</a>
+ &#8226;   <a href="#core.session">core.session</a>
+ &#8226;   <a href="#datetime">datetime</a>
+ &#8226;   <a href="#services.settings_service">services.settings_service</a>
+ &#8226;   <a href="#services.update_service">services.update_service</a>
+ &#8226;   <a href="#ui.components.page_header">ui.components.page_header</a>
+ &#8226;   <a href="#ui.pages.settings">ui.pages.settings</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#main.py">main.py</a>
  &#8226;   <a href="#ui.shell.main_window">ui.shell.main_window</a>
 
   </div>
@@ -29486,6 +31170,30 @@ imported by:
 </div>
 
 <div class="node">
+  <a name="ui.pages.update_page"></a>
+  <a target="code" href="///C:/Users/Projektleiter/Desktop/anspruchssystem/ui/pages/update_page.py" type="text/plain"><tt>ui.pages.update_page</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#PyQt6.QtCore">PyQt6.QtCore</a>
+ &#8226;   <a href="#PyQt6.QtWidgets">PyQt6.QtWidgets</a>
+ &#8226;   <a href="#core.session">core.session</a>
+ &#8226;   <a href="#json">json</a>
+ &#8226;   <a href="#pathlib">pathlib</a>
+ &#8226;   <a href="#services.update_service">services.update_service</a>
+ &#8226;   <a href="#ui.components.page_header">ui.components.page_header</a>
+ &#8226;   <a href="#ui.pages">ui.pages</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#main.py">main.py</a>
+ &#8226;   <a href="#ui.shell.main_window">ui.shell.main_window</a>
+
+  </div>
+
+</div>
+
+<div class="node">
   <a name="ui.pages.user_management"></a>
   <a target="code" href="///C:/Users/Projektleiter/Desktop/anspruchssystem/ui/pages/user_management.py" type="text/plain"><tt>ui.pages.user_management</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
@@ -29529,8 +31237,10 @@ imported by:
 <span class="moduletype">SourceModule</span>  <div class="import">
 imports:
     <a href="#PyQt6.QtCore">PyQt6.QtCore</a>
+ &#8226;   <a href="#PyQt6.QtGui">PyQt6.QtGui</a>
  &#8226;   <a href="#PyQt6.QtWidgets">PyQt6.QtWidgets</a>
- &#8226;   <a href="#datetime">datetime</a>
+ &#8226;   <a href="#core.constants">core.constants</a>
+ &#8226;   <a href="#core.session">core.session</a>
  &#8226;   <a href="#services.user_service">services.user_service</a>
  &#8226;   <a href="#ui.components.action_button">ui.components.action_button</a>
  &#8226;   <a href="#ui.components.page_header">ui.components.page_header</a>
@@ -29576,7 +31286,9 @@ imports:
  &#8226;   <a href="#app.config">app.config</a>
  &#8226;   <a href="#app.container">app.container</a>
  &#8226;   <a href="#core.session">core.session</a>
+ &#8226;   <a href="#services.manual_service">services.manual_service</a>
  &#8226;   <a href="#ui.components.app_navigation">ui.components.app_navigation</a>
+ &#8226;   <a href="#ui.components.sidebar">ui.components.sidebar</a>
  &#8226;   <a href="#ui.components.topbar">ui.components.topbar</a>
  &#8226;   <a href="#ui.dialogs.search_result_dialog">ui.dialogs.search_result_dialog</a>
  &#8226;   <a href="#ui.navigation.navigation_controller">ui.navigation.navigation_controller</a>
@@ -29596,10 +31308,17 @@ imports:
  &#8226;   <a href="#ui.pages.locations.locations_page">ui.pages.locations.locations_page</a>
  &#8226;   <a href="#ui.pages.mandants.mandants_page">ui.pages.mandants.mandants_page</a>
  &#8226;   <a href="#ui.pages.person_dossier_page">ui.pages.person_dossier_page</a>
+ &#8226;   <a href="#ui.pages.personal.personal_page">ui.pages.personal.personal_page</a>
+ &#8226;   <a href="#ui.pages.re_evaluation_page">ui.pages.re_evaluation_page</a>
  &#8226;   <a href="#ui.pages.reports_page">ui.pages.reports_page</a>
  &#8226;   <a href="#ui.pages.role_management">ui.pages.role_management</a>
+ &#8226;   <a href="#ui.pages.serial_letters_page">ui.pages.serial_letters_page</a>
+ &#8226;   <a href="#ui.pages.settings.pruefungslimits_page">ui.pages.settings.pruefungslimits_page</a>
  &#8226;   <a href="#ui.pages.settings.settings_page">ui.pages.settings.settings_page</a>
+ &#8226;   <a href="#ui.pages.settings.smtp_settings_page">ui.pages.settings.smtp_settings_page</a>
+ &#8226;   <a href="#ui.pages.settings.system_settings_page">ui.pages.settings.system_settings_page</a>
  &#8226;   <a href="#ui.pages.tasks.tasks_page">ui.pages.tasks.tasks_page</a>
+ &#8226;   <a href="#ui.pages.update_page">ui.pages.update_page</a>
  &#8226;   <a href="#ui.pages.users.users_page">ui.pages.users.users_page</a>
  &#8226;   <a href="#ui.shell">ui.shell</a>
  &#8226;   <a href="#ui.shell.workspace_host">ui.shell.workspace_host</a>
@@ -29628,6 +31347,84 @@ imported by:
     <a href="#main.py">main.py</a>
  &#8226;   <a href="#ui.navigation.navigation_controller">ui.navigation.navigation_controller</a>
  &#8226;   <a href="#ui.shell.main_window">ui.shell.main_window</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="ui.web"></a>
+  <a target="code" href="-" type="text/plain"><tt>ui.web</tt></a>
+<span class="moduletype">NamespacePackage</span>  <div class="import">
+imports:
+    <a href="#ui">ui</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#ui.web.reports">ui.web.reports</a>
+ &#8226;   <a href="#ui.web.web_view_page">ui.web.web_view_page</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="ui.web.reports"></a>
+  <a target="code" href="-" type="text/plain"><tt>ui.web.reports</tt></a>
+<span class="moduletype">NamespacePackage</span>  <div class="import">
+imports:
+    <a href="#ui.web">ui.web</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#ui.web.reports.bridge">ui.web.reports.bridge</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="ui.web.reports.bridge"></a>
+  <a target="code" href="///C:/Users/Projektleiter/Desktop/anspruchssystem/ui/web/reports/bridge.py" type="text/plain"><tt>ui.web.reports.bridge</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#PyQt6.QtCore">PyQt6.QtCore</a>
+ &#8226;   <a href="#PyQt6.QtGui">PyQt6.QtGui</a>
+ &#8226;   <a href="#PyQt6.QtWidgets">PyQt6.QtWidgets</a>
+ &#8226;   <a href="#os">os</a>
+ &#8226;   <a href="#pathlib">pathlib</a>
+ &#8226;   <a href="#services.excel_service">services.excel_service</a>
+ &#8226;   <a href="#services.pdf_service">services.pdf_service</a>
+ &#8226;   <a href="#services.report_service">services.report_service</a>
+ &#8226;   <a href="#ui.web.reports">ui.web.reports</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#ui.pages.reports_web_page">ui.pages.reports_web_page</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="ui.web.web_view_page"></a>
+  <a target="code" href="///C:/Users/Projektleiter/Desktop/anspruchssystem/ui/web/web_view_page.py" type="text/plain"><tt>ui.web.web_view_page</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#'PyQt6.QtWebEngineWidgets'">'PyQt6.QtWebEngineWidgets'</a>
+ &#8226;   <a href="#PyQt6.QtCore">PyQt6.QtCore</a>
+ &#8226;   <a href="#PyQt6.QtWebChannel">PyQt6.QtWebChannel</a>
+ &#8226;   <a href="#PyQt6.QtWidgets">PyQt6.QtWidgets</a>
+ &#8226;   <a href="#pathlib">pathlib</a>
+ &#8226;   <a href="#ui.web">ui.web</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#ui.pages.reports_web_page">ui.pages.reports_web_page</a>
 
   </div>
 
@@ -29954,7 +31751,8 @@ imports:
   </div>
   <div class="import">
 imported by:
-    <a href="#pathlib">pathlib</a>
+    <a href="#jwt.jwks_client">jwt.jwks_client</a>
+ &#8226;   <a href="#pathlib">pathlib</a>
  &#8226;   <a href="#urllib.request">urllib.request</a>
 
   </div>
@@ -29983,6 +31781,7 @@ imported by:
  &#8226;   <a href="#http.client">http.client</a>
  &#8226;   <a href="#http.cookiejar">http.cookiejar</a>
  &#8226;   <a href="#http.server">http.server</a>
+ &#8226;   <a href="#jwt.jwks_client">jwt.jwks_client</a>
  &#8226;   <a href="#mimetypes">mimetypes</a>
  &#8226;   <a href="#pathlib">pathlib</a>
  &#8226;   <a href="#pydoc">pydoc</a>
@@ -30035,9 +31834,11 @@ imports:
   <div class="import">
 imported by:
     <a href="#http.cookiejar">http.cookiejar</a>
+ &#8226;   <a href="#jwt.jwks_client">jwt.jwks_client</a>
  &#8226;   <a href="#pathlib">pathlib</a>
  &#8226;   <a href="#reportlab.lib.testutils">reportlab.lib.testutils</a>
  &#8226;   <a href="#reportlab.lib.utils">reportlab.lib.utils</a>
+ &#8226;   <a href="#services.update_service">services.update_service</a>
  &#8226;   <a href="#xml.dom.xmlbuilder">xml.dom.xmlbuilder</a>
  &#8226;   <a href="#xml.sax.saxutils">xml.sax.saxutils</a>
 
@@ -30126,6 +31927,7 @@ imported by:
  &#8226;   <a href="#PyQt6.QtGui">PyQt6.QtGui</a>
  &#8226;   <a href="#PyQt6.QtPrintSupport">PyQt6.QtPrintSupport</a>
  &#8226;   <a href="#PyQt6.QtSvg">PyQt6.QtSvg</a>
+ &#8226;   <a href="#PyQt6.QtWebChannel">PyQt6.QtWebChannel</a>
  &#8226;   <a href="#PyQt6.QtWidgets">PyQt6.QtWidgets</a>
  &#8226;   <a href="#_collections_abc">_collections_abc</a>
  &#8226;   <a href="#_pydatetime">_pydatetime</a>
@@ -30163,6 +31965,8 @@ imported by:
  &#8226;   <a href="#importlib.resources._common">importlib.resources._common</a>
  &#8226;   <a href="#importlib.resources._functional">importlib.resources._functional</a>
  &#8226;   <a href="#importlib.resources.readers">importlib.resources.readers</a>
+ &#8226;   <a href="#jwt.api_jws">jwt.api_jws</a>
+ &#8226;   <a href="#jwt.api_jwt">jwt.api_jwt</a>
  &#8226;   <a href="#locale">locale</a>
  &#8226;   <a href="#logging">logging</a>
  &#8226;   <a href="#main.py">main.py</a>
@@ -30208,6 +32012,7 @@ imported by:
  &#8226;   <a href="#threading">threading</a>
  &#8226;   <a href="#traceback">traceback</a>
  &#8226;   <a href="#typing">typing</a>
+ &#8226;   <a href="#typing_extensions">typing_extensions</a>
  &#8226;   <a href="#unittest.async_case">unittest.async_case</a>
  &#8226;   <a href="#unittest.case">unittest.case</a>
  &#8226;   <a href="#unittest.runner">unittest.runner</a>
@@ -30880,9 +32685,11 @@ imports:
 imported by:
     <a href="#importlib.metadata">importlib.metadata</a>
  &#8226;   <a href="#importlib.resources.readers">importlib.resources.readers</a>
+ &#8226;   <a href="#main.py">main.py</a>
  &#8226;   <a href="#openpyxl.reader.excel">openpyxl.reader.excel</a>
  &#8226;   <a href="#openpyxl.writer.excel">openpyxl.writer.excel</a>
  &#8226;   <a href="#pyi_rth_inspect.py">pyi_rth_inspect.py</a>
+ &#8226;   <a href="#services.update_service">services.update_service</a>
  &#8226;   <a href="#shutil">shutil</a>
  &#8226;   <a href="#zipfile._path">zipfile._path</a>
 
