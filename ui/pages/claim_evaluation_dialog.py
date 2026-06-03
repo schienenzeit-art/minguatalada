@@ -1,3 +1,5 @@
+import json
+from datetime import datetime
 from typing import Dict
 
 from PyQt6.QtWidgets import (
@@ -18,7 +20,7 @@ from PyQt6.QtWidgets import (
     QCheckBox,
     QScrollArea,
 )
-from PyQt6.QtCore import Qt, QUrl
+from PyQt6.QtCore import Qt, QTimer, QUrl
 from PyQt6.QtGui import QDesktopServices
 from pathlib import Path
 
@@ -61,7 +63,9 @@ class ClaimEvaluationDialog(QDialog):
         flags |= Qt.WindowType.WindowMaximizeButtonHint
         self.setWindowFlags(flags)
 
+        self._autosave_timer: QTimer | None = None
         self.setup_ui()
+        self._init_autosave()
 
     def setup_ui(self):
         main_layout = QVBoxLayout()
@@ -480,11 +484,15 @@ class ClaimEvaluationDialog(QDialog):
     def reject(self) -> None:
         # Fängt Escape-Taste und den "Schließen"-Button ab.
         if self._confirm_discard():
+            if self._autosave_timer:
+                self._autosave_timer.stop()
             super().reject()
 
     def closeEvent(self, event) -> None:
         # Fängt das Schließen über das Fenster-X ab.
         if self._confirm_discard():
+            if self._autosave_timer:
+                self._autosave_timer.stop()
             event.accept()
         else:
             event.ignore()
@@ -589,8 +597,9 @@ class ClaimEvaluationDialog(QDialog):
             return
 
         updated_claim = self.claim_service.get_claim_by_id(self.claim_id)
-        # Prüfung wurde gespeichert → Schließen ist jetzt gefahrlos.
+        # Prüfung wurde gespeichert → Entwurf löschen + Schließen ist gefahrlos.
         self._saved = True
+        self._clear_draft()
         self.accept()
 
         # ── PostEvaluationPanel: Folgeaktionen direkt nach Prüfung ────────────
@@ -789,3 +798,131 @@ class ClaimEvaluationDialog(QDialog):
             self.status_label.setText("Vorhandene Prüfung geladen. Bitte neu auswerten, wenn Änderungen nötig sind.")
         else:
             self.status_label.setText("Bitte Eingaben prüfen und auf Prüfung klicken.")
+
+    # ── Autosave / Draft-Recovery ─────────────────────────────────────────
+
+    def _init_autosave(self) -> None:
+        """Startet den 30-Sekunden-Autosave-Timer und bietet ggf. einen gespeicherten Entwurf an."""
+        self._autosave_timer = QTimer(self)
+        self._autosave_timer.setInterval(30_000)
+        self._autosave_timer.timeout.connect(self._autosave_draft)
+        self._autosave_timer.start()
+
+        # Gespeicherten Entwurf anbieten (nur wenn Antrag bekannt)
+        if self.claim_id:
+            path = self._draft_path
+            if path and path.exists():
+                self._offer_draft_restore()
+
+    @property
+    def _draft_path(self) -> Path | None:
+        """Pfad zur Entwurfsdatei für den aktuellen Antrag."""
+        if not self.claim_id:
+            return None
+        from app.config import DATA_DIR
+        drafts_dir = Path(DATA_DIR) / "drafts"
+        drafts_dir.mkdir(parents=True, exist_ok=True)
+        return drafts_dir / f"draft_evaluation_{self.claim_id}.json"
+
+    def _autosave_draft(self) -> None:
+        """Speichert den aktuellen Formularstand als Entwurf (aufgerufen alle 30 s)."""
+        if self._saved or not self.claim_id:
+            return
+        if not self._evaluation_started and not self._has_user_input():
+            return
+        try:
+            draft = {
+                "claim_id": self.claim_id,
+                "saved_at": datetime.now().strftime("%d.%m.%Y %H:%M:%S"),
+                "incomes": {k: self._parse_float(v) for k, v in self.income_fields.items()},
+                "expenses": {
+                    k: {
+                        "amount": self._parse_float(amount),
+                        "has_proof": proof.isChecked(),
+                        "note": note.text().strip(),
+                    }
+                    for k, (amount, proof, note) in self.expense_fields.items()
+                },
+                "adult_count": self.adult_count_input.value(),
+                "child_count": self.child_count_input.value(),
+                "category": self.category_combo.currentText(),
+                "disability_degree": self.disability_degree_input.value(),
+                "has_housing_benefit": self._get_has_housing_benefit(),
+                "housing_benefit_set": self.housing_benefit_set,
+            }
+            path = self._draft_path
+            if path:
+                path.write_text(
+                    json.dumps(draft, ensure_ascii=False, indent=2), encoding="utf-8"
+                )
+        except Exception:
+            pass
+
+    def _offer_draft_restore(self) -> None:
+        """Fragt ob ein vorhandener Entwurf wiederhergestellt werden soll."""
+        try:
+            path = self._draft_path
+            if not path or not path.exists():
+                return
+            data = json.loads(path.read_text(encoding="utf-8"))
+            saved_at = data.get("saved_at", "unbekannt")
+            answer = QMessageBox.question(
+                self,
+                "Entwurf wiederherstellen?",
+                f"Es wurde ein gespeicherter Entwurf für diesen Antrag gefunden\n"
+                f"(gespeichert: {saved_at}).\n\n"
+                "Möchten Sie die Eingaben aus dem Entwurf wiederherstellen?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.Yes,
+            )
+            if answer == QMessageBox.StandardButton.Yes:
+                self._restore_from_draft(data)
+        except Exception:
+            pass
+
+    def _restore_from_draft(self, data: dict) -> None:
+        """Befüllt alle Formularfelder aus einem gespeicherten Entwurf."""
+        try:
+            for name, widget in self.income_fields.items():
+                if name in data.get("incomes", {}):
+                    widget.setText(f"{data['incomes'][name]:.2f}")
+
+            for name, (amount, proof, note) in self.expense_fields.items():
+                exp = data.get("expenses", {}).get(name)
+                if exp:
+                    amount.setText(f"{exp.get('amount', 0.0):.2f}")
+                    proof.setChecked(bool(exp.get("has_proof", False)))
+                    note.setText(exp.get("note", ""))
+
+            if "adult_count" in data:
+                self.adult_count_input.setValue(int(data["adult_count"]))
+            if "child_count" in data:
+                self.child_count_input.setValue(int(data["child_count"]))
+            if "category" in data:
+                idx = self.category_combo.findText(data["category"])
+                if idx >= 0:
+                    self.category_combo.setCurrentIndex(idx)
+            if "disability_degree" in data:
+                self.disability_degree_input.setValue(int(data["disability_degree"]))
+
+            if data.get("housing_benefit_set"):
+                self.housing_benefit_set = True
+                self.housing_benefit_check.setChecked(
+                    bool(data.get("has_housing_benefit"))
+                )
+
+            self._evaluation_started = True
+            self.status_label.setText(
+                f"Entwurf vom {data.get('saved_at', '?')} wiederhergestellt."
+            )
+        except Exception:
+            pass
+
+    def _clear_draft(self) -> None:
+        """Löscht den Entwurf nach erfolgreichem Speichern."""
+        try:
+            path = self._draft_path
+            if path and path.exists():
+                path.unlink()
+        except Exception:
+            pass
