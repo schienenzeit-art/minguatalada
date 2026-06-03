@@ -44,3 +44,8 @@ Desktop.ini
 
 # Pytest
 .pytest_cache/
+
+# Code-Signing: privater Schlüssel NIEMALS committen
+certs/*.key
+certs/*.pfx
+certs/*.p12
