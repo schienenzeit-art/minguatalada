@@ -647,7 +647,7 @@ Supabase Free Tier (0 €/Monat) eignet sich zum Testen. Supabase Pro (~23 €/M
 | **Owner** | Dario Schaer |
 | **Kontakt** | dario.schaer89@gmail.com |
 | **Nutzung** | Internes Vereinsprojekt — kein öffentliches Release |
-| **Lizenz** | Intern / proprietär — zu validieren |
+| **Lizenz** | Proprietary - All Rights Reserved |
 
 > **Technische Architektur**: Siehe [TECHNICAL_DESIGN_DOCUMENT.md](TECHNICAL_DESIGN_DOCUMENT.md)
 
