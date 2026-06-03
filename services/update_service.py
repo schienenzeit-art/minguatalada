@@ -183,6 +183,14 @@ class UpdateService:
                         None,
                     )
 
+                # ── Signaturprüfung (Ed25519) ──────────────────────────────
+                # Muss VOR der Versionsprüfung erfolgen: ein manipuliertes Paket
+                # darf keine weiteren Informationen über seinen Inhalt preisgeben.
+                from core.update_signing import verify_package_signature
+                sig_ok, sig_msg = verify_package_signature(manifest_data)
+                if not sig_ok:
+                    return False, sig_msg, None
+
                 manifest = UpdateManifest(manifest_data)
 
                 if not manifest.version:
