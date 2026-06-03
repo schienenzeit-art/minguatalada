@@ -31,7 +31,7 @@ from typing import Optional
 
 from app.config import DATA_DIR, DB_PATH
 
-APP_VERSION = "1.0.3"
+APP_VERSION = "1.1.0"
 
 BACKUPS_DIR = Path(DATA_DIR) / "backups"
 UPDATES_DIR = Path(DATA_DIR) / "updates"
