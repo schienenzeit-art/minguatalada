@@ -6,7 +6,7 @@ __pycache__/
 *.pyo
 *.pyd
 
-# Datenbank & Nutzerdaten (pro Gerät, nie einchecken)
+# Datenbank & Laufzeitdaten — NIE einchecken (personenbezogene Daten / DSGVO)
 data/*.db
 data/backups/
 data/documents/
@@ -14,6 +14,17 @@ data/pdfs/
 data/excel/
 data/updates/
 data/logs/
+
+# Auch Unterverzeichnisse explizit absichern
+data/documents/**
+data/pdfs/**
+data/excel/**
+data/backups/**
+data/logs/**
+data/updates/**
+
+# Installer-Binaries (gross, kein Source-Code)
+installer/*.exe
 
 # Build-Artefakte
 build/
