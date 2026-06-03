@@ -21,13 +21,17 @@ manifest.json-Format:
 """
 import hashlib
 import json
+import logging
 import shutil
+import sqlite3
 import subprocess
 import tempfile
 import zipfile
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
+
+logger = logging.getLogger(__name__)
 
 from app.config import DATA_DIR, DB_PATH
 
@@ -249,8 +253,11 @@ class UpdateService:
     def create_backup(self) -> Path:
         """
         Erstellt ein vollständiges Datenbank-Backup.
-        Führt vorher einen WAL-Checkpoint durch, um Datenkonsistenz zu gewährleisten.
-        Gibt den Pfad zur Backup-Datei zurück.
+        Ablauf:
+          1. WAL-Checkpoint — stellt sicher dass alle Änderungen in der DB-Datei sind
+          2. Datei kopieren
+          3. PRAGMA integrity_check auf der Backup-Kopie — verifiziert erfolgreichen Kopiervorgang
+        Wirft RuntimeError wenn die Integritätsprüfung fehlschlägt (Backup wird dann gelöscht).
         """
         BACKUPS_DIR.mkdir(parents=True, exist_ok=True)
         self._wal_checkpoint()
@@ -258,8 +265,48 @@ class UpdateService:
         backup_name = f"backup_{timestamp}_v{APP_VERSION}.db"
         backup_path = BACKUPS_DIR / backup_name
         shutil.copy2(DB_PATH, backup_path)
+
+        ok, detail = self._verify_backup_integrity(backup_path)
+        if not ok:
+            backup_path.unlink(missing_ok=True)
+            msg = f"Backup-Integritätsprüfung fehlgeschlagen: {detail}"
+            logger.error(msg)
+            raise RuntimeError(msg)
+
+        logger.info("Backup erstellt und verifiziert: %s", backup_path.name)
         self._cleanup_old_backups()
         return backup_path
+
+    def _verify_backup_integrity(self, backup_path: Path) -> tuple[bool, str]:
+        """
+        Öffnet eine Backup-Datei direkt (unabhängig von DB_PATH) und führt
+        PRAGMA integrity_check durch. Gibt (ok, detail) zurück.
+        """
+        if not backup_path.exists():
+            return False, f"Datei nicht gefunden: {backup_path.name}"
+
+        conn: sqlite3.Connection | None = None
+        try:
+            conn = sqlite3.connect(str(backup_path))
+            try:
+                rows = conn.execute("PRAGMA integrity_check").fetchall()
+            finally:
+                conn.close()
+                conn = None
+            results = [r[0] for r in rows]
+            if results == ["ok"]:
+                return True, "ok"
+            detail = "; ".join(results[:5])
+            logger.error("Backup-Integritätsfehler in '%s': %s", backup_path.name, detail)
+            return False, detail
+        except Exception as exc:
+            if conn is not None:
+                try:
+                    conn.close()
+                except Exception:
+                    pass
+            logger.error("Backup-Integritätsprüfung: Ausnahme für '%s': %s", backup_path.name, exc)
+            return False, str(exc)
 
     def _wal_checkpoint(self) -> None:
         """WAL-Checkpoint vor Backup für Datenkonsistenz."""
