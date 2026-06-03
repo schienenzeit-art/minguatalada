@@ -38,6 +38,7 @@ class HouseholdService:
         birth_date: Optional[str],
         relationship: str,
         is_primary: bool = False,
+        category_id: Optional[int] = None,
     ) -> Optional[int]:
         member_id = self.hm_repo.add_member(
             claim_id=claim_id,
@@ -46,6 +47,7 @@ class HouseholdService:
             birth_date=birth_date,
             relationship=relationship,
             is_primary=is_primary,
+            category_id=category_id,
         )
         if member_id:
             self.audit_repo.log(
@@ -64,8 +66,11 @@ class HouseholdService:
         last_name: str,
         birth_date: Optional[str],
         relationship: str,
+        category_id: Optional[int] = None,
     ) -> bool:
-        result = self.hm_repo.update_member(member_id, first_name, last_name, birth_date, relationship)
+        result = self.hm_repo.update_member(
+            member_id, first_name, last_name, birth_date, relationship, category_id
+        )
         if result:
             self.audit_repo.log(
                 user_id=Session.get_user_id(),

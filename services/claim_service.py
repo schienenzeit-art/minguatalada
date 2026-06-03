@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, UTC
 from typing import Optional, Dict, List
 
 from app.ports import ClaimRepositoryPort, ExpenseRepositoryPort, IncomeRepositoryPort
@@ -159,7 +159,7 @@ class ClaimService:
             has_housing_benefit=has_housing_benefit,
         )
 
-        evaluation_date = datetime.utcnow().isoformat()
+        evaluation_date = datetime.now(UTC).isoformat()
 
         self.claim_repository.update_claim_evaluation(
             claim_id=claim_id,
@@ -268,7 +268,7 @@ class ClaimService:
             return None
 
         created_by = created_by or Session.get_user_id() or source.get("user_id", 1)
-        year = datetime.utcnow().year
+        year = datetime.now(UTC).year
         prefix = "AS"
         try:
             prefix = str(self.settings_service.get("CASE_NUMBER_PREFIX", "AS") or "AS")

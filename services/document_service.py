@@ -5,7 +5,7 @@ import mimetypes
 import re
 import shutil
 import uuid
-from datetime import datetime
+from datetime import datetime, UTC
 from pathlib import Path
 from typing import Dict, List, Optional
 
@@ -142,7 +142,7 @@ class DocumentService:
         mime_type, _ = mimetypes.guess_type(target_path.name)
         mime_type = mime_type or "application/octet-stream"
         file_size = target_path.stat().st_size
-        now = datetime.utcnow().isoformat()
+        now = datetime.now(UTC).isoformat()
 
         document_id = self.repository.create_document(
             title=title.strip() or source_path.stem,
@@ -197,11 +197,11 @@ class DocumentService:
     def _build_storage_path(self, original_name: str, document_type_name: str) -> tuple[Path, str]:
         safe_type = self._sanitize_component(document_type_name)
         safe_base = self._sanitize_component(Path(original_name).stem)
-        timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+        timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
         unique_id = uuid.uuid4().hex[:8]
         suffix = Path(original_name).suffix
         file_name = f"{timestamp}_{unique_id}_{safe_base}{suffix}"
-        storage_path = Path(safe_type) / datetime.utcnow().strftime("%Y") / file_name
+        storage_path = Path(safe_type) / datetime.now(UTC).strftime("%Y") / file_name
         return storage_path, file_name
 
     def _sanitize_component(self, value: str) -> str:

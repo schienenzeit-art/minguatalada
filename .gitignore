@@ -1,6 +1,35 @@
+# Python
 .venv/
+venv/
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+
+# Datenbank & Nutzerdaten (pro Gerät, nie einchecken)
 data/*.db
+data/backups/
+data/documents/
+data/pdfs/
+data/excel/
+data/updates/
+data/logs/
+
+# Build-Artefakte
+build/
+dist/
+*.spec.bak
+
+# IDE
 .vscode/
 .idea/
+
+# Node (nur für lokale Tooling-Tools)
+node_modules/
+
+# Windows
+Thumbs.db
+Desktop.ini
+
+# Pytest
+.pytest_cache/

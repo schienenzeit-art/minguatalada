@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, UTC
 from typing import Dict, Optional
 
 from app.ports import CaseRepositoryPort, CategoryRepositoryPort, LocationRepositoryPort, PersonRepositoryPort
@@ -33,7 +33,7 @@ class CaseService:
 
     def generate_case_number(self) -> str:
         prefix = self._get_prefix()
-        year = datetime.utcnow().year
+        year = datetime.now(UTC).year
         last_case_number = self.case_repo.get_last_case_number_for_year(year, prefix)
 
         if last_case_number:

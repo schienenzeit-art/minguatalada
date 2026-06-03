@@ -1,9 +1,11 @@
+import logging
+import logging.handlers
 import sys
 from pathlib import Path
 
 from PyQt6.QtWidgets import QApplication, QDialog
 
-from app.config import WINDOW_WIDTH, WINDOW_HEIGHT
+from app.config import WINDOW_WIDTH, WINDOW_HEIGHT, DATA_DIR
 from app.container import build_service_container
 from core.constants import APP_TITLE
 from core.session import Session
@@ -11,6 +13,45 @@ from database.db import initialize_database
 
 from ui.login.login_window import LoginWindow
 from ui.shell.main_window import MainWindow
+
+
+def setup_logging() -> None:
+    """Richtet das zentrale Logging ein: RotatingFileHandler + Console."""
+    log_dir = Path(DATA_DIR) / "logs"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    log_file = log_dir / "app.log"
+
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.INFO)
+
+    # Bereits konfiguriert (z. B. in Tests)? Handler nicht doppelt hinzufügen.
+    if root_logger.handlers:
+        return
+
+    fmt = logging.Formatter(
+        "%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
+
+    # Rotierende Logdatei: max 2 MB, 5 Backups → max ~10 MB
+    file_handler = logging.handlers.RotatingFileHandler(
+        log_file,
+        maxBytes=2 * 1024 * 1024,
+        backupCount=5,
+        encoding="utf-8",
+    )
+    file_handler.setFormatter(fmt)
+    file_handler.setLevel(logging.INFO)
+    root_logger.addHandler(file_handler)
+
+    # Console (nur für Entwicklungsmodus, nicht im Frozen-Bundle nötig)
+    if not getattr(sys, "frozen", False):
+        console = logging.StreamHandler()
+        console.setFormatter(fmt)
+        console.setLevel(logging.DEBUG)
+        root_logger.addHandler(console)
+
+    logging.getLogger(__name__).info("Logging initialisiert — Log-Datei: %s", log_file)
 
 
 def load_theme() -> str:
@@ -33,6 +74,7 @@ def _app_icon():
 
 
 def run_app() -> None:
+    setup_logging()
     initialize_database()
 
     app = QApplication(sys.argv)

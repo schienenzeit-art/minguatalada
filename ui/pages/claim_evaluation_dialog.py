@@ -47,6 +47,10 @@ class ClaimEvaluationDialog(QDialog):
         self.current_evaluation = None
         self.claim = None
         self._lock_state: dict = {"locked": False}
+        # Datenverlust-Schutz: True sobald eine Prüfung gestartet wurde,
+        # False sobald die Prüfung gespeichert (apply_status) wurde.
+        self._evaluation_started = False
+        self._saved = False
 
         self.setWindowTitle("Anspruchsprüfung")
         self.setMinimumWidth(1000)
@@ -372,27 +376,40 @@ class ClaimEvaluationDialog(QDialog):
         return self.housing_benefit_check.isChecked()
 
     def evaluate_claim(self) -> None:
-        incomes = {k: self._parse_float(v) for k, v in self.income_fields.items()}
-        expenses = {k: float(amount.text().strip() or 0) for k, (amount, _, _) in self.expense_fields.items()}
+        # Ab jetzt gilt die Prüfung als gestartet → Schließen wird abgesichert.
+        self._evaluation_started = True
+        try:
+            incomes = {k: self._parse_float(v) for k, v in self.income_fields.items()}
+            expenses = {k: float(amount.text().strip() or 0) for k, (amount, _, _) in self.expense_fields.items()}
 
-        category = self.category_combo.currentText()
-        disability_degree = (
-            self.disability_degree_input.value()
-            if category == "Menschen mit Beeinträchtigung"
-            else None
-        )
+            category = self.category_combo.currentText()
+            disability_degree = (
+                self.disability_degree_input.value()
+                if category == "Menschen mit Beeinträchtigung"
+                else None
+            )
 
-        has_housing_benefit = self._get_has_housing_benefit()
+            has_housing_benefit = self._get_has_housing_benefit()
 
-        evaluation = self.claim_service.evaluate_claim(
-            incomes=incomes,
-            expenses=expenses,
-            adult_count=self.adult_count_input.value(),
-            child_count=self.child_count_input.value(),
-            category=category,
-            disability_degree=disability_degree,
-            has_housing_benefit=has_housing_benefit,
-        )
+            evaluation = self.claim_service.evaluate_claim(
+                incomes=incomes,
+                expenses=expenses,
+                adult_count=self.adult_count_input.value(),
+                child_count=self.child_count_input.value(),
+                category=category,
+                disability_degree=disability_degree,
+                has_housing_benefit=has_housing_benefit,
+            )
+        except Exception as exc:
+            # Niemals den Dialog wegen eines Auswertungsfehlers schließen –
+            # eingegebene Daten bleiben erhalten.
+            QMessageBox.critical(
+                self,
+                "Fehler bei der Auswertung",
+                f"Die Prüfung konnte nicht berechnet werden. Ihre Eingaben bleiben erhalten.\n\n{exc}",
+            )
+            self.status_label.setText("Auswertung fehlgeschlagen – Eingaben unverändert.")
+            return
 
         self.current_evaluation = evaluation
         status_text = evaluation["status"]
@@ -427,6 +444,50 @@ class ClaimEvaluationDialog(QDialog):
 
         self.status_label.setText("Auswertung abgeschlossen. Status kann übernommen werden.")
         self.apply_status_button.setEnabled(True)
+
+    # ── Datenverlust-Schutz ───────────────────────────────────────────────
+    def _has_user_input(self) -> bool:
+        """True, wenn der Nutzer Werte eingegeben hat, die beim Schließen verloren gingen."""
+        for widget in self.income_fields.values():
+            text = widget.text().strip()
+            if text and text not in ("0", "0.0", "0.00"):
+                return True
+        for amount, proof, note in self.expense_fields.values():
+            text = amount.text().strip()
+            if text and text not in ("0", "0.0", "0.00"):
+                return True
+            if proof.isChecked() or note.text().strip():
+                return True
+        return False
+
+    def _confirm_discard(self) -> bool:
+        """Fragt vor dem Schließen nach, wenn eine Prüfung läuft oder Daten erfasst wurden."""
+        if self._saved:
+            return True
+        if not self._evaluation_started and not self._has_user_input():
+            return True
+        answer = QMessageBox.question(
+            self,
+            "Prüfung schließen?",
+            "Es liegen nicht gespeicherte Prüfungsdaten vor.\n\n"
+            "Wenn Sie jetzt schließen, gehen die eingegebenen Werte verloren.\n"
+            "Möchten Sie die Prüfung wirklich schließen?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        )
+        return answer == QMessageBox.StandardButton.Yes
+
+    def reject(self) -> None:
+        # Fängt Escape-Taste und den "Schließen"-Button ab.
+        if self._confirm_discard():
+            super().reject()
+
+    def closeEvent(self, event) -> None:
+        # Fängt das Schließen über das Fenster-X ab.
+        if self._confirm_discard():
+            event.accept()
+        else:
+            event.ignore()
 
     def _apply_status_style(self, status: str) -> None:
         if status == "ANSPRUCHSBERECHTIGT":
@@ -528,6 +589,8 @@ class ClaimEvaluationDialog(QDialog):
             return
 
         updated_claim = self.claim_service.get_claim_by_id(self.claim_id)
+        # Prüfung wurde gespeichert → Schließen ist jetzt gefahrlos.
+        self._saved = True
         self.accept()
 
         # ── PostEvaluationPanel: Folgeaktionen direkt nach Prüfung ────────────

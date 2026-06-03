@@ -1,7 +1,7 @@
 ﻿import sqlite3
 from contextlib import contextmanager
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, UTC
 
 from app.config import DATA_DIR, DB_PATH
 from core.claim_status import ClaimStatus
@@ -337,7 +337,7 @@ def initialize_database() -> None:
         # Assign case numbers to existing claims that don't have one
         try:
             rows = connection.execute("SELECT id, case_number FROM claims ORDER BY id").fetchall()
-            year = datetime.utcnow().year
+            year = datetime.now(UTC).year
             for row in rows:
                 if not row["case_number"]:
                     # find last existing sequence for this year
@@ -1006,6 +1006,16 @@ def initialize_database() -> None:
         except Exception:
             pass
 
+        # ── Migration: Haushaltsmitglieder-Kategorien ─────────────────────────
+        try:
+            if not has_column('household_members', 'category_id'):
+                connection.execute(
+                    "ALTER TABLE household_members ADD COLUMN category_id INTEGER REFERENCES categories(id)"
+                )
+                connection.commit()
+        except Exception:
+            pass
+
 
 def seed_basic_data(connection: sqlite3.Connection) -> None:
     locations = [
@@ -1069,29 +1079,6 @@ def seed_basic_data(connection: sqlite3.Connection) -> None:
         )
         connection.commit()
 
-    employee_exists = connection.execute("SELECT id FROM users WHERE username = 'mitarbeiter1'").fetchone()
-    if not employee_exists:
-        connection.execute(
-            """
-            INSERT INTO users (
-                full_name, username, password_hash, role_id, location_id, is_active
-            ) VALUES (
-                ?, ?, ?,
-                (SELECT id FROM roles WHERE name = ?),
-                (SELECT id FROM locations WHERE name = ?),
-                1
-            )
-            """,
-            (
-                "Max Mitarbeiter",
-                "mitarbeiter1",
-                PasswordService.hash_password("Mitarbeiter2024!"),
-                "Mitarbeiter",
-                "Feldkirch",
-            ),
-        )
-        connection.commit()
-
     # Migration: admin der durch ältere Versionen deaktiviert angelegt wurde, reaktivieren
     try:
         inactive = connection.execute(
@@ -1108,18 +1095,40 @@ def seed_basic_data(connection: sqlite3.Connection) -> None:
         pass
 
     if in_pytest:
+        # Testbenutzer temporär anlegen damit Integrationstests funktionieren
         try:
             connection.execute(
                 "UPDATE users SET password_hash = ?, is_active = 1, failed_attempts = 0, locked_until = NULL WHERE username = ?",
                 (PasswordService.hash_password("admin123"), "admin"),
             )
-            connection.execute(
-                "UPDATE users SET is_active = 1, failed_attempts = 0, locked_until = NULL WHERE username = ?",
-                ("mitarbeiter1",),
-            )
             connection.commit()
         except Exception:
             pass
+        test_worker = connection.execute("SELECT id FROM users WHERE username = 'mitarbeiter1'").fetchone()
+        if not test_worker:
+            try:
+                connection.execute(
+                    """
+                    INSERT INTO users (
+                        full_name, username, password_hash, role_id, location_id, is_active
+                    ) VALUES (
+                        ?, ?, ?,
+                        (SELECT id FROM roles WHERE name = ?),
+                        (SELECT id FROM locations WHERE name = ?),
+                        1
+                    )
+                    """,
+                    (
+                        "Max Mitarbeiter",
+                        "mitarbeiter1",
+                        PasswordService.hash_password("Mitarbeiter2024!"),
+                        "Mitarbeiter",
+                        "Feldkirch",
+                    ),
+                )
+                connection.commit()
+            except Exception:
+                pass
 
     connection.commit()
     seed_document_types(connection)
@@ -1208,13 +1217,13 @@ def seed_claims(connection: sqlite3.Connection) -> None:
     # Simple seed claims to allow UI to show examples
     example_claims = [
         {
-            "username": "mitarbeiter1",
-            "location": "Feldkirch",
+            "username": "admin",
+            "location": "Bludenz",
             "status": ClaimStatus.IN_PRUEFUNG,
             "description": "Erstmalige Beantragung von Unterstützung im Mai 2026.",
             "start_date": "2026-05-01",
             "end_date": "2026-05-31",
-            "created_by": "mitarbeiter1",
+            "created_by": "admin",
         }
     ]
 
@@ -1228,7 +1237,7 @@ def seed_claims(connection: sqlite3.Connection) -> None:
             continue
 
         # generate a simple case number
-        year = datetime.utcnow().year
+        year = datetime.now(UTC).year
         last = connection.execute(
             "SELECT case_number FROM claims WHERE case_number LIKE ? ORDER BY case_number DESC LIMIT 1",
             (f"AS-{year}-%",),

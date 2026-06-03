@@ -129,10 +129,13 @@ class CaseCreateDialog(QDialog):
         hh_info.setStyleSheet("color: #52606d;")
         household_layout.addWidget(hh_info)
 
-        self.household_table = QTableWidget(0, 4)
-        self.household_table.setHorizontalHeaderLabels(["Nachname", "Vorname", "Geburtsdatum", "Beziehung"])
+        self.household_table = QTableWidget(0, 5)
+        self.household_table.setHorizontalHeaderLabels(
+            ["Nachname", "Vorname", "Geburtsdatum", "Beziehung", "Kategorie (Erwachsene)"]
+        )
         self.household_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
         self.household_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
+        self.household_table.horizontalHeader().setSectionResizeMode(4, QHeaderView.ResizeMode.Stretch)
         self.household_table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.household_table.setFixedHeight(180)
         household_layout.addWidget(self.household_table)
@@ -385,14 +388,34 @@ class CaseCreateDialog(QDialog):
         bd.setDisplayFormat("dd.MM.yyyy")
         bd.setDate(QDate.currentDate().addYears(-10))
         rel = QComboBox()
+        ADULT_RELATIONSHIPS = {"Ehepartner", "Lebenspartner", "Elternteil", "Geschwister", "Sonstiges"}
         rel.addItems([
             "Ehepartner", "Lebenspartner", "Kind", "Stiefkind", "Pflegekind",
             "Elternteil", "Geschwister", "Sonstiges",
         ])
+
+        # Kategorie-Auswahl nur für Erwachsene
+        from domain.categories import CATEGORIES
+        cat = QComboBox()
+        cat.addItem("(keine)")
+        cat.addItems(CATEGORIES)
+        cat_label = __import__('PyQt6.QtWidgets', fromlist=['QLabel']).QLabel("Kategorie (Erwachsene)")
+
+        def _update_cat_visibility(text: str) -> None:
+            is_adult = text in ADULT_RELATIONSHIPS
+            cat.setEnabled(is_adult)
+            cat_label.setEnabled(is_adult)
+            if not is_adult:
+                cat.setCurrentIndex(0)
+
+        rel.currentTextChanged.connect(_update_cat_visibility)
+        _update_cat_visibility(rel.currentText())
+
         form.addRow("Nachname", ln)
         form.addRow("Vorname", fn)
         form.addRow("Geburtsdatum", bd)
         form.addRow("Beziehung", rel)
+        form.addRow(cat_label, cat)
         btns = QDialogButtonBox = __import__('PyQt6.QtWidgets', fromlist=['QDialogButtonBox']).QDialogButtonBox
         btn_box = btns(btns.StandardButton.Ok | btns.StandardButton.Cancel)
         btn_box.accepted.connect(dlg.accept)
@@ -403,12 +426,14 @@ class CaseCreateDialog(QDialog):
         dlg.setLayout(layout)
 
         if dlg.exec():
+            category_text = cat.currentText() if cat.currentText() != "(keine)" else ""
             row = self.household_table.rowCount()
             self.household_table.insertRow(row)
             self.household_table.setItem(row, 0, QTableWidgetItem(ln.text().strip()))
             self.household_table.setItem(row, 1, QTableWidgetItem(fn.text().strip()))
             self.household_table.setItem(row, 2, QTableWidgetItem(bd.date().toString("yyyy-MM-dd")))
             self.household_table.setItem(row, 3, QTableWidgetItem(rel.currentText()))
+            self.household_table.setItem(row, 4, QTableWidgetItem(category_text))
 
     def _on_remove_household_member(self) -> None:
         row = self.household_table.currentRow()
@@ -418,18 +443,26 @@ class CaseCreateDialog(QDialog):
     def _save_household_members(self, claim_id: int) -> None:
         try:
             from services.household_service import HouseholdService
+            from database.repositories.category_repository import CategoryRepository
             svc = HouseholdService()
+            cat_repo = CategoryRepository()
+            # Kategorie-Name → ID-Mapping (nur einmal laden)
+            all_cats = {c["name"]: c["id"] for c in cat_repo.list_all()}
             for row in range(self.household_table.rowCount()):
                 ln = self.household_table.item(row, 0)
                 fn = self.household_table.item(row, 1)
                 bd = self.household_table.item(row, 2)
                 rel = self.household_table.item(row, 3)
+                cat_item = self.household_table.item(row, 4)
+                cat_name = cat_item.text().strip() if cat_item else ""
+                category_id = all_cats.get(cat_name) if cat_name else None
                 svc.add_member(
                     claim_id=claim_id,
                     first_name=fn.text() if fn else "",
                     last_name=ln.text() if ln else "",
                     birth_date=bd.text() if bd else None,
                     relationship=rel.text() if rel else "Sonstiges",
+                    category_id=category_id,
                 )
         except Exception as e:
             print(f"Haushaltsmitglieder konnten nicht gespeichert werden: {e}")

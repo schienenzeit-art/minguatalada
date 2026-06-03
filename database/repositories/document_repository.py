@@ -107,8 +107,8 @@ class DocumentRepository:
         with get_connection() as connection:
             archived_at = None
             if status == "ARCHIVIERT":
-                from datetime import datetime
-                archived_at = datetime.utcnow().isoformat()
+                from datetime import datetime, UTC
+                archived_at = datetime.now(UTC).isoformat()
             
             cursor = connection.execute(
                 "UPDATE documents SET status = ?, archived_at = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",

@@ -16,16 +16,19 @@ class HouseholdMemberRepository:
         relationship: str,
         is_primary: bool = False,
         person_id: Optional[int] = None,
+        category_id: Optional[int] = None,
     ) -> Optional[int]:
         try:
             with get_connection() as conn:
                 cur = conn.execute(
                     """
                     INSERT INTO household_members
-                        (claim_id, person_id, first_name, last_name, birth_date, relationship, is_primary)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                        (claim_id, person_id, first_name, last_name, birth_date,
+                         relationship, is_primary, category_id)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                     """,
-                    (claim_id, person_id, first_name, last_name, birth_date, relationship, 1 if is_primary else 0),
+                    (claim_id, person_id, first_name, last_name, birth_date,
+                     relationship, 1 if is_primary else 0, category_id),
                 )
                 conn.commit()
                 return cur.lastrowid
@@ -37,11 +40,13 @@ class HouseholdMemberRepository:
         with get_connection() as conn:
             rows = conn.execute(
                 """
-                SELECT id, claim_id, person_id, first_name, last_name, birth_date,
-                       relationship, is_primary, created_at
-                FROM household_members
-                WHERE claim_id = ?
-                ORDER BY is_primary DESC, last_name ASC, first_name ASC
+                SELECT hm.id, hm.claim_id, hm.person_id, hm.first_name, hm.last_name,
+                       hm.birth_date, hm.relationship, hm.is_primary, hm.created_at,
+                       hm.category_id, c.name AS category_name
+                FROM household_members hm
+                LEFT JOIN categories c ON hm.category_id = c.id
+                WHERE hm.claim_id = ?
+                ORDER BY hm.is_primary DESC, hm.last_name ASC, hm.first_name ASC
                 """,
                 (claim_id,),
             ).fetchall()
@@ -50,7 +55,13 @@ class HouseholdMemberRepository:
     def get_member(self, member_id: int) -> Optional[dict]:
         with get_connection() as conn:
             row = conn.execute(
-                "SELECT * FROM household_members WHERE id = ?", (member_id,)
+                """
+                SELECT hm.*, c.name AS category_name
+                FROM household_members hm
+                LEFT JOIN categories c ON hm.category_id = c.id
+                WHERE hm.id = ?
+                """,
+                (member_id,),
             ).fetchone()
         return dict(row) if row else None
 
@@ -61,6 +72,7 @@ class HouseholdMemberRepository:
         last_name: str,
         birth_date: Optional[str],
         relationship: str,
+        category_id: Optional[int] = None,
     ) -> bool:
         try:
             with get_connection() as conn:
@@ -68,10 +80,10 @@ class HouseholdMemberRepository:
                     """
                     UPDATE household_members
                     SET first_name=?, last_name=?, birth_date=?, relationship=?,
-                        updated_at=CURRENT_TIMESTAMP
+                        category_id=?, updated_at=CURRENT_TIMESTAMP
                     WHERE id=?
                     """,
-                    (first_name, last_name, birth_date, relationship, member_id),
+                    (first_name, last_name, birth_date, relationship, category_id, member_id),
                 )
                 conn.commit()
                 return cur.rowcount > 0
