@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from PyQt6.QtWidgets import (
+    QApplication,
     QDialog,
     QVBoxLayout,
     QHBoxLayout,
@@ -47,7 +48,15 @@ class CaseCreateDialog(QDialog):
         self.setWindowFlags(flags)
         # Allow resizing and sensible default size
         self.setMinimumSize(720, 480)
-        self.resize(900, 700)
+        screen = QApplication.primaryScreen()
+        if screen:
+            geo = screen.availableGeometry()
+            self.resize(
+                min(1200, int(geo.width() * 0.85)),
+                min(840, int(geo.height() * 0.85)),
+            )
+        else:
+            self.resize(900, 700)
 
         self.case_service = case_service or CaseService()
         self.claim_service = claim_service or ClaimService()
@@ -108,26 +117,24 @@ class CaseCreateDialog(QDialog):
         person_form.addRow("Adresse", self.address)
         person_form.addRow("PLZ", self.postal_code)
         person_form.addRow("Ort", self.city)
-        person_form.addRow("E-Mail-Adresse", self.email)
+        person_form.addRow("E-Mail-Adresse (optional)", self.email)
         person_form.addRow("Kategorie", self.category_combo)
         person_form.addRow("Standort", self.location_combo)
 
         person_card.setLayout(person_form)
-        content_layout.addWidget(person_card)
+        # person_card wird weiter unten im side-by-side body_row eingefügt
 
-        # Haushaltsmitglieder-Bereich (Anforderungen 11 + 12)
-        self.household_card = QGroupBox("Alle im Haushalt lebenden Personen")
+        # Haushaltsmitglieder-Bereich (Familie + Pensionist)
+        self.household_card = QGroupBox("Haushaltsmitglieder")
         self.household_card.setVisible(False)
         household_layout = QVBoxLayout()
         household_layout.setSpacing(10)
 
-        hh_info = QLabel(
-            "Kategorie 'Familie': Bitte alle Haushaltsmitglieder erfassen "
-            "(Name, Vorname, Geburtsdatum, Beziehung)."
-        )
-        hh_info.setWordWrap(True)
-        hh_info.setStyleSheet("color: #52606d;")
-        household_layout.addWidget(hh_info)
+        # Info-Text wird in _on_category_changed dynamisch gesetzt
+        self.hh_info = QLabel("")
+        self.hh_info.setWordWrap(True)
+        self.hh_info.setStyleSheet("color: #52606d;")
+        household_layout.addWidget(self.hh_info)
 
         self.household_table = QTableWidget(0, 5)
         self.household_table.setHorizontalHeaderLabels(
@@ -137,7 +144,7 @@ class CaseCreateDialog(QDialog):
         self.household_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
         self.household_table.horizontalHeader().setSectionResizeMode(4, QHeaderView.ResizeMode.Stretch)
         self.household_table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
-        self.household_table.setFixedHeight(180)
+        self.household_table.setMinimumHeight(160)
         household_layout.addWidget(self.household_table)
 
         hh_btn_row = QHBoxLayout()
@@ -149,9 +156,16 @@ class CaseCreateDialog(QDialog):
         hh_btn_row.addWidget(self.remove_hh_btn)
         hh_btn_row.addStretch()
         household_layout.addLayout(hh_btn_row)
+        household_layout.addStretch()
 
         self.household_card.setLayout(household_layout)
-        content_layout.addWidget(self.household_card)
+
+        # Side-by-side: Person links, Haushalt rechts (wird sichtbar wenn Kategorie es erfordert)
+        body_row = QHBoxLayout()
+        body_row.setSpacing(16)
+        body_row.addWidget(person_card, 1)
+        body_row.addWidget(self.household_card, 1)
+        content_layout.addLayout(body_row)
 
         self.category_combo.currentTextChanged.connect(self._on_category_changed)
 
@@ -309,13 +323,23 @@ class CaseCreateDialog(QDialog):
             (self.address, "Adresse"),
             (self.postal_code, "PLZ"),
             (self.city, "Ort"),
-            (self.email, "E-Mail"),
         ]
 
         for widget, label in required:
             if not widget.text().strip():
                 QMessageBox.warning(self, "Pflichtfeld fehlt", f"Bitte '{label}' ausfüllen.")
                 return
+
+        # E-Mail ist optional; wenn angegeben, Mindest-Formatprüfung
+        email_val = self.email.text().strip()
+        if email_val and "@" not in email_val:
+            QMessageBox.warning(
+                self,
+                "Ungültige E-Mail",
+                "Die eingegebene E-Mail-Adresse ist ungültig.\n"
+                "Bitte korrigieren oder das Feld leer lassen.",
+            )
+            return
 
         person = {
             "first_name": self.first_name.text().strip(),
@@ -358,8 +382,8 @@ class CaseCreateDialog(QDialog):
             except Exception:
                 pass
 
-        # Haushaltsmitglieder speichern (nur wenn Familie-Kategorie)
-        if self.category_combo.currentText() == "Familie":
+        # Haushaltsmitglieder speichern (Familie: alle; Pensionist: optional)
+        if self.category_combo.currentText() in ("Familie", "Pensionist"):
             self._save_household_members(result["id"])
 
         QMessageBox.information(self, "Erfolg", "Person, Fall und ggf. Dokumente wurden angelegt.")
@@ -370,8 +394,18 @@ class CaseCreateDialog(QDialog):
         return Session.get_user_id()
 
     def _on_category_changed(self, category_text: str) -> None:
-        is_family = (category_text == "Familie")
-        self.household_card.setVisible(is_family)
+        show_household = category_text in ("Familie", "Pensionist")
+        self.household_card.setVisible(show_household)
+        if category_text == "Familie":
+            self.hh_info.setText(
+                "Bitte alle im Haushalt lebenden Personen erfassen "
+                "(Name, Vorname, Geburtsdatum, Beziehung)."
+            )
+        elif category_text == "Pensionist":
+            self.hh_info.setText(
+                "Optional: Weitere Haushaltsmitglieder können erfasst werden "
+                "(z. B. Ehepartner, Mitbewohner). Keine Pflicht."
+            )
 
     def _on_add_household_member(self) -> None:
         from ui.pages.personal.staff_form_dialog import StaffFormDialog
