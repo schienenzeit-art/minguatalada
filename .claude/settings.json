@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -iE \"\\\\.\\(db|log|env|key|pem|secret|password|credentials|sqlite\\)$|settings\\\\.json|\\\\.env\")",
+      "Bash(git ls-files *)"
+    ]
+  }
+}

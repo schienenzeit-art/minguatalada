@@ -9,7 +9,7 @@ from app.config import WINDOW_WIDTH, WINDOW_HEIGHT, DATA_DIR
 from app.container import build_service_container
 from core.constants import APP_TITLE
 from core.session import Session
-from database.db import initialize_database
+from database.db import initialize_database, check_database_health
 
 from ui.login.login_window import LoginWindow
 from ui.shell.main_window import MainWindow
@@ -81,6 +81,19 @@ def run_app() -> None:
     app.setApplicationName(APP_TITLE)
     app.setWindowIcon(_app_icon())
     app.setStyleSheet(load_theme())
+
+    ok, health_messages = check_database_health()
+    if not ok:
+        from PyQt6.QtWidgets import QMessageBox
+        detail = "\n".join(f"• {m}" for m in health_messages)
+        QMessageBox.critical(
+            None,
+            "Datenbankfehler — Min Guata Lada",
+            f"Die Datenbank ist beschädigt oder nicht erreichbar:\n\n{detail}\n\n"
+            "Bitte ein Backup über die Einstellungen wiederherstellen\n"
+            "oder den Support kontaktieren.",
+        )
+        sys.exit(1)
 
     service_container = build_service_container()
     login_window = LoginWindow(auth_service=service_container.auth_service)

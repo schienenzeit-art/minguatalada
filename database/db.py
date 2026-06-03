@@ -1,4 +1,5 @@
-﻿import sqlite3
+﻿import logging
+import sqlite3
 from contextlib import contextmanager
 from pathlib import Path
 from datetime import datetime, UTC
@@ -7,6 +8,8 @@ from app.config import DATA_DIR, DB_PATH
 from core.claim_status import ClaimStatus
 from services.password_service import PasswordService
 from domain.categories import CATEGORIES
+
+logger = logging.getLogger(__name__)
 
 
 def ensure_data_dir() -> None:
@@ -24,10 +27,67 @@ def get_connection() -> sqlite3.Connection:
         connection.close()
 
 
+def check_database_health() -> tuple[bool, list[str]]:
+    """
+    Prüft beim Start ob die Datenbank erreichbar, konsistent und korrekt
+    konfiguriert ist. Gibt (ok, meldungen) zurück. Bei ok=False ist die
+    Anwendung nicht sicher startbar.
+    """
+    messages: list[str] = []
+    try:
+        with get_connection() as conn:
+            # 1. Erreichbarkeit: bereits durch get_connection() sichergestellt
+
+            # 2. Foreign Keys aktiv?
+            fk_row = conn.execute("PRAGMA foreign_keys").fetchone()
+            if not fk_row or fk_row[0] != 1:
+                msg = "PRAGMA foreign_keys ist nicht aktiv — referentielle Integrität nicht gewährleistet."
+                messages.append(msg)
+                logger.warning("Healthcheck: %s", msg)
+
+            # 3. WAL-Modus aktiv?
+            jm_row = conn.execute("PRAGMA journal_mode").fetchone()
+            if jm_row and jm_row[0].lower() != "wal":
+                msg = f"Journal-Modus ist '{jm_row[0]}', erwartet 'wal'."
+                messages.append(msg)
+                logger.warning("Healthcheck: %s", msg)
+
+            # 4. Integritätsprüfung
+            rows = conn.execute("PRAGMA integrity_check").fetchall()
+            results = [r[0] for r in rows]
+            if results != ["ok"]:
+                detail = "; ".join(results[:5])
+                msg = f"Integritätsfehler: {detail}"
+                messages.append(msg)
+                logger.error("Healthcheck: %s", msg)
+                return False, messages
+
+    except Exception as exc:
+        msg = f"Datenbank nicht erreichbar: {exc}"
+        messages.append(msg)
+        logger.critical("Healthcheck fehlgeschlagen: %s", exc)
+        return False, messages
+
+    if not any(m.startswith("Integrit") for m in messages):
+        logger.info("Healthcheck OK — WAL, FK, Integrität geprüft.")
+
+    critical = [m for m in messages if "Integrit" in m or "nicht erreichbar" in m]
+    return len(critical) == 0, messages
+
+
 def initialize_database() -> None:
     ensure_data_dir()
 
     with get_connection() as connection:
+        # WAL-Modus einmalig aktivieren; bleibt persistent in der DB-Datei gespeichert.
+        # Vorteile: bessere Schreib-Performance, crash-sichere Commits,
+        # Lesezugriffe blockieren keine Schreibvorgänge.
+        result = connection.execute("PRAGMA journal_mode=WAL").fetchone()
+        if result and result[0].lower() == "wal":
+            logger.debug("WAL-Modus aktiv.")
+        else:
+            logger.warning("WAL-Modus konnte nicht aktiviert werden (journal_mode=%s).", result[0] if result else "?")
+
         connection.executescript(
             """
             CREATE TABLE IF NOT EXISTS locations (
