@@ -40,14 +40,14 @@ _ABSENDER_CITY   = "Vandans"
 class PDFService:
     def __init__(
         self,
-        claim_service: ClaimService | None = None,
+        claim_service: ClaimService,
         card_service: CardService | None = None,
         document_service: DocumentService | None = None,
         report_service: ReportService | None = None,
     ):
         self.document_service = document_service or DocumentService()
         self.person_repository = PersonRepository()
-        self.claim_service = claim_service or ClaimService()
+        self.claim_service = claim_service
         self.card_service = card_service or CardService()
         self.report_service = report_service or ReportService()
 

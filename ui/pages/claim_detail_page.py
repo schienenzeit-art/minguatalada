@@ -42,7 +42,8 @@ class ClaimDetailPage(QDialog):
         flags |= Qt.WindowType.WindowMaximizeButtonHint
         self.setWindowFlags(flags)
         self.claim_id = claim_id
-        self.claim_service = claim_service or ClaimService()
+        from services.service_factory import default_claim_service
+        self.claim_service = claim_service or default_claim_service()
         self.card_service = card_service or CardService()
         self.claim = None
         self.setup_ui()

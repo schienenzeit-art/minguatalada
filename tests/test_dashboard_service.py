@@ -9,10 +9,13 @@ class DashboardServiceTest(unittest.TestCase):
         self.claim_service = MagicMock()
         self.card_service = MagicMock()
         self.location_service = MagicMock()
+        self.task_service = MagicMock()
+        self.task_service.count_open_tasks.return_value = 0
         self.dashboard_service = DashboardService(
             claim_service=self.claim_service,
             card_service=self.card_service,
             location_service=self.location_service,
+            task_service=self.task_service,
         )
 
     def test_get_kpi_items_returns_clickable_metrics(self):

@@ -34,6 +34,7 @@ class DocumentPackageService:
         self._tpl = template_service or DocumentTemplateService()
 
     def _get_pdf(self):
+        # TODO Sprint 2: Lazy-Getter entfernen, pdf_service required im __init__ injizieren
         if self._pdf is None:
             from services.pdf_service import PDFService
             self._pdf = PDFService()
@@ -105,13 +106,10 @@ class DocumentPackageService:
     def build_package_for_claim_id(
         self,
         claim_id: int,
-        claim_service=None,
+        claim_service,
         template_id: int | None = None,
         include_protocol: bool | None = None,
     ) -> list[str]:
-        if claim_service is None:
-            from services.claim_service import ClaimService
-            claim_service = ClaimService()
         claim = claim_service.get_claim_by_id(claim_id)
         if not claim:
             raise ValueError(f"Antrag {claim_id} nicht gefunden.")

@@ -8,6 +8,7 @@ from database.repositories.claim_repository import ClaimRepository
 from database.repositories.claim_note_repository import ClaimNoteRepository
 from database.repositories.income_repository import IncomeRepository
 from database.repositories.expense_repository import ExpenseRepository
+from domain.types import ClaimSnapshot
 from services.pruefung_service import PruefungService
 from services.settings_service import SettingsService
 
@@ -15,43 +16,25 @@ from services.settings_service import SettingsService
 class ClaimService:
     def __init__(
         self,
-        claim_repository: ClaimRepositoryPort | None = None,
-        income_repository: IncomeRepositoryPort | None = None,
-        expense_repository: ExpenseRepositoryPort | None = None,
+        claim_repository: ClaimRepositoryPort,
+        income_repository: IncomeRepositoryPort,
+        expense_repository: ExpenseRepositoryPort,
+        settings_service: SettingsService,
+        re_evaluation_service,
+        notification_service,
+        audit_service,
         evaluation_service: PruefungService | None = None,
-        settings_service: SettingsService | None = None,
-        re_evaluation_service=None,
-        notification_service=None,
-        audit_service=None,
     ):
-        self.claim_repository = claim_repository or ClaimRepository()
-        self.settings_service = settings_service or SettingsService()
+        self.claim_repository = claim_repository
+        self.settings_service = settings_service
         self._evaluation_service = evaluation_service
         self.pruefung_service = evaluation_service
-        self.income_repo = income_repository or IncomeRepository()
-        self.expense_repo = expense_repository or ExpenseRepository()
+        self.income_repo = income_repository
+        self.expense_repo = expense_repository
         self.note_repo = ClaimNoteRepository()
-        self._re_eval_svc = re_evaluation_service
-        self._notification_svc = notification_service
-        self._audit_svc = audit_service
-
-    def _get_re_eval_svc(self):
-        if self._re_eval_svc is None:
-            from services.re_evaluation_service import ReEvaluationService
-            self._re_eval_svc = ReEvaluationService()
-        return self._re_eval_svc
-
-    def _get_notification_svc(self):
-        if self._notification_svc is None:
-            from services.notification_service import NotificationService
-            self._notification_svc = NotificationService()
-        return self._notification_svc
-
-    def _get_audit_svc(self):
-        if self._audit_svc is None:
-            from services.audit_service import AuditService
-            self._audit_svc = AuditService()
-        return self._audit_svc
+        self.re_eval_svc = re_evaluation_service
+        self.notification_svc = notification_service
+        self.audit_svc = audit_service
 
     def _default_pruefung_service(self) -> PruefungService:
         return PruefungService(
@@ -75,6 +58,13 @@ class ClaimService:
         claim["incomes"] = self.income_repo.get_incomes(claim_id)
         claim["expenses"] = self.expense_repo.get_expenses(claim_id)
         return claim
+
+    def get_claim_snapshot(self, claim_id: int) -> Optional[ClaimSnapshot]:
+        """Typsicherer Abruf als ClaimSnapshot. Ersatz für get_claim_by_id() – schrittweise Migration."""
+        raw = self.claim_repository.get_claim_by_id(claim_id)
+        if raw is None:
+            return None
+        return ClaimSnapshot.from_dict(raw)
 
     def list_claims(
         self,
@@ -131,11 +121,10 @@ class ClaimService:
         has_housing_benefit: Optional[bool] = None,
     ) -> dict:
         # ── Prüfungssperre: Nur einmal pro Antrag für Mitarbeiter ─────────────
-        re_eval_svc = self._get_re_eval_svc()
         eval_count = self.claim_repository.get_evaluation_count(claim_id)
-        allowed, reason = re_eval_svc.can_evaluate(claim_id, eval_count)
+        allowed, reason = self.re_eval_svc.can_evaluate(claim_id, eval_count)
         if not allowed:
-            self._get_audit_svc().log(
+            self.audit_svc.log(
                 "evaluation_blocked", "claim", claim_id,
                 f"Prüfversuch blockiert für User {examiner_id}. Grund: {reason}"
             )
@@ -186,7 +175,7 @@ class ClaimService:
         # ── Bei Wiederholungsprüfung: genehmigte Freigabe verbrauchen ─────────
         if not is_first_evaluation:
             try:
-                re_eval_svc.consume_approved_request(claim_id)
+                self.re_eval_svc.consume_approved_request(claim_id)
             except Exception:
                 pass
 
@@ -207,7 +196,7 @@ class ClaimService:
         from core.claim_status import ClaimStatus
         status_display = ClaimStatus.get_display(evaluation.status)
         audit_action = "first_evaluation_completed" if is_first_evaluation else "re_evaluation_completed"
-        self._get_audit_svc().log(
+        self.audit_svc.log(
             audit_action, "claim", claim_id,
             f"Prüfer: {examiner_id} | Status: {status_display} | "
             f"Erstprüfung: {'Ja' if is_first_evaluation else 'Nein'}"
@@ -219,14 +208,14 @@ class ClaimService:
                 claim = self.claim_repository.get_claim_by_id(claim_id)
                 case_number   = (claim or {}).get("case_number", str(claim_id))
                 examiner_name = (claim or {}).get("examiner_name", f"User {examiner_id}")
-                self._get_notification_svc().notify_supervisors_first_evaluation_done(
+                self.notification_svc.notify_supervisors_first_evaluation_done(
                     case_number=case_number,
                     claim_id=claim_id,
                     examiner_name=examiner_name,
                     status_display=status_display,
                     evaluation_date=evaluation_date,
                 )
-                self._get_audit_svc().log(
+                self.audit_svc.log(
                     "supervisor_notified_after_first_evaluation", "claim", claim_id,
                     f"Supervisor benachrichtigt nach Erstprüfung von {case_number}."
                 )

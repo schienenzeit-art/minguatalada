@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import mimetypes
 import re
 import shutil
@@ -12,7 +11,6 @@ from typing import Dict, List, Optional
 from app.config import DOCUMENTS_DIR
 from core.document_status import DocumentStatus
 from core.session import Session
-from database.db import get_connection
 from database.repositories.document_repository import DocumentRepository
 from database.repositories.document_type_repository import DocumentTypeRepository
 
@@ -34,11 +32,20 @@ class DocumentService:
         self,
         repository: DocumentRepository | None = None,
         type_repository: DocumentTypeRepository | None = None,
+        audit_service=None,
     ):
         DOCUMENTS_DIR.mkdir(parents=True, exist_ok=True)
         self.repository = repository or DocumentRepository()
         self.type_repository = type_repository or DocumentTypeRepository()
+        self._audit_svc = audit_service
         self._seed_document_types()
+
+    def _get_audit_svc(self):
+        if self._audit_svc is None:
+            from services.audit_service import AuditService
+            from database.repositories.audit_repository import AuditRepository
+            self._audit_svc = AuditService(repo=AuditRepository())
+        return self._audit_svc
 
     def _seed_document_types(self) -> None:
         for name in DEFAULT_DOCUMENT_TYPES:
@@ -84,30 +91,30 @@ class DocumentService:
         return self.repository.get_document_by_id(document_id)
 
     def update_document_title(self, document_id: int, title: str) -> bool:
-        return self.repository.update_document_title(document_id, title)
+        updated = self.repository.update_document_title(document_id, title)
+        if updated:
+            self._get_audit_svc().log(
+                "update_document_title", "document", document_id,
+                f"Titel geändert auf: {title!r}"
+            )
+        return updated
 
     def archive_document(self, document_id: int) -> bool:
         """Archive a document manually (sets status to ARCHIVIERT)."""
         archived = self.repository.update_document_status(document_id, "ARCHIVIERT")
         if archived:
-            self._record_audit_log(
-                user_id=Session.get_user_id(),
-                action="archive_document",
-                object_type="document",
-                object_id=document_id,
-                details={"document_id": document_id},
+            self._get_audit_svc().log(
+                "archive_document", "document", document_id,
+                f"Dokument {document_id} archiviert"
             )
         return archived
 
     def delete_document(self, document_id: int) -> bool:
         deleted = self.repository.delete_document(document_id)
         if deleted:
-            self._record_audit_log(
-                user_id=Session.get_user_id(),
-                action="delete_document",
-                object_type="document",
-                object_id=document_id,
-                details={"document_id": document_id},
+            self._get_audit_svc().log(
+                "delete_document", "document", document_id,
+                f"Dokument {document_id} gelöscht"
             )
         return deleted
 
@@ -164,20 +171,10 @@ class DocumentService:
             expiry_date=expiry_date,
         )
 
-        self._record_audit_log(
-            user_id=Session.get_user_id(),
-            action="upload_document",
-            object_type="document",
-            object_id=document_id,
-            details={
-                "file_name": file_name,
-                "original_file_name": source_path.name,
-                "document_type_id": document_type_id,
-                "claim_id": claim_id,
-                "person_id": person_id,
-                "card_id": card_id,
-                "location_id": location_id,
-            },
+        self._get_audit_svc().log(
+            "upload_document", "document", document_id,
+            f"Datei: {source_path.name} | Typ: {document_type_id} | "
+            f"Antrag: {claim_id} | Person: {person_id}"
         )
 
         return self.get_document_by_id(document_id)
@@ -209,18 +206,3 @@ class DocumentService:
         normalized = re.sub(r"[^a-zA-Z0-9_\-\.]+", "", normalized)
         return normalized[:128]
 
-    def _record_audit_log(
-        self,
-        user_id: int | None,
-        action: str,
-        object_type: str,
-        object_id: int,
-        details: Dict[str, object],
-    ) -> None:
-        payload = json.dumps(details, ensure_ascii=False)
-        with get_connection() as connection:
-            connection.execute(
-                "INSERT INTO audit_logs (user_id, action, object_type, object_id, details) VALUES (?, ?, ?, ?, ?)",
-                (user_id, action, object_type, object_id, payload),
-            )
-            connection.commit()

@@ -43,9 +43,10 @@ class ClaimEvaluationDialog(QDialog):
     ):
         super().__init__()
         self.claim_id = claim_id
-        self.claim_service = claim_service or ClaimService()
+        from services.service_factory import default_claim_service, default_re_eval_service
+        self.claim_service = claim_service or default_claim_service()
         self.checklist_service = checklist_service or ChecklistService()
-        self.re_evaluation_service = re_evaluation_service or ReEvaluationService()
+        self.re_evaluation_service = re_evaluation_service or default_re_eval_service()
         self.current_evaluation = None
         self.claim = None
         self._lock_state: dict = {"locked": False}
@@ -669,23 +670,6 @@ class ClaimEvaluationDialog(QDialog):
             self.re_evaluation_service.request_re_evaluation(
                 self.claim_id, reason.strip() or None
             )
-            # Supervisor benachrichtigen
-            from services.notification_service import NotificationService
-            from services.audit_service import AuditService
-            claim = self.claim
-            if claim:
-                case_number = claim.get("case_number", str(self.claim_id))
-                user = Session.get_user() or {}
-                NotificationService().notify_re_evaluation_requested(
-                    case_number=case_number,
-                    claim_id=self.claim_id,
-                    requester_name=user.get("full_name", "Mitarbeiter"),
-                    reason=reason.strip() or None,
-                )
-                AuditService().log(
-                    "re_evaluation_requested", "claim", self.claim_id,
-                    f"Freigabe zur erneuten Prüfung angefordert für {case_number}."
-                )
             QMessageBox.information(
                 self,
                 "Freigabe angefordert",

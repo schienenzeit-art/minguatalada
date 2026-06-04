@@ -6,7 +6,6 @@ from PyQt6.QtWidgets import (
 )
 
 from ui.pages.claim_detail_page import ClaimDetailPage
-from ui.pages.claim_evaluation_dialog import ClaimEvaluationDialog
 
 
 class DashboardPage(QWidget):
@@ -37,24 +36,16 @@ class DashboardPage(QWidget):
         self.claim_button = QPushButton("Beispielanspruch anzeigen")
         self.claim_button.clicked.connect(self.open_example_claim)
 
-        self.new_evaluation_button = QPushButton("Neue Prüfung starten")
-        self.new_evaluation_button.clicked.connect(self.open_new_evaluation)
-
         layout.addWidget(title_label)
         layout.addWidget(welcome_label)
         layout.addWidget(role_label)
         layout.addWidget(location_label)
         layout.addWidget(note_label)
         layout.addWidget(self.claim_button)
-        layout.addWidget(self.new_evaluation_button)
         layout.addStretch()
 
         self.setLayout(layout)
 
     def open_example_claim(self):
         dialog = ClaimDetailPage(claim_id=1)
-        dialog.exec()
-
-    def open_new_evaluation(self):
-        dialog = ClaimEvaluationDialog(claim_id=None, claim_service=None)
         dialog.exec()

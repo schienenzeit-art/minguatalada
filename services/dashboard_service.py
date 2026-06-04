@@ -13,15 +13,15 @@ from services.task_service import TaskService
 class DashboardService:
     def __init__(
         self,
-        claim_service: ClaimService | None = None,
+        claim_service: ClaimService,
+        task_service: TaskService,
         card_service: CardService | None = None,
         location_service: LocationService | None = None,
-        task_service: TaskService | None = None,
     ):
-        self.claim_service = claim_service or ClaimService()
+        self.claim_service = claim_service
         self.card_service = card_service or CardService()
         self.location_service = location_service or LocationService()
-        self.task_service = task_service or TaskService()
+        self.task_service = task_service
 
     def get_kpi_items(self) -> List[Dict[str, object]]:
         today = date.today().isoformat()

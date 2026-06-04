@@ -15,6 +15,14 @@ class Session:
         return cls._current_user
 
     @classmethod
+    def require_user(cls) -> UserType:
+        """Gibt den aktuellen User zurück oder wirft RuntimeError wenn keine Session aktiv ist."""
+        user = cls._current_user
+        if user is None:
+            raise RuntimeError("Keine aktive Session. Bitte zuerst einloggen.")
+        return user
+
+    @classmethod
     def clear(cls) -> None:
         cls._current_user = None
 

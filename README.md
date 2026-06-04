@@ -83,18 +83,26 @@ minguatalada/
 │       └── pruefung_service.py Anspruchsberechnungslogik (zustandslos)
 │
 ├── database/                   Datenbankschema, Migrationen, Seed
-│   ├── db.py                   initialize_database(), Migrationen, Seed-Daten
+│   ├── db.py                   initialize_database(), Migrationen, Healthcheck
+│   ├── seed.py                 Seed-Funktionen (Standorte, Rollen, Vorlagen, …)
 │   └── repositories/           Eine Klasse je Entität (ClaimRepository, UserRepository, …)
+│
+├── domain/                     Reine Fachlogik ohne DB-Zugriff
+│   ├── categories.py           Anspruchskategorien
+│   ├── types.py                ClaimSnapshot – typsicherer Ersatz für rohe dicts
+│   └── services/
+│       └── pruefung_service.py Anspruchsberechnungslogik (zustandslos, versioniert)
 │
 ├── services/                   Fachlogik mit DB-Zugriff
 │   ├── auth_service.py         Login, Lockout, Audit-Logging
 │   ├── claim_service.py        Antragsverwaltung, persist_evaluation
-│   ├── re_evaluation_service.py 4-Augen-Regel
+│   ├── re_evaluation_service.py 4-Augen-Regel + Supervisor-Notification
 │   ├── update_service.py       Update-System, Backup, Restore
 │   ├── user_service.py         Benutzerverwaltung
 │   ├── household_service.py    Haushaltsmitglieder
 │   ├── audit_service.py        Audit-Log schreiben und lesen
-│   └── password_service.py     bcrypt-Hashing und -Verifikation
+│   ├── password_service.py     bcrypt-Hashing und -Verifikation
+│   └── service_factory.py      Fallback-Fabriken für UI ohne DI-Container
 │
 ├── ui/                         PyQt6-Oberfläche
 │   ├── login/                  Login-Dialog
@@ -585,9 +593,9 @@ Betrifft nur Versionen **vor v1.1**. Seit v1.1: Beim Schließen des Prüfdialogs
 | Thema | Priorität | Status |
 |---|---|---|
 | Zentrale Datenbank (PostgreSQL / Supabase) | Hoch | Geplant |
-| API-Schicht (FastAPI, REST) | Mittel | Vorbereitet, nicht aktiv |
+| API-Schicht (FastAPI, REST) | Mittel | Vorbereitet (web_api.py), nicht aktiv |
 | Audit-Log-Filter im Admin-Bereich | Mittel | Basisansicht vorhanden |
-| Integrationstests `persist_evaluation` | Mittel | Offen |
+| Integrationstests `persist_evaluation` | Mittel | ✓ Abgeschlossen (v1.3.0) |
 | Automatisches Log-Monitoring / Alerting | Niedrig | Offen |
 
 ### Bewusst noch nicht umgesetzt
@@ -612,7 +620,7 @@ Supabase Free Tier (0 €/Monat) eignet sich zum Testen. Supabase Pro (~23 €/M
 
 ### Vor jedem Release
 
-1. `python -m pytest tests/` — alle 157 Tests müssen grün sein
+1. `python -m pytest tests/` — alle 273 Tests müssen grün sein
 2. Manuelles Backup auf dem Produktivgerät erstellen
 3. Versionsnummer erhöhen (`services/update_service.py → APP_VERSION`)
 4. Changelog in `manifest.json` des Update-Pakets pflegen
@@ -653,4 +661,4 @@ Supabase Free Tier (0 €/Monat) eignet sich zum Testen. Supabase Pro (~23 €/M
 
 ---
 
-*Stand: 2026-06-03 — Version 1.0.3*
+*Stand: 2026-06-04 — Version 1.3.0*

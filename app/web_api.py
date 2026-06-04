@@ -1,4 +1,10 @@
-from datetime import datetime, timedelta
+# NOT ACTIVE IN PRODUCTION
+# Dieses Modul ist ein Architektur-Vorbereitungs-Adapter für eine spätere API-Schicht.
+# Es wird von keinem anderen Produktions-Modul importiert und ist aktuell nicht gestartet.
+# Voraussetzungen für Aktivierung: Thread-sicherer Session-Kontext (Request-scoped),
+# PostgreSQL/geteilte DB, separater ASGI-Startprozess.
+# Roadmap: v2.x
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 import jwt
@@ -23,7 +29,7 @@ def create_token(user: dict) -> str:
         "sub": user.get("username"),
         "uid": user.get("id"),
         "role": user.get("role_name"),
-        "exp": datetime.utcnow() + JWT_EXPIRY,
+        "exp": datetime.now(timezone.utc) + JWT_EXPIRY,
     }
     return jwt.encode(payload, SECRET_KEY, algorithm=JWT_ALGORITHM)
 

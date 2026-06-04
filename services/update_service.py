@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 
 from app.config import DATA_DIR, DB_PATH
 
-APP_VERSION = "1.1.0"
+APP_VERSION = "1.3.0"
 
 BACKUPS_DIR = Path(DATA_DIR) / "backups"
 UPDATES_DIR = Path(DATA_DIR) / "updates"

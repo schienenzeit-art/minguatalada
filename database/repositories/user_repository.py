@@ -145,6 +145,13 @@ class UserRepository:
             ).fetchall()
         return [dict(row) for row in rows]
 
+    def username_exists(self, username: str) -> bool:
+        with get_connection() as connection:
+            row = connection.execute(
+                "SELECT 1 FROM users WHERE username = ?", (username,)
+            ).fetchone()
+        return row is not None
+
     def create(
         self,
         full_name: str,

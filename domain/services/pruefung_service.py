@@ -5,6 +5,9 @@ from core.claim_status import ClaimStatus
 from domain.categories import CATEGORIES
 
 
+LOGIC_VERSION = "1.0"
+
+
 @dataclass
 class EvaluationResult:
     status: str
@@ -21,6 +24,7 @@ class EvaluationResult:
     disability_degree: Optional[int]
     reason: str
     details: Dict[str, Any]
+    logic_version: str = LOGIC_VERSION
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -38,6 +42,7 @@ class EvaluationResult:
             "disability_degree": self.disability_degree,
             "reason": self.reason,
             "details": self.details,
+            "logic_version": self.logic_version,
         }
 
 
@@ -132,6 +137,7 @@ class PruefungService:
             "additional_adults": additional_adults,
             "child_count": child_count,
             "has_housing_benefit": has_housing_benefit,
+            "logic_version": LOGIC_VERSION,
         }
 
         return EvaluationResult(

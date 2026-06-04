@@ -6,6 +6,73 @@ Versionierung nach [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
 
+## [1.3.0] – 2026-06-04
+
+Architektur-Refactoring (Sprint 1–4): Stabilitäts- und Wartbarkeitsverbesserungen ohne
+Änderungen an der Benutzeroberfläche oder den Geschäftsregeln.
+
+### Changed
+- **Dependency Injection**: `ClaimService`, `ReEvaluationService`, `TaskService`,
+  `DashboardService`, `PDFService` und `DocumentPackageService` erhalten alle
+  Abhängigkeiten explizit über den `ServiceContainer`. Keine Lazy-DI-Fallbacks mehr
+  in kritischen Services.
+- **`service_factory.py`** (neu): Zentraler Fallback für UI-Komponenten die ohne
+  vollständigen DI-Container instanziiert werden.
+- **`EvaluationResult.logic_version`**: Alle gespeicherten Prüfergebnisse tragen
+  jetzt eine Versionsnummer (`"1.0"`) damit historische Auswertungen nach
+  Regeländerungen korrekt interpretiert werden können.
+- **`database/db.py`**: 510 Zeilen extrahiert – Seed-Funktionen in `database/seed.py`
+  ausgelagert. `db.py` orchestriert nur noch Schema, Migrationen und Healthcheck.
+- **`DocumentService`**: Audit-Logging über `AuditService` statt direktem SQL.
+  `update_document_title` ist jetzt auditiert. Vollständiger Compliance-Trail für
+  Upload, Archivierung, Löschung und Titeländerung.
+- **`ReEvaluationService`**: `notify_re_evaluation_requested()` wird jetzt im
+  Service-Layer ausgelöst (statt in der UI). `notification_service` wird injiziert.
+- **`ClaimEvaluationDialog`**: Doppeltes `AuditService().log()` und
+  `NotificationService()` Inline-Aufruf aus der UI entfernt.
+- **`app/web_api.py`**: Als inaktiver Architektur-Placeholder markiert.
+  `datetime.utcnow()` auf `timezone.utc` migriert.
+- **Tests**: `conftest.py` mit `make_claim_service()` / `make_re_eval_service()`
+  Factories – vollständig verdrahtete Services in Integrationstests.
+  `autouse`-Fixture verhindert Session-Ghoststate zwischen Tests.
+
+### Added
+- **`domain/types.py`**: `ClaimSnapshot` Dataclass als typsicherer Ersatz für
+  rohe `dict`-Rückgaben aus `ClaimService`. `get_claim_snapshot()` als neue
+  Methode auf `ClaimService` (additiv, bestehende `get_claim_by_id()` unverändert).
+- **`UserRepository.username_exists()`**: Explizite Existenzprüfung vor Create-
+  Operationen (verhindert Constraint-Exceptions als Kontrollfluss).
+- **graphify Knowledge Graph**: Codebase-Navigation via `graphify-out/graph.json`
+  (3155 Nodes, 8906 Edges). `CLAUDE.md` und PreToolUse-Hook integriert.
+
+### Fixed
+- **Startup-Crash**: `notification_service_early` wurde im Container nach
+  `re_evaluation_service` initialisiert → `UnboundLocalError` beim Start. Behoben.
+- **UI-Crash** bei `ClaimEvaluationDialog(claim_service=None)`: Lazy-Fallback
+  `or ClaimService()` schlug fehl da `ClaimService` jetzt Required-Deps hat.
+  Behoben via `service_factory.default_claim_service()`.
+
+---
+
+## [1.2.0] – 2026-06-04
+
+### Added
+- **Mehrpersonen-Erfassung**: Responsive Erfassungsmaske für mehrere Personen
+  in einem Durchgang.
+- **Ed25519-Signaturen**: `.mugala`-Update-Pakete werden mit Ed25519 signiert
+  und beim Einspielen verifiziert.
+- **WAL-Modus**: SQLite WAL-Journaling und Startup-Healthcheck (FK, Integrität,
+  Journal-Modus) aktiv.
+- **Backup-Integritätsprüfung**: Backups werden vor Restore auf Vollständigkeit
+  geprüft. Destruktive SQL-Befehle in Migrationsskripten blockiert.
+- **Erweiterte Test-Suite**: Hardening-Tests für Edge Cases, Backup-Restore,
+  Randfälle und Autosave-Verhalten.
+
+### Changed
+- **Autosave im Prüfdialog**: Zwischenspeicherung bei längeren Prüfvorgängen.
+
+---
+
 ## [1.1.0] – 2026-06-03
 
 ### Added

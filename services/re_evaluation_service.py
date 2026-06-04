@@ -16,11 +16,13 @@ class ReEvaluationService:
 
     def __init__(
         self,
-        repo: ReEvaluationRepository | None = None,
+        repo: ReEvaluationRepository,
         audit_service=None,
+        notification_service=None,
     ):
-        self.repo = repo or ReEvaluationRepository()
+        self.repo = repo
         self._audit = audit_service
+        self._notification = notification_service
 
     # ── Kernprüfung ───────────────────────────────────────────────────────────
     def can_evaluate(self, claim_id: int, eval_count: int) -> tuple[bool, str]:
@@ -80,6 +82,25 @@ class ReEvaluationService:
             "re_evaluation_requested", "claim", claim_id,
             f"Erneute Prüfung angefordert durch User {user_id}. Grund: {reason or '(kein Grund)'}"
         )
+
+        if self._notification:
+            try:
+                from database.db import get_connection
+                with get_connection() as conn:
+                    row = conn.execute(
+                        "SELECT case_number FROM claims WHERE id=?", (claim_id,)
+                    ).fetchone()
+                case_number = row["case_number"] if row else str(claim_id)
+                requester_name = (Session.get_user() or {}).get("full_name", f"User {user_id}")
+                self._notification.notify_re_evaluation_requested(
+                    case_number=case_number,
+                    claim_id=claim_id,
+                    requester_name=requester_name,
+                    reason=reason,
+                )
+            except Exception:
+                pass
+
         return request_id
 
     def consume_approved_request(self, claim_id: int) -> None:

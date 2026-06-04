@@ -17,7 +17,7 @@ Marker: @pytest.mark.integration
 import pytest
 
 from core.claim_status import ClaimStatus
-from tests.conftest import create_test_claim
+from tests.conftest import create_test_claim, make_claim_service
 
 pytestmark = pytest.mark.integration
 
@@ -36,14 +36,13 @@ EXPENSES_ZERO               = {}
 @pytest.fixture()
 def svc(db):
     """ClaimService mit allen echten Abhängigkeiten, isolierte Test-DB."""
-    from services.claim_service import ClaimService
-    return ClaimService()
+    return make_claim_service()
 
 
 @pytest.fixture()
 def re_svc(db):
-    from services.re_evaluation_service import ReEvaluationService
-    return ReEvaluationService()
+    from tests.conftest import make_re_eval_service
+    return make_re_eval_service()
 
 
 @pytest.fixture()
@@ -223,8 +222,7 @@ class TestZweitpruefung:
         self, svc, claim_id, as_mitarbeiter, db_conn
     ):
         # Erstprüfung als Admin durchführen (setzt eval_count=1)
-        from services.claim_service import ClaimService
-        admin_svc = ClaimService()
+        admin_svc = make_claim_service()
         from core.session import Session
         admin_row = db_conn.execute(
             "SELECT u.*, r.name AS role_name FROM users u JOIN roles r ON u.role_id=r.id "

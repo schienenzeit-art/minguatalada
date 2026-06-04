@@ -112,6 +112,9 @@ def build_service_container() -> ServiceContainer:
     card_service     = CardService()
     settings_service = SettingsService()
 
+    audit_service_early        = AuditService(repo=AuditRepository())
+    notification_service_early = NotificationService(repo=NotificationRepository())
+
     case_service = CaseService(
         person_repo=person_repository,
         case_repo=case_repository,
@@ -119,10 +122,10 @@ def build_service_container() -> ServiceContainer:
         category_repo=category_repository,
         settings_service=settings_service,
     )
-    re_evaluation_service = ReEvaluationService(repo=ReEvaluationRepository())
-
-    audit_service_early   = AuditService(repo=AuditRepository())
-    notification_service_early = NotificationService(repo=NotificationRepository())
+    re_evaluation_service = ReEvaluationService(
+        repo=ReEvaluationRepository(),
+        notification_service=notification_service_early,
+    )
 
     claim_service = ClaimService(
         claim_repository=claim_repository,
@@ -157,7 +160,7 @@ def build_service_container() -> ServiceContainer:
         task_service=task_service,
     )
 
-    document_service      = DocumentService()
+    document_service      = DocumentService(audit_service=audit_service_early)
     search_service        = SearchService()
     filter_preset_service = FilterPresetService()
 

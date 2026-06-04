@@ -62,6 +62,14 @@ def db_conn(db):
 
 # ─── Session-Fixtures ──────────────────────────────────────────────────────────
 
+@pytest.fixture(autouse=True)
+def _clear_session_after_test():
+    """Stellt sicher dass kein Session-State zwischen Tests überläuft."""
+    yield
+    from core.session import Session
+    Session.clear()
+
+
 @pytest.fixture()
 def as_admin(db_conn):
     """Setzt eine Admin-Session. Gibt den User zurück."""
@@ -120,6 +128,41 @@ def as_supervisor(db, db_conn):
     Session.clear()
 
 
+# ─── Service-Factories ────────────────────────────────────────────────────────
+
+def make_claim_service(settings_service=None) -> "ClaimService":
+    """Vollständig verdrahteter ClaimService für Tests – spiegelt build_service_container()."""
+    from services.claim_service import ClaimService
+    from services.settings_service import SettingsService
+    from services.re_evaluation_service import ReEvaluationService
+    from services.notification_service import NotificationService
+    from services.audit_service import AuditService
+    from database.repositories.claim_repository import ClaimRepository
+    from database.repositories.income_repository import IncomeRepository
+    from database.repositories.expense_repository import ExpenseRepository
+    from database.repositories.re_evaluation_repository import ReEvaluationRepository
+    from database.repositories.audit_repository import AuditRepository
+    from database.repositories.notification_repository import NotificationRepository
+
+    audit_svc = AuditService(repo=AuditRepository())
+    return ClaimService(
+        claim_repository=ClaimRepository(),
+        income_repository=IncomeRepository(),
+        expense_repository=ExpenseRepository(),
+        settings_service=settings_service or SettingsService(),
+        re_evaluation_service=ReEvaluationService(repo=ReEvaluationRepository(), audit_service=audit_svc),
+        notification_service=NotificationService(repo=NotificationRepository()),
+        audit_service=audit_svc,
+    )
+
+
+def make_re_eval_service() -> "ReEvaluationService":
+    """Vollständig verdrahteter ReEvaluationService für Tests."""
+    from services.re_evaluation_service import ReEvaluationService
+    from database.repositories.re_evaluation_repository import ReEvaluationRepository
+    return ReEvaluationService(repo=ReEvaluationRepository(), notification_service=None)
+
+
 # ─── Service-Fixtures ─────────────────────────────────────────────────────────
 
 @pytest.fixture()
@@ -131,15 +174,12 @@ def auth_service(db):
 
 @pytest.fixture()
 def claim_service(db):
-    from services.claim_service import ClaimService
-    from services.settings_service import SettingsService
-    return ClaimService(settings_service=SettingsService())
+    return make_claim_service()
 
 
 @pytest.fixture()
 def re_eval_service(db):
-    from services.re_evaluation_service import ReEvaluationService
-    return ReEvaluationService()
+    return make_re_eval_service()
 
 
 @pytest.fixture()

@@ -2,8 +2,8 @@ import unittest
 
 from core.session import Session
 from services.settings_service import SettingsService
-from services.claim_service import ClaimService
 from core.claim_status import ClaimStatus
+from tests.conftest import make_claim_service
 
 
 class SettingsServiceTest(unittest.TestCase):
@@ -41,7 +41,7 @@ class SettingsServiceTest(unittest.TestCase):
 class ClaimServiceSettingsTest(unittest.TestCase):
     def setUp(self):
         self.settings_service = SettingsService()
-        self.claim_service = ClaimService(settings_service=self.settings_service)
+        self.claim_service = make_claim_service(settings_service=self.settings_service)
         Session.set_user({"id": 1, "role_name": "Admin"})
 
     def tearDown(self):

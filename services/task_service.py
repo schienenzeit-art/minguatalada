@@ -18,13 +18,13 @@ from services.user_service import UserService
 class TaskService:
     def __init__(
         self,
+        claim_service: ClaimService,
         task_repository: TaskRepository | None = None,
-        claim_service: ClaimService | None = None,
         user_service: UserService | None = None,
         location_service: LocationService | None = None,
     ):
         self.task_repository = task_repository or TaskRepository()
-        self.claim_service = claim_service or ClaimService()
+        self.claim_service = claim_service
         self.user_service = user_service or UserService()
         self.location_service = location_service or LocationService()
 
