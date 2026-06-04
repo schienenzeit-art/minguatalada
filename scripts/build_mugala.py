@@ -30,10 +30,18 @@ def build(
         "installer_file":   installer_path.name,
         "migrations":       [],
         "changelog": (
-            "- Bugfix: Absturz beim Start mit Nicht-Admin-Benutzer behoben\n"
-            "  (AttributeError: UpdatePage hat kein Attribut _lbl_last_update)\n"
-            "- Bugfix: manifest.json mit UTF-8 BOM wird nun korrekt gelesen\n"
-            "  (Fehler: Unexpected UTF-8 BOM beim Einspielen von Updates)"
+            "v1.3.0 – Architektur-Refactoring\n"
+            "- Dependency Injection vollständig: keine Lazy-DI-Fallbacks mehr in Services\n"
+            "- Prüfergebnis-Versionierung: EvaluationResult.logic_version sichert historische Auswertungen\n"
+            "- Datenbank: db.py gesplittet (seed.py ausgelagert, 510 Zeilen entfernt)\n"
+            "- Audit-Trail vollständig: Dokument-Upload, -Archivierung, -Löschung, Titeländerung\n"
+            "- ReEvaluationService: Supervisor-Benachrichtigung im Service statt UI\n"
+            "- Bugfix: Startup-Crash bei notification_service_early Initialisierungsreihenfolge\n"
+            "- Tests: 273 automatisierte Tests, alle grün\n"
+            "\n"
+            "v1.2.0 – Stabilisierung\n"
+            "- Mehrpersonen-Erfassung, Ed25519-Update-Signaturen, WAL-Modus\n"
+            "- Backup-Integritätsprüfung, erweiterte Test-Suite"
         ),
         "release_date":    date.today().isoformat(),
         "requires_restart": True,
