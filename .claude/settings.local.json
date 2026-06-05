@@ -8,7 +8,10 @@
       "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\Projektleiter\\\\Desktop\\\\anspruchssystem\" -Recurse -Directory)",
       "Bash(Select-Object -ExpandProperty FullName)",
       "Bash(Sort-Object)",
-      "Bash(python -c ' *)"
+      "Bash(python -c ' *)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\Projektleiter\\\\Desktop\\\\Projekte\\\\Min Guata Lada ERP\\\\anspruchssystem\" -MaxDepth 1 | Select-Object Name, FullName, @{Name=\"Type\";Expression={if\\($_.PSIsContainer\\){\"Dir\"}else{\"File\"}}} | Sort-Object Name)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\Projektleiter\\\\Desktop\\\\Projekte\\\\Min Guata Lada ERP\\\\anspruchssystem\" -Depth 0 | Where-Object {$_.PSIsContainer -or $_.Extension -eq \".py\" -or $_.Name -match \"\\\\.\\(md|ini|txt|json\\)$\"} | Select-Object Name)",
+      "PowerShell($buildBat = \"c:\\\\Users\\\\Projektleiter\\\\Desktop\\\\Projekte\\\\Min Guata Lada ERP\\\\anspruchssystem\\\\build.bat\"; cmd /c \"`\"$buildBat`\"\" 2>&1)"
     ]
   }
 }

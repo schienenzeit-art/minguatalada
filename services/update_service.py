@@ -108,13 +108,24 @@ class UpdateService:
         try:
             import urllib.request
             with urllib.request.urlopen(manifest_url, timeout=10) as resp:
-                manifest = json.loads(resp.read().decode())
+                raw = resp.read().decode("utf-8-sig")
+            manifest = json.loads(raw)
+
+            # Signatur des Server-Manifests prüfen
+            from core.update_signing import verify_package_signature
+            sig_ok, sig_msg = verify_package_signature(manifest)
+            if not sig_ok:
+                return UpdateCheckResult(
+                    available=False,
+                    error=f"Server-Manifest Signatur ungültig: {sig_msg}",
+                )
+
             remote_version = manifest.get("version", "")
             if self._is_newer(remote_version, APP_VERSION):
                 return UpdateCheckResult(
                     available=True,
                     version=remote_version,
-                    url=manifest.get("url", ""),
+                    url=manifest.get("mugala_url", manifest.get("url", "")),
                     sha256=manifest.get("sha256", ""),
                     notes=manifest.get("changelog", ""),
                 )

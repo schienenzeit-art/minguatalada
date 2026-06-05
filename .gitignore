@@ -49,3 +49,12 @@ Desktop.ini
 certs/*.key
 certs/*.pfx
 certs/*.p12
+
+# Signing-Keys (neues Verzeichnis)
+keys/private.pem
+keys/*.key
+keys/*.pfx
+
+# Release-Artefakte (lokal, nicht in Git)
+releases/
+deploy/
