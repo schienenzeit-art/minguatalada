@@ -1,5 +1,5 @@
 """
-Release-Pipeline für Min Guata Lada.
+Release-Pipeline fuer Min Guata Lada.
 
 Entrypoint: release.bat  (oder direkt: python scripts/release.py)
 
@@ -25,9 +25,9 @@ Ausgabe:
   └── update_{version}.mugala
 
 Argumente:
-  --skip-tests    Tests überspringen (nützlich wenn CI bereits getestet hat)
+  --skip-tests    Tests ueberspringen (nützlich wenn CI bereits getestet hat)
   --skip-build    Bestehende EXE nutzen, kein neuer PyInstaller-Lauf
-  --no-sign       Ohne Signatur (nur für lokale Tests, NICHT für Produktion)
+  --no-sign       Ohne Signatur (nur fuer lokale Tests, NICHT fuer Produktion)
   --dry-run       Simulieren, keine Dateien schreiben
 """
 from __future__ import annotations
@@ -64,16 +64,16 @@ _X = "\033[0m"    # reset
 
 
 def _ok(msg: str) -> None:
-    print(f"  {_G}✓{_X}  {msg}")
+    print(f"  {_G}[OK]{_X}  {msg}")
 
 
 def _fail(msg: str) -> None:
-    print(f"\n  {_R}✗  FEHLER: {msg}{_X}\n", file=sys.stderr)
+    print(f"\n  {_R}[FEHLER]: {msg}{_X}\n", file=sys.stderr)
     sys.exit(1)
 
 
 def _info(msg: str) -> None:
-    print(f"  {_B}→{_X}  {msg}")
+    print(f"  {_B}[>>]{_X}  {msg}")
 
 
 def _step(n: int, label: str) -> None:
@@ -157,7 +157,7 @@ def step_preflight(args: argparse.Namespace, ver: dict) -> Path | None:
                 "       Oder Release ohne Signatur: release.bat --no-sign"
             )
     else:
-        print(f"  {_Y}!{_X}  Ohne Signatur (--no-sign) – NICHT für Produktion!")
+        print(f"  {_Y}[!]{_X}  Ohne Signatur (--no-sign) – NICHT fuer Produktion!")
 
     return signing_key
 
@@ -165,11 +165,11 @@ def step_preflight(args: argparse.Namespace, ver: dict) -> Path | None:
 def step_tests(args: argparse.Namespace) -> None:
     _step(2, "Tests")
     if args.skip_tests:
-        print(f"  {_Y}!{_X}  Tests übersprungen (--skip-tests)")
+        print(f"  {_Y}[!]{_X}  Tests uebersprungen (--skip-tests)")
         return
 
     if args.dry_run:
-        _info("dry-run: pytest würde hier ausgeführt")
+        _info("dry-run: pytest wuerde hier ausgefuehrt")
         return
 
     result = subprocess.run(
@@ -190,7 +190,7 @@ def step_build(args: argparse.Namespace) -> Path:
         return EXE_PATH
 
     if args.dry_run:
-        _info("dry-run: PyInstaller würde hier ausgeführt")
+        _info("dry-run: PyInstaller wuerde hier ausgefuehrt")
         return EXE_PATH
 
     # Alten Build bereinigen
@@ -234,17 +234,18 @@ def step_mugala(
     _step(5, ".mugala-Paket")
     version = ver["version"]
     mugala_name = f"update_{version}.mugala"
-    mugala_path = RELEASE_DIR / mugala_name
+    # Staging-Pfad ausserhalb von RELEASE_DIR, damit step_assemble RELEASE_DIR
+    # neu aufbauen kann ohne die gerade erstellte Datei zu loeschen.
+    mugala_path = ROOT / mugala_name
 
     if dry_run:
-        _info(f"dry-run: {mugala_path.relative_to(ROOT)} würde erstellt")
+        _info(f"dry-run: {mugala_name} wuerde erstellt")
         return mugala_path, "dry-run-sha256"
 
     # Importiere build_mugala direkt
     sys.path.insert(0, str(ROOT / "scripts"))
     from build_mugala import build as build_mugala
 
-    mugala_path.parent.mkdir(parents=True, exist_ok=True)
     build_mugala(exe_path, mugala_path, signing_key)
 
     sha = sha256_file(mugala_path)
@@ -261,7 +262,7 @@ def step_server_manifest(
     signing_key: Path | None,
     dry_run: bool,
 ) -> dict:
-    """Erstellt und signiert das Server-Manifest für https://www.schaer-systems.at/updates/"""
+    """Erstellt und signiert das Server-Manifest fuer https://www.schaer-systems.at/updates/"""
     _step(6, "Server-Manifest")
     version = ver["version"]
 
@@ -305,7 +306,7 @@ def step_assemble(
     mugala_name = mugala_path.name
 
     if dry_run:
-        _info("dry-run: release/ und deploy/ würden befüllt")
+        _info("dry-run: release/ und deploy/ wuerden befüllt")
         return
 
     # ── release/ ──────────────────────────────────────────────────────────────
@@ -325,7 +326,7 @@ def step_assemble(
     # CHANGELOG.txt
     (RELEASE_DIR / "CHANGELOG.txt").write_text(changelog, encoding="utf-8")
 
-    _ok(f"release/  → {len(list(RELEASE_DIR.iterdir()))} Dateien")
+    _ok(f"release/  [>>] {len(list(RELEASE_DIR.iterdir()))} Dateien")
 
     # ── deploy/ ───────────────────────────────────────────────────────────────
     if DEPLOY_DIR.exists():
@@ -335,8 +336,8 @@ def step_assemble(
     shutil.copy2(RELEASE_DIR / "manifest.json", DEPLOY_DIR / "manifest.json")
     shutil.copy2(RELEASE_DIR / mugala_name, DEPLOY_DIR / mugala_name)
 
-    _ok(f"deploy/   → manifest.json + {mugala_name}")
-    _info(f"Upload: SCP deploy/ → web15.wh20.easyname.systems:/www/updates/")
+    _ok(f"deploy/   [>>] manifest.json + {mugala_name}")
+    _info(f"Upload: SCP deploy/ [>>] web15.wh20.easyname.systems:/www/updates/")
 
 
 # ── Einstiegspunkt ────────────────────────────────────────────────────────────
@@ -351,9 +352,9 @@ def main() -> None:
         description="Min Guata Lada Release-Pipeline",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument("--skip-tests", action="store_true", help="Tests überspringen")
+    parser.add_argument("--skip-tests", action="store_true", help="Tests ueberspringen")
     parser.add_argument("--skip-build", action="store_true", help="Bestehende EXE verwenden")
-    parser.add_argument("--no-sign",    action="store_true", help="Ohne Signatur (nicht für Produktion)")
+    parser.add_argument("--no-sign",    action="store_true", help="Ohne Signatur (nicht fuer Produktion)")
     parser.add_argument("--dry-run",    action="store_true", help="Simulieren, keine Dateien schreiben")
     args = parser.parse_args()
 
@@ -385,7 +386,7 @@ def main() -> None:
     print(f"  Server:  {_B}https://www.schaer-systems.at/updates/{_X}")
     print(f"\n  Nächste Schritte:")
     print(f"    1. deploy/ per FTP/SCP auf web15.wh20.easyname.systems hochladen")
-    print(f"    2. In der App: Admin → Updates → Online prüfen")
+    print(f"    2. In der App: Admin [>>] Updates [>>] Online prüfen")
     print(f"{'='*60}\n")
 
 
