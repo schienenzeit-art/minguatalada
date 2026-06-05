@@ -457,8 +457,23 @@ class UpdateService:
             if manifest.installer_file:
                 installer_src = tmp / manifest.installer_file
                 if installer_src.exists():
+                    # Alle extrahierten Dateien (ausser manifest.json) nach UPDATES_DIR kopieren,
+                    # damit _internal/ neben der EXE liegt und die DLLs gefunden werden.
+                    for item in tmp.iterdir():
+                        if item.name == "manifest.json":
+                            continue
+                        dest = UPDATES_DIR / item.name
+                        try:
+                            if item.is_dir():
+                                if dest.exists():
+                                    shutil.rmtree(dest)
+                                shutil.copytree(item, dest)
+                            else:
+                                shutil.copy2(item, dest)
+                        except Exception:
+                            pass
+
                     perm_installer = UPDATES_DIR / manifest.installer_file
-                    shutil.copy2(installer_src, perm_installer)
                     try:
                         subprocess.Popen(
                             [str(perm_installer), "/SILENT"],

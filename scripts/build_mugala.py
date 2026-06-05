@@ -92,7 +92,7 @@ def build(
         "version":          version,
         "min_base_version": min_base,
         "max_base_version": "",
-        "installer_file":   exe_name,
+        "installer_file":   exe_name,   # "" = kein Installer (nur Migrationen)
         "migrations":       [],
         "changelog":        changelog,
         "release_date":     date.today().isoformat(),
