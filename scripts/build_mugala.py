@@ -69,14 +69,12 @@ def build(
     """
     Erstellt das .mugala-Paket.
 
-    Args:
-        installer_path:    Pfad zur EXE (MinGuataLada.exe)
-        output_path:       Ziel-Pfad für das .mugala-Paket
-        signing_key_path:  Optionaler Pfad zum privaten Ed25519-Schlüssel (PEM)
-        version_override:  Optionale Versionsnummer (überschreibt version.json)
+    installer_path kann sein:
+      - Verzeichnis (z.B. dist/MinGuataLada/) → komplettes Verzeichnis wird gepackt
+      - Einzelne EXE-Datei                   → nur diese Datei wird gepackt
     """
     if not installer_path.exists():
-        print(f"FEHLER: Installer nicht gefunden: {installer_path}", file=sys.stderr)
+        print(f"FEHLER: Pfad nicht gefunden: {installer_path}", file=sys.stderr)
         sys.exit(1)
 
     ver_info = load_version()
@@ -84,11 +82,17 @@ def build(
     min_base = ver_info.get("min_base_version", "1.0.0")
     changelog = extract_changelog(version)
 
+    # Installer-Dateiname fuer das Manifest bestimmen
+    if installer_path.is_dir():
+        exe_name = "MinGuataLada.exe"
+    else:
+        exe_name = installer_path.name
+
     manifest: dict = {
         "version":          version,
         "min_base_version": min_base,
         "max_base_version": "",
-        "installer_file":   installer_path.name,
+        "installer_file":   exe_name,
         "migrations":       [],
         "changelog":        changelog,
         "release_date":     date.today().isoformat(),
@@ -98,7 +102,7 @@ def build(
     # Signierung
     if signing_key_path:
         if not signing_key_path.exists():
-            print(f"FEHLER: Signierschlüssel nicht gefunden: {signing_key_path}", file=sys.stderr)
+            print(f"FEHLER: Signierschluessel nicht gefunden: {signing_key_path}", file=sys.stderr)
             sys.exit(1)
         try:
             sys.path.insert(0, str(PROJECT_ROOT))
@@ -117,9 +121,23 @@ def build(
     # ZIP → .mugala
     output_path.parent.mkdir(parents=True, exist_ok=True)
     tmp = output_path.with_suffix(".zip")
+
     with zipfile.ZipFile(tmp, "w", compression=zipfile.ZIP_DEFLATED) as zf:
         zf.writestr("manifest.json", manifest_bytes)
-        zf.write(str(installer_path), installer_path.name)
+
+        if installer_path.is_dir():
+            # Vollstaendiges Verzeichnis packen: Dateipfade relativ zum Verzeichnis selbst,
+            # damit sie im ZIP-Root landen (MinGuataLada.exe, _internal/...).
+            all_files = [f for f in installer_path.rglob("*") if f.is_file()]
+            total = len(all_files)
+            for i, file in enumerate(all_files, 1):
+                arc = file.relative_to(installer_path)
+                zf.write(str(file), str(arc))
+                if i % 50 == 0 or i == total:
+                    print(f"  Packe: {i}/{total} Dateien ...", end="\r")
+            print()
+        else:
+            zf.write(str(installer_path), installer_path.name)
 
     if output_path.exists():
         output_path.unlink()
@@ -133,11 +151,11 @@ def build(
 
     size_mb = round(output_path.stat().st_size / 1024 / 1024, 1)
     print(f"  Datei:    {output_path}")
-    print(f"  Größe:    {size_mb} MB")
+    print(f"  Groesse:  {size_mb} MB")
     print(f"  Version:  {parsed['version']}")
-    print(f"  BOM:      {'JA (Problem!)' if has_bom else 'NEIN – korrekt'}")
+    print(f"  BOM:      {'JA (Problem!)' if has_bom else 'NEIN - korrekt'}")
     print(f"  Signiert: {'JA' if 'signature' in parsed else 'NEIN'}")
-    print(f"  EXE:      {installer_path.name}")
+    print(f"  EXE:      {exe_name}")
 
 
 def _find_signing_key() -> Path | None:

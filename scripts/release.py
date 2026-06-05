@@ -246,7 +246,11 @@ def step_mugala(
     sys.path.insert(0, str(ROOT / "scripts"))
     from build_mugala import build as build_mugala
 
-    build_mugala(exe_path, mugala_path, signing_key)
+    # Vollstaendiges dist-Verzeichnis packen (~36 MB komprimiert statt nur 7 MB EXE)
+    dist_dir = ROOT / "dist" / "MinGuataLada"
+    if not dist_dir.exists():
+        _fail(f"dist-Verzeichnis nicht gefunden: {dist_dir}\nBitte zuerst: build.bat")
+    build_mugala(dist_dir, mugala_path, signing_key)
 
     sha = sha256_file(mugala_path)
     size_mb = round(mugala_path.stat().st_size / 1024 / 1024, 1)
