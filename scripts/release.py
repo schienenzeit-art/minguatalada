@@ -42,15 +42,23 @@ from datetime import date
 from pathlib import Path
 
 # ── Pfade ─────────────────────────────────────────────────────────────────────
-ROOT         = Path(__file__).resolve().parent.parent
-VENV_PYTHON  = ROOT / ".venv" / "Scripts" / "python.exe"
-SPEC_FILE    = ROOT / "anspruchssystem.spec"
-DIST_DIR     = ROOT / "dist" / "MinGuataLada"
-EXE_PATH     = DIST_DIR / "MinGuataLada.exe"
-VERSION_FILE = ROOT / "version.json"
-CHANGELOG_MD = ROOT / "CHANGELOG.md"
-RELEASE_DIR  = ROOT / "releases"
-DEPLOY_DIR   = ROOT / "deploy"
+ROOT           = Path(__file__).resolve().parent.parent
+VENV_PYTHON    = ROOT / ".venv" / "Scripts" / "python.exe"
+SPEC_FILE      = ROOT / "anspruchssystem.spec"
+DIST_DIR       = ROOT / "dist" / "MinGuataLada"
+EXE_PATH       = DIST_DIR / "MinGuataLada.exe"
+VERSION_FILE   = ROOT / "version.json"
+CHANGELOG_MD   = ROOT / "CHANGELOG.md"
+RELEASE_DIR    = ROOT / "releases"
+DEPLOY_DIR     = ROOT / "deploy"
+INSTALLER_DIR  = ROOT / "installer"
+
+# Inno Setup Compiler – Standardpfade auf Windows
+_ISCC_CANDIDATES = [
+    Path(r"C:\Program Files (x86)\Inno Setup 6\ISCC.exe"),
+    Path(r"C:\Program Files\Inno Setup 6\ISCC.exe"),
+    Path(r"C:\Program Files (x86)\Inno Setup 5\ISCC.exe"),
+]
 
 MANIFEST_BASE_URL = "https://www.schaer-systems.at/updates"
 
@@ -77,7 +85,7 @@ def _info(msg: str) -> None:
 
 
 def _step(n: int, label: str) -> None:
-    print(f"\n{_W}[{n}/7] {label}{_X}")
+    print(f"\n{_W}[{n}/8] {label}{_X}")
 
 
 # ── Hilfsfunktionen ───────────────────────────────────────────────────────────
@@ -213,8 +221,61 @@ def step_build(args: argparse.Namespace) -> Path:
     return EXE_PATH
 
 
+def _find_iscc() -> Path | None:
+    for p in _ISCC_CANDIDATES:
+        if p.exists():
+            return p
+    # PATH-Suche als Fallback
+    import shutil as _shutil
+    found = _shutil.which("ISCC.exe") or _shutil.which("ISCC")
+    return Path(found) if found else None
+
+
+def step_installer_exe(ver: dict, dry_run: bool) -> Path:
+    """Erstellt den Windows-Installer via Inno Setup."""
+    _step(4, "Windows-Installer bauen (Inno Setup)")
+    version = ver["version"]
+    setup_iss = INSTALLER_DIR / "setup.iss"
+    installer_out = INSTALLER_DIR / f"MinGuataLada_Setup_{version}.exe"
+
+    if dry_run:
+        _info(f"dry-run: MinGuataLada_Setup_{version}.exe wuerde erstellt")
+        return installer_out
+
+    iscc = _find_iscc()
+    if iscc is None:
+        _fail(
+            "Inno Setup Compiler (ISCC.exe) nicht gefunden.\n"
+            "       Bitte installieren: https://jrsoftware.org/isinfo.php\n"
+            "       Oder Release ohne Installer: nicht moeglich (Inno Setup ist Pflicht)"
+        )
+
+    if not setup_iss.exists():
+        _fail(f"installer/setup.iss nicht gefunden: {setup_iss}")
+
+    result = subprocess.run(
+        [
+            str(iscc),
+            f"/DMyAppVersion={version}",
+            f"/O{INSTALLER_DIR}",
+            f"/F{f'MinGuataLada_Setup_{version}'}",
+            str(setup_iss),
+        ],
+        cwd=ROOT,
+    )
+    if result.returncode != 0:
+        _fail("Inno Setup Build fehlgeschlagen.")
+
+    if not installer_out.exists():
+        _fail(f"Installer nach Build nicht gefunden: {installer_out}")
+
+    size_mb = round(installer_out.stat().st_size / 1024 / 1024, 1)
+    _ok(f"Installer erstellt: installer/MinGuataLada_Setup_{version}.exe ({size_mb} MB)")
+    return installer_out
+
+
 def step_sha256(exe_path: Path, dry_run: bool) -> str:
-    _step(4, "SHA-256 Prüfsumme")
+    _step(5, "SHA-256 Prüfsumme (Installer)")
     if dry_run:
         checksum = "dry-run-placeholder-sha256"
         _info(f"dry-run: sha256 = {checksum}")
@@ -231,7 +292,7 @@ def step_mugala(
     dry_run: bool,
 ) -> tuple[Path, str]:
     """Erstellt das .mugala-Paket. Gibt (mugala_path, sha256_of_mugala) zurück."""
-    _step(5, ".mugala-Paket")
+    _step(6, ".mugala-Paket")
     version = ver["version"]
     mugala_name = f"update_{version}.mugala"
     # Staging-Pfad ausserhalb von RELEASE_DIR, damit step_assemble RELEASE_DIR
@@ -267,7 +328,7 @@ def step_server_manifest(
     dry_run: bool,
 ) -> dict:
     """Erstellt und signiert das Server-Manifest fuer https://www.schaer-systems.at/updates/"""
-    _step(6, "Server-Manifest")
+    _step(7, "Server-Manifest")
     version = ver["version"]
 
     manifest = {
@@ -298,14 +359,14 @@ def step_server_manifest(
 
 def step_assemble(
     ver: dict,
-    exe_path: Path,
+    installer_path: Path,
     mugala_path: Path,
     server_manifest: dict,
     changelog: str,
     dry_run: bool,
 ) -> None:
     """Befüllt release/ und deploy/ mit allen Artefakten."""
-    _step(7, "Artefakte zusammenstellen")
+    _step(8, "Artefakte zusammenstellen")
     version = ver["version"]
     mugala_name = mugala_path.name
 
@@ -318,8 +379,8 @@ def step_assemble(
         shutil.rmtree(RELEASE_DIR)
     RELEASE_DIR.mkdir(parents=True)
 
-    # EXE
-    shutil.copy2(exe_path, RELEASE_DIR / exe_path.name)
+    # Installer-EXE (Inno Setup)
+    shutil.copy2(installer_path, RELEASE_DIR / installer_path.name)
     # .mugala
     shutil.copy2(mugala_path, RELEASE_DIR / mugala_name)
     # Server-Manifest
@@ -370,20 +431,21 @@ def main() -> None:
     version = ver["version"]
 
     # Pipeline
-    signing_key    = step_preflight(args, ver)
+    signing_key       = step_preflight(args, ver)
     step_tests(args)
-    exe_path       = step_build(args)
-    exe_sha256     = step_sha256(exe_path, args.dry_run)
+    exe_path          = step_build(args)
+    installer_path    = step_installer_exe(ver, args.dry_run)
+    _                 = step_sha256(installer_path, args.dry_run)
     mugala_path, mugala_sha256 = step_mugala(exe_path, ver, signing_key, args.dry_run)
-    changelog      = extract_changelog(version)
-    server_manifest = step_server_manifest(ver, mugala_sha256, changelog, signing_key, args.dry_run)
-    step_assemble(ver, exe_path, mugala_path, server_manifest, changelog, args.dry_run)
+    changelog         = extract_changelog(version)
+    server_manifest   = step_server_manifest(ver, mugala_sha256, changelog, signing_key, args.dry_run)
+    step_assemble(ver, installer_path, mugala_path, server_manifest, changelog, args.dry_run)
 
     # Zusammenfassung
     print(f"\n{_W}{'='*60}")
     print(f"  {_G}RELEASE ERFOLGREICH – v{version}{_X}{_W}")
     print(f"{'='*60}{_X}")
-    print(f"  EXE:       {_W}releases/MinGuataLada.exe{_X}")
+    print(f"  Installer: {_W}releases/MinGuataLada_Setup_{version}.exe{_X}")
     print(f"  .mugala:   {_W}releases/update_{version}.mugala{_X}")
     print(f"  Manifest:  {_W}releases/manifest.json{_X}")
     print(f"\n  Deploy-Artefakte in: {_W}deploy/{_X}")

@@ -71,6 +71,8 @@ jobs:
       - name: Release-Pipeline ausführen (Tests bereits in Job 1 gelaufen)
         shell: cmd
         run: .venv\Scripts\python scripts\release.py --skip-tests
+        # Inno Setup ist auf windows-latest vorinstalliert:
+        # C:\Program Files (x86)\Inno Setup 6\ISCC.exe
 
       - name: Version auslesen
         id: ver
@@ -90,7 +92,7 @@ jobs:
           name: release-artifacts
           retention-days: 30
           path: |
-            releases/MinGuataLada.exe
+            releases/MinGuataLada_Setup_*.exe
             releases/update_*.mugala
             releases/manifest.json
             releases/CHANGELOG.txt
@@ -124,7 +126,7 @@ jobs:
           draft: false
           prerelease: false
           files: |
-            releases/MinGuataLada.exe
+            releases/MinGuataLada_Setup_*.exe
             releases/update_*.mugala
             releases/manifest.json
         env:

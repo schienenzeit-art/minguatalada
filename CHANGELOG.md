@@ -6,6 +6,40 @@ Versionierung nach [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
 
+## [1.5.0] – 2026-06-07
+
+Architektur-Refactoring Sprint 2–3: Code-Qualitätsgates und Schuldenabbau.
+Keine Änderungen an der Benutzeroberfläche oder den Geschäftsregeln.
+
+### Changed
+- **Migration-Framework**: `database/migrations.py` mit 26 nummerierten, idempotenten
+  Migrationen. `database/db.py` von 1106 auf 385 Zeilen reduziert. Jede neue Spalte
+  oder Tabelle wird ab sofort in einer nummerierten Migration erfasst statt als
+  try/except ALTER TABLE-Block.
+- **`schema_migrations`-Tabelle**: Trackt angewandte Migrationen mit Versionsnummer
+  und Zeitstempel. Migrationen laufen automatisch beim nächsten App-Start.
+- **DI-Propagation**: `TasksPage` und `DashboardPage` leiten `claim_service` und
+  `case_service` jetzt vollständig an untergeordnete Dialoge weiter.
+- **`service_factory.py` entfernt**: Fallback-Anti-Pattern aus allen UI-Dialogen
+  (`ClaimDetailPage`, `ClaimEvaluationDialog`, `CaseCreateDialog`) entfernt.
+  Services werden direkt instanziiert wenn kein Container verfügbar ist.
+- **`ManualService`**: In `ServiceContainer` aufgenommen und per DI übergeben.
+  Kein direktes `ManualService()` mehr in `main_window.py`.
+
+### Added
+- **Inno Setup Installer**: Release enthält jetzt `MinGuataLada_Setup_<version>.exe` –
+  ein vollständiger Windows-Installer mit Deinstallations-Support, Desktop-Verknüpfung
+  und automatischem Upgrade bestehender Installationen.
+
+### Fixed
+- Doppelte `AuditService`- und `NotificationService`-Instanzen im Container
+  (Sprint 2) behoben.
+- Legacy-Seiten (`claims_page.py`, `dashboard.py`, `location_page.py`) und
+  `refactor.md` aus dem Repository entfernt.
+- F401-Lint-Fehler in allen Services und Repositories bereinigt.
+
+---
+
 ## [1.3.0] – 2026-06-04
 
 Architektur-Refactoring (Sprint 1–4): Stabilitäts- und Wartbarkeitsverbesserungen ohne

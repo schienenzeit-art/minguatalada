@@ -5,8 +5,13 @@
 ; Erstellt mit Inno Setup 6
 ; =============================================================================
 
+; Version kann per Kommandozeile ueberschrieben werden:
+;   ISCC.exe setup.iss /DMyAppVersion=1.5.0
+#ifndef MyAppVersion
+  #define MyAppVersion "1.5.0"
+#endif
+
 #define MyAppName        "Min Guata Lada"
-#define MyAppVersion     "1.0.3"
 #define MyAppPublisher   "Nexaris Software Engineering"
 #define MyAppCopyright   "Copyright (C) 2026 Nexaris Software Engineering"
 #define MyAppExeName     "MinGuataLada.exe"
