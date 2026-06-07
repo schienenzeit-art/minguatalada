@@ -475,19 +475,29 @@ class UpdateService:
 
                     perm_installer = UPDATES_DIR / manifest.installer_file
                     try:
+                        # Aktuelles Installationsverzeichnis ermitteln, damit die neue EXE
+                        # sich nach dem Start selbst dorthin kopiert (Self-Replacement).
+                        # Das stellt sicher, dass Desktop-Shortcuts nach dem Update weiterhin
+                        # auf die richtige EXE zeigen.
+                        import sys as _sys
+                        launch_args = [str(perm_installer)]
+                        if getattr(_sys, "frozen", False):
+                            current_install_dir = Path(_sys.executable).parent.resolve()
+                            if current_install_dir != UPDATES_DIR.resolve():
+                                launch_args += ["--mgl-replace", str(current_install_dir)]
+
                         subprocess.Popen(
-                            [str(perm_installer), "/SILENT"],
+                            launch_args,
                             creationflags=subprocess.DETACHED_PROCESS,
                         )
-                        import sys
-                        sys.exit(0)
+                        _sys.exit(0)
                     except Exception as e:
                         return UpdateResult(
                             success=True,
                             message=(
                                 f"Migrationen erfolgreich auf Version {manifest.version}.\n\n"
-                                f"Installer konnte nicht automatisch gestartet werden:\n{e}\n\n"
-                                f"Bitte manuell ausführen:\n{perm_installer}"
+                                f"Neustart konnte nicht automatisch ausgeführt werden:\n{e}\n\n"
+                                f"Bitte die Anwendung manuell neu starten:\n{perm_installer}"
                             ),
                             backup_path=str(backup_path),
                         )

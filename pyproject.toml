@@ -1,0 +1,44 @@
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+exclude = [
+    ".venv",
+    "venv",
+    "dist",
+    "build",
+    "node_modules",
+    "__pycache__",
+    "graphify-out",
+    "installer",
+    "scripts/_compile_pdf_service.py",
+]
+
+[tool.ruff.lint]
+# Sprint 1: konservative Regeln — nur echte Fehler, keine Style-Korrekturen
+# E9xx  = Syntax-Fehler (SyntaxError, IndentationError)
+# F7xx  = Statement-Fehler (assert, break, return falsch platziert)
+# F821  = Undefinierter Name (echter Bug)
+# F822  = Undefinierter Name im __all__
+# F823  = lokaler Name vor Zuweisung referenziert
+select = ["E9", "F7", "F821", "F822", "F823"]
+
+# F401 (unused imports) und F811 (redefinition) werden in Sprint 2 aktiviert
+# sobald __init__.py Re-Exports und Legacy-Duplikate bereinigt sind.
+ignore = []
+
+[tool.ruff.lint.per-file-ignores]
+# Test-Dateien dürfen etwas freizügiger sein
+"tests/**" = ["F821"]
+# Init-Dateien re-exportieren häufig
+"**/__init__.py" = ["F401", "F811"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q --tb=short"
+
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+strict = false
+# Sprint 3: schrittweise auf strict=true erhöhen, beginnend mit domain/ und services/
+files = ["core", "domain", "services", "app"]

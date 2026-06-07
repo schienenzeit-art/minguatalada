@@ -1,0 +1,11 @@
+# CI-Abhängigkeiten: nur Pakete die für Tests auf Linux (ubuntu) benötigt werden.
+# PyQt6, PyInstaller und andere GUI/Build-Pakete sind bewusst ausgelassen.
+bcrypt==5.0.0
+reportlab==4.5.1
+openpyxl==3.1.5
+fastapi==0.136.3
+uvicorn==0.48.0
+PyJWT==2.13.0
+pytest==8.3.5
+cryptography>=42.0
+ruff>=0.4.0

@@ -29,11 +29,12 @@ logger = logging.getLogger(__name__)
 # Aktueller öffentlicher Schlüssel (Base64url-kodiert, 32 Byte Ed25519 Raw).
 # Leer = kein Schlüssel konfiguriert (Dev-Modus / vor erster Schlüsselgenerierung).
 # Eintragen nach: python scripts/generate_signing_key.py
-EMBEDDED_PUBLIC_KEY_B64: str = "BLckpD4UBVi2SKU856AOsnzhuEoltEOgN9cZy5BD3Hw"
+EMBEDDED_PUBLIC_KEY_B64: str = "CPkR_lBN74cbvNQa1ZMLiQNI7-PMj2qOwoT234WSXB8"
 
 # Frühere öffentliche Schlüssel — signierte Pakete dieser Schlüssel werden weiterhin akzeptiert.
 # Hierher verschieben bei Schlüsselrotation.
-LEGACY_PUBLIC_KEYS_B64: list[str] = []
+# Rotiert: 2026-06-07 (alter Schlüssel BLckpD4U... verloren, neues Paar erzeugt)
+LEGACY_PUBLIC_KEYS_B64: list[str] = ["BLckpD4UBVi2SKU856AOsnzhuEoltEOgN9cZy5BD3Hw"]
 
 
 # ── Interne Hilfsfunktionen ───────────────────────────────────────────────────

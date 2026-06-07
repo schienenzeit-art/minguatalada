@@ -2,62 +2,31 @@ name: CI
 
 on:
   push:
-    branches: ["main", "master"]
+    branches: ["main", "develop"]
   pull_request:
-    branches: ["main", "master"]
+    branches: ["main", "develop"]
 
 jobs:
-  test:
-    name: Lint & Test (Python ${{ matrix.python-version }})
-    runs-on: windows-latest
-
-    strategy:
-      matrix:
-        python-version: ["3.12", "3.13"]
+  lint-and-test:
+    name: Lint & Test
+    runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Python ${{ matrix.python-version }} setup
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
-          cache: pip
-
-      - name: Install dependencies
-        run: pip install -r requirements.txt
-
-      - name: Run tests
-        env:
-          PYTEST_RUNNING: "1"
-        run: python -m pytest tests/ -v --tb=short
-
-  build:
-    name: PyInstaller Build
-    runs-on: windows-latest
-    needs: test
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Python setup
+      - name: Python 3.12 setup
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
           cache: pip
 
-      - name: Install dependencies + PyInstaller
-        run: |
-          pip install -r requirements.txt
-          pip install pyinstaller
+      - name: Install CI dependencies
+        run: pip install -r requirements-ci.txt
 
-      - name: Build executable
-        run: pyinstaller anspruchssystem.spec --noconfirm
+      - name: Lint (ruff)
+        run: ruff check . --output-format=github
 
-      - name: Upload build artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: MinGuataLada-${{ github.sha }}
-          path: dist/
-          retention-days: 14
+      - name: Tests
+        env:
+          PYTEST_RUNNING: "1"
+        run: pytest tests/ -q --tb=short

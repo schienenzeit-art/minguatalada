@@ -1,0 +1,141 @@
+name: Release
+
+# Ausgelöst durch: git tag v1.4.0 && git push origin --tags
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+jobs:
+  # ────────────────────────────────────────────────────────────────────────────
+  # Job 1: Tests auf ubuntu (schnell, ~2 Min)
+  # ────────────────────────────────────────────────────────────────────────────
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Python 3.12 setup
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install CI dependencies
+        run: pip install -r requirements-ci.txt
+
+      - name: Lint (ruff)
+        run: ruff check . --output-format=github
+
+      - name: Tests
+        env:
+          PYTEST_RUNNING: "1"
+        run: pytest tests/ -q --tb=short
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # Job 2: EXE + .mugala bauen (windows-latest, ~10-15 Min)
+  # ────────────────────────────────────────────────────────────────────────────
+  build:
+    name: Build EXE & .mugala
+    runs-on: windows-latest
+    needs: test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Python 3.12 setup
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Venv erstellen und Abhängigkeiten installieren
+        run: |
+          python -m venv .venv
+          .venv\Scripts\pip install --upgrade pip
+          .venv\Scripts\pip install -r requirements.txt
+          .venv\Scripts\pip install pyinstaller
+        shell: cmd
+
+      - name: Signierschlüssel aus Secret schreiben
+        shell: pwsh
+        env:
+          MUGALA_KEY_B64: ${{ secrets.MUGALA_SIGNING_KEY_B64 }}
+        run: |
+          New-Item -ItemType Directory -Force certs | Out-Null
+          $bytes = [System.Convert]::FromBase64String($env:MUGALA_KEY_B64)
+          [System.IO.File]::WriteAllBytes("certs\mugala_signing.key", $bytes)
+
+      - name: Release-Pipeline ausführen (Tests bereits in Job 1 gelaufen)
+        shell: cmd
+        run: .venv\Scripts\python scripts\release.py --skip-tests
+
+      - name: Version auslesen
+        id: ver
+        shell: pwsh
+        run: |
+          $v = (Get-Content releases\VERSION.txt).Trim()
+          echo "VERSION=$v" >> $env:GITHUB_OUTPUT
+
+      - name: Signierschlüssel aus Filesystem entfernen
+        if: always()
+        shell: pwsh
+        run: Remove-Item -Force -ErrorAction SilentlyContinue certs\mugala_signing.key
+
+      - name: Release-Artefakte hochladen
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-artifacts
+          retention-days: 30
+          path: |
+            releases/MinGuataLada.exe
+            releases/update_*.mugala
+            releases/manifest.json
+            releases/CHANGELOG.txt
+            releases/VERSION.txt
+            deploy/manifest.json
+            deploy/update_*.mugala
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # Job 3: GitHub Release erstellen + FTP Deploy
+  # ────────────────────────────────────────────────────────────────────────────
+  publish:
+    name: Publish Release & Deploy
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      contents: write
+
+    steps:
+      - name: Artefakte herunterladen
+        uses: actions/download-artifact@v4
+        with:
+          name: release-artifacts
+          path: releases/
+
+      - name: GitHub Release erstellen
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: "Min Guata Lada ${{ github.ref_name }}"
+          body_path: releases/CHANGELOG.txt
+          draft: false
+          prerelease: false
+          files: |
+            releases/MinGuataLada.exe
+            releases/update_*.mugala
+            releases/manifest.json
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update-Server deployen (FTP → schaer-systems.at/updates/)
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server:     ${{ secrets.FTP_HOST }}
+          username:   ${{ secrets.FTP_USERNAME }}
+          password:   ${{ secrets.FTP_PASSWORD }}
+          local-dir:  ./deploy/
+          server-dir: ${{ secrets.FTP_SERVER_DIR }}
+          log-level:  minimal

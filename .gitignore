@@ -58,3 +58,8 @@ keys/*.pfx
 # Release-Artefakte (lokal, nicht in Git)
 releases/
 deploy/
+*.mugala
+
+# Secrets / Umgebungsvariablen
+.env
+.env.local
