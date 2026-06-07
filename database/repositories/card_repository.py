@@ -1,7 +1,6 @@
-import json
 from sqlite3 import Row
 from typing import Optional
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from database.db import get_connection
 from core.card_status import CardStatus

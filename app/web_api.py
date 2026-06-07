@@ -4,7 +4,7 @@
 # Voraussetzungen für Aktivierung: Thread-sicherer Session-Kontext (Request-scoped),
 # PostgreSQL/geteilte DB, separater ASGI-Startprozess.
 # Roadmap: v2.x
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from typing import Optional
 
 import jwt

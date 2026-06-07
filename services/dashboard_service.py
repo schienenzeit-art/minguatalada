@@ -1,5 +1,5 @@
-from datetime import date, timedelta
-from typing import List, Dict, Optional
+from datetime import date
+from typing import List, Dict
 
 from core.card_status import CardStatus
 from core.claim_status import ClaimStatus

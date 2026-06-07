@@ -3,7 +3,7 @@
 ab diesem Tag die Anspruchsberechtigung, sofern kein Einkommensnachweis oder
 Studentenausweis vorliegt. Supervisor und Dashboard erhalten eine Meldung.
 """
-from datetime import date, datetime
+from datetime import date
 from typing import Optional
 
 from database.repositories.household_member_repository import HouseholdMemberRepository

@@ -1,5 +1,4 @@
 from typing import Optional
-from datetime import date
 
 from database.db import get_connection
 

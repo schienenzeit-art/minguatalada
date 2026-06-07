@@ -9,7 +9,6 @@ Aktueller Status: Stub – kein Tesseract konfiguriert.
 Die Schnittstelle ist jedoch vollständig definiert und AuditLog-fähig.
 """
 from pathlib import Path
-from typing import Optional
 
 from database.repositories.audit_repository import AuditRepository
 from core.session import Session

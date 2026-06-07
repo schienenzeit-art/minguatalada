@@ -471,7 +471,6 @@ class PDFService:
     ) -> str:
         """Generiert ein Sammel-PDF mit mehreren Briefen (ein Brief pro Seite)."""
         from reportlab.pdfgen import canvas as rl_canvas
-        from reportlab.lib.styles import ParagraphStyle as PS
         from services.document_template_service import DocumentTemplateService
 
         svc = DocumentTemplateService()

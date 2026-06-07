@@ -5,7 +5,6 @@ from typing import List, Dict, Optional
 from core.session import Session
 from core.task_priority import TaskPriority
 from core.task_status import TaskStatus
-from core.task_type import TaskType
 from core.task_source_type import TaskSourceType
 from core.claim_status import ClaimStatus
 from database.db import get_connection

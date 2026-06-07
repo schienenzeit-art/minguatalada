@@ -4,10 +4,7 @@ from typing import Optional, Dict, List
 from app.ports import ClaimRepositoryPort, ExpenseRepositoryPort, IncomeRepositoryPort
 from core.claim_status import ClaimStatus
 from core.session import Session
-from database.repositories.claim_repository import ClaimRepository
 from database.repositories.claim_note_repository import ClaimNoteRepository
-from database.repositories.income_repository import IncomeRepository
-from database.repositories.expense_repository import ExpenseRepository
 from domain.types import ClaimSnapshot
 from services.pruefung_service import PruefungService
 from services.settings_service import SettingsService

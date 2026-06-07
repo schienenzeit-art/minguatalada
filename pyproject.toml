@@ -27,10 +27,14 @@ select = ["E9", "F401", "F7", "F821", "F822", "F823"]
 ignore = []
 
 [tool.ruff.lint.per-file-ignores]
-# Test-Dateien dürfen etwas freizügiger sein
-"tests/**" = ["F821"]
+# Test-Dateien: F821 + F401 (Test-Imports häufig in Fixtures oder lokalen Scopes)
+"tests/**" = ["F821", "F401"]
 # Init-Dateien re-exportieren häufig
 "**/__init__.py" = ["F401", "F811"]
+# UI-Dateien: PyQt6-Imports werden oft vorsorglich/für spätere Nutzung importiert
+"ui/**" = ["F401"]
+# Scripts: Einzel-Skripte mit optionalen Dev-Imports
+"scripts/**" = ["F401"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

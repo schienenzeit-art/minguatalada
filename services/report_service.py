@@ -1,5 +1,5 @@
 from collections import Counter
-from datetime import date, timedelta
+from datetime import date
 from typing import Optional
 import calendar
 
@@ -312,7 +312,6 @@ class ReportService:
         Von-bis-Auswertung mit Monatsaufschlüsselung.
         Gibt für jeden Monat im Zeitraum eine Kennzahlenzeile zurück.
         """
-        from datetime import datetime as _dt
         try:
             s = date.fromisoformat(start_date)
             e = date.fromisoformat(end_date)

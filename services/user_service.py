@@ -4,8 +4,6 @@ from app.ports import UserRepositoryPort
 from core.constants import NON_LOGIN_ROLES
 from database.repositories.user_repository import UserRepository
 from services.password_service import PasswordService
-from services.auth_service import MAX_FAILED_ATTEMPTS
-from datetime import datetime
 
 # Benutzer die niemals deaktiviert oder gelöscht werden dürfen
 _PROTECTED_USERNAMES = frozenset({"admin"})

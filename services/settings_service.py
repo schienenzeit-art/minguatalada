@@ -7,7 +7,7 @@ recording for changes made by administrators.
 from __future__ import annotations
 
 import json
-from typing import Any, Dict, List
+from typing import Any
 
 from core.session import Session
 from database.db import initialize_database, get_connection

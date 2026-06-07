@@ -9,7 +9,6 @@ Gibt eine geordnete Liste von PDF-Pfaden zurück.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional
 
 from core.claim_status import ClaimStatus
 from services.document_template_service import DocumentTemplateService, build_claim_context
