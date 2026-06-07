@@ -14,16 +14,16 @@ exclude = [
 ]
 
 [tool.ruff.lint]
-# Sprint 1: konservative Regeln — nur echte Fehler, keine Style-Korrekturen
+# Sprint 2: F401 (unused imports) aktiviert nach Legacy-Bereinigung
 # E9xx  = Syntax-Fehler (SyntaxError, IndentationError)
+# F401  = importiertes Modul nicht genutzt
 # F7xx  = Statement-Fehler (assert, break, return falsch platziert)
 # F821  = Undefinierter Name (echter Bug)
 # F822  = Undefinierter Name im __all__
 # F823  = lokaler Name vor Zuweisung referenziert
-select = ["E9", "F7", "F821", "F822", "F823"]
+select = ["E9", "F401", "F7", "F821", "F822", "F823"]
 
-# F401 (unused imports) und F811 (redefinition) werden in Sprint 2 aktiviert
-# sobald __init__.py Re-Exports und Legacy-Duplikate bereinigt sind.
+# F811 (redefinition) und isort (I) kommen in Sprint 3
 ignore = []
 
 [tool.ruff.lint.per-file-ignores]

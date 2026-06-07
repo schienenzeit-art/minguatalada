@@ -104,7 +104,6 @@ class CardService:
         location_id = claim.get("location_id")
         location_name = claim.get("location_name")
         is_staff = False
-        from domain.categories import CATEGORIES
         # Kategorie "Freiwillige Mitarbeiter" → Staff-Nummernkreis
         if claim.get("category_name") == "Freiwillige Mitarbeiter":
             is_staff = True

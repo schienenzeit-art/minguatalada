@@ -26,7 +26,6 @@ from services.report_service import ReportService
 from services.pdf_service import PDFService
 from services.search_service import SearchService
 from services.user_service import UserService
-from services.pruefung_service import PruefungService
 from services.settings_service import SettingsService
 from services.task_service import TaskService
 from services.dashboard_service import DashboardService
@@ -53,8 +52,8 @@ from database.repositories.audit_repository import AuditRepository
 from database.repositories.approval_repository import ApprovalRepository
 from database.repositories.checklist_repository import ChecklistRepository
 from database.repositories.document_template_repository import DocumentTemplateRepository
-from database.repositories.household_member_repository import HouseholdMemberRepository
 from database.repositories.re_evaluation_repository import ReEvaluationRepository
+from database.repositories.claim_note_repository import ClaimNoteRepository
 
 
 @dataclass
@@ -112,8 +111,8 @@ def build_service_container() -> ServiceContainer:
     card_service     = CardService()
     settings_service = SettingsService()
 
-    audit_service_early        = AuditService(repo=AuditRepository())
-    notification_service_early = NotificationService(repo=NotificationRepository())
+    audit_service        = AuditService(repo=AuditRepository())
+    notification_service = NotificationService(repo=NotificationRepository())
 
     case_service = CaseService(
         person_repo=person_repository,
@@ -124,7 +123,7 @@ def build_service_container() -> ServiceContainer:
     )
     re_evaluation_service = ReEvaluationService(
         repo=ReEvaluationRepository(),
-        notification_service=notification_service_early,
+        notification_service=notification_service,
     )
 
     claim_service = ClaimService(
@@ -133,8 +132,9 @@ def build_service_container() -> ServiceContainer:
         expense_repository=expense_repository,
         settings_service=settings_service,
         re_evaluation_service=re_evaluation_service,
-        notification_service=notification_service_early,
-        audit_service=audit_service_early,
+        notification_service=notification_service,
+        audit_service=audit_service,
+        claim_note_repository=ClaimNoteRepository(),
     )
 
     task_service = TaskService(
@@ -160,24 +160,22 @@ def build_service_container() -> ServiceContainer:
         task_service=task_service,
     )
 
-    document_service      = DocumentService(audit_service=audit_service_early)
+    document_service      = DocumentService(audit_service=audit_service)
     search_service        = SearchService()
     filter_preset_service = FilterPresetService()
 
-    mandant_service           = MandantService()
-    notification_service      = NotificationService(repo=NotificationRepository())
-    appointment_service       = AppointmentService(repo=AppointmentRepository())
-    archive_service           = ArchiveService(repo=ArchiveRepository())
-    person_note_service       = PersonNoteService(repo=PersonNoteRepository())
-    audit_service             = AuditService(repo=AuditRepository())
-    approval_service          = ApprovalService(repo=ApprovalRepository())
+    mandant_service     = MandantService()
+    appointment_service = AppointmentService(repo=AppointmentRepository())
+    archive_service     = ArchiveService(repo=ArchiveRepository())
+    person_note_service = PersonNoteService(repo=PersonNoteRepository())
+    approval_service    = ApprovalService(repo=ApprovalRepository())
     checklist_service         = ChecklistService(repo=ChecklistRepository())
     document_template_service = DocumentTemplateService(repo=DocumentTemplateRepository())
 
     age_alert_service        = AgeAlertService()
     household_service        = HouseholdService()
     ocr_service              = OcrService()
-    update_service           = UpdateService(settings_service=settings_service, audit_service=audit_service_early)
+    update_service           = UpdateService(settings_service=settings_service, audit_service=audit_service)
     user_mail_service        = UserMailService(repo=UserMailConfigRepository())
     wiedervorlage_service    = WiedervorlageService(repo=WiedervorlageRepository())
     document_package_service = DocumentPackageService(

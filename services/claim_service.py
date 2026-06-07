@@ -24,6 +24,7 @@ class ClaimService:
         notification_service,
         audit_service,
         evaluation_service: PruefungService | None = None,
+        claim_note_repository: ClaimNoteRepository | None = None,
     ):
         self.claim_repository = claim_repository
         self.settings_service = settings_service
@@ -31,7 +32,7 @@ class ClaimService:
         self.pruefung_service = evaluation_service
         self.income_repo = income_repository
         self.expense_repo = expense_repository
-        self.note_repo = ClaimNoteRepository()
+        self.note_repo = claim_note_repository or ClaimNoteRepository()
         self.re_eval_svc = re_evaluation_service
         self.notification_svc = notification_service
         self.audit_svc = audit_service

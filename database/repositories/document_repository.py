@@ -108,7 +108,6 @@ class DocumentRepository:
         with get_connection() as connection:
             archived_at = None
             if status == "ARCHIVIERT":
-                from datetime import datetime, UTC
                 archived_at = datetime.now(UTC).isoformat()
             
             cursor = connection.execute(

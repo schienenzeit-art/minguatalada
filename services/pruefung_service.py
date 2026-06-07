@@ -1,1 +1,1 @@
-from domain.services.pruefung_service import EvaluationResult, PruefungService
+from domain.services.pruefung_service import PruefungService
