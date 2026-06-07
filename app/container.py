@@ -46,6 +46,7 @@ from services.re_evaluation_service import ReEvaluationService
 from services.user_mail_service import UserMailService
 from services.wiedervorlage_service import WiedervorlageService
 from services.document_package_service import DocumentPackageService
+from services.manual_service import ManualService
 from database.repositories.user_mail_config_repository import UserMailConfigRepository
 from database.repositories.wiedervorlage_repository import WiedervorlageRepository
 from database.repositories.audit_repository import AuditRepository
@@ -92,6 +93,7 @@ class ServiceContainer:
     user_mail_service: UserMailService
     wiedervorlage_service: WiedervorlageService
     document_package_service: DocumentPackageService
+    manual_service: ManualService
 
 
 def build_service_container() -> ServiceContainer:
@@ -182,6 +184,7 @@ def build_service_container() -> ServiceContainer:
         pdf_service=pdf_service,
         template_service=document_template_service,
     )
+    manual_service = ManualService()
 
     return ServiceContainer(
         auth_service=auth_service,
@@ -218,4 +221,5 @@ def build_service_container() -> ServiceContainer:
         user_mail_service=user_mail_service,
         wiedervorlage_service=wiedervorlage_service,
         document_package_service=document_package_service,
+        manual_service=manual_service,
     )

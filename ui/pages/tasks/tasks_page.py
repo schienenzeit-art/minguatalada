@@ -116,12 +116,14 @@ class TasksPage(QWidget):
         task_service: TaskService | None = None,
         user_service: UserService | None = None,
         location_service: LocationService | None = None,
+        claim_service=None,
         navigate_callback=None,
     ):
         super().__init__()
         self.task_service = task_service or TaskService()
         self.user_service = user_service or UserService()
         self.location_service = location_service or LocationService()
+        self.claim_service = claim_service
         self.navigate_callback = navigate_callback
         self.tasks: list[dict] = []
         self.wiedervorlagen: list[dict] = []
@@ -426,7 +428,7 @@ class TasksPage(QWidget):
         ref_id   = task.get("source_ref_id")
 
         if ref_type == "claim" and ref_id is not None:
-            dialog = ClaimDetailPage(claim_id=ref_id)
+            dialog = ClaimDetailPage(claim_id=ref_id, claim_service=self.claim_service)
             dialog.exec()
             return
         if self.navigate_callback:

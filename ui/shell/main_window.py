@@ -87,6 +87,8 @@ class MainWindow(QMainWindow):
             DashboardPage(
                 dashboard_service=self.services.dashboard_service,
                 navigate_callback=self.route_to,
+                claim_service=self.services.claim_service,
+                case_service=self.services.case_service,
             ),
             title="Dashboard",
             parent_app="dashboard",
@@ -103,6 +105,7 @@ class MainWindow(QMainWindow):
                 task_service=self.services.task_service,
                 user_service=self.services.user_service,
                 location_service=self.services.location_service,
+                claim_service=self.services.claim_service,
                 navigate_callback=self.route_to,
             ),
             title="Aufgaben",
@@ -154,13 +157,12 @@ class MainWindow(QMainWindow):
             title="Standorte",
             parent_app="administration",
         )
-        from services.manual_service import ManualService
         self.register_route(
             "settings",
             SettingsPage(
                 settings_service=self.services.settings_service,
                 navigate_callback=self.route_to,
-                manual_service=ManualService(),
+                manual_service=self.services.manual_service,
             ),
             title="Einstellungen",
             parent_app="administration",

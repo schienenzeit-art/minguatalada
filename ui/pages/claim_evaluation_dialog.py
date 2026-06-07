@@ -43,10 +43,9 @@ class ClaimEvaluationDialog(QDialog):
     ):
         super().__init__()
         self.claim_id = claim_id
-        from services.service_factory import default_claim_service, default_re_eval_service
-        self.claim_service = claim_service or default_claim_service()
+        self.claim_service = claim_service or ClaimService()
         self.checklist_service = checklist_service or ChecklistService()
-        self.re_evaluation_service = re_evaluation_service or default_re_eval_service()
+        self.re_evaluation_service = re_evaluation_service or ReEvaluationService()
         self.current_evaluation = None
         self.claim = None
         self._lock_state: dict = {"locked": False}

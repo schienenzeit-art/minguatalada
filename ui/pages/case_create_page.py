@@ -58,9 +58,8 @@ class CaseCreateDialog(QDialog):
         else:
             self.resize(900, 700)
 
-        from services.service_factory import default_claim_service
         self.case_service = case_service or CaseService()
-        self.claim_service = claim_service or default_claim_service()
+        self.claim_service = claim_service or ClaimService()
         self.document_service = DocumentService()
 
         self.created_case = None

@@ -49,10 +49,18 @@ class ClickableCard(QFrame):
 
 
 class DashboardPage(QWidget):
-    def __init__(self, dashboard_service: DashboardService | None = None, navigate_callback=None):
+    def __init__(
+        self,
+        dashboard_service: DashboardService | None = None,
+        navigate_callback=None,
+        claim_service=None,
+        case_service=None,
+    ):
         super().__init__()
         self.dashboard_service = dashboard_service or DashboardService()
         self.navigate_callback = navigate_callback
+        self.claim_service = claim_service
+        self.case_service = case_service
         self.setup_ui()
         self.load_dashboard()
 
@@ -296,7 +304,7 @@ class DashboardPage(QWidget):
             self.kpi_grid.setColumnStretch(i, 1)
 
     def open_new_case(self):
-        dialog = CaseCreateDialog(self)
+        dialog = CaseCreateDialog(self, case_service=self.case_service, claim_service=self.claim_service)
         if dialog.exec() == QDialog.DialogCode.Accepted:
             # if case created, refresh dashboard
             self.load_dashboard()
