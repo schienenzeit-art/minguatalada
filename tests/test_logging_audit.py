@@ -7,6 +7,8 @@ Sichert ab:
 - Benutzernames ohne Passworte
 - Prüfungs-Events werden protokolliert
 """
+from datetime import datetime, UTC, timedelta
+
 import pytest
 
 from core.claim_status import ClaimStatus

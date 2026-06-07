@@ -1,3 +1,4 @@
+from datetime import datetime, UTC
 from typing import Dict, List, Optional
 
 from database.db import get_connection

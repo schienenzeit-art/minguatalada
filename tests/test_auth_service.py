@@ -2,6 +2,7 @@
 Tests für AuthService: Login-Szenarien, Lockout, deaktivierte Accounts.
 Nutzt eine temporäre In-Memory-DB damit Produktionsdaten unberührt bleiben.
 """
+from datetime import datetime, UTC, timedelta
 import os
 import pytest
 import tempfile
