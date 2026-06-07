@@ -1,24 +1,46 @@
+import os
+import shutil
+import tempfile
 import unittest
 from pathlib import Path
 
+os.environ.setdefault("PYTEST_RUNNING", "1")
+
 from core.session import Session
-from services.document_service import DocumentService
 from core.document_status import DocumentStatus
 
 
 class DocumentServiceTest(unittest.TestCase):
     def setUp(self):
+        self._tmpdir = Path(tempfile.mkdtemp())
+        db_path = self._tmpdir / "test.db"
+        docs_dir = self._tmpdir / "documents"
+
+        import app.config as cfg
+        import database.db as dbmod
+        import services.document_service as docsvc_mod
+
+        self._orig = (cfg.DB_PATH, cfg.DATA_DIR, dbmod.DB_PATH, docsvc_mod.DOCUMENTS_DIR)
+        cfg.DB_PATH = db_path
+        cfg.DATA_DIR = self._tmpdir
+        dbmod.DB_PATH = db_path
+        docsvc_mod.DOCUMENTS_DIR = docs_dir
+
+        from database.db import initialize_database
+        initialize_database()
+
+        from services.document_service import DocumentService
         self.service = DocumentService()
         Session.set_user({"id": 1, "role_name": "Admin", "location_id": 1})
-        self.source_file = Path("data/test_document_service.txt")
+        self.source_file = self._tmpdir / "test_document_service.txt"
         self.source_file.write_text("Testinhalt für Dokumentenservice.", encoding="utf-8")
         self.document_type_id = self.service.list_document_types()[0]["id"]
         self.created_document_ids: list[int] = []
 
     def tearDown(self):
-        Session.clear()
-        if self.source_file.exists():
-            self.source_file.unlink()
+        import app.config as cfg
+        import database.db as dbmod
+        import services.document_service as docsvc_mod
 
         for document_id in self.created_document_ids:
             try:
@@ -28,6 +50,10 @@ class DocumentServiceTest(unittest.TestCase):
             except Exception:
                 pass
             self.service.repository.delete_document(document_id)
+
+        Session.clear()
+        cfg.DB_PATH, cfg.DATA_DIR, dbmod.DB_PATH, docsvc_mod.DOCUMENTS_DIR = self._orig
+        shutil.rmtree(self._tmpdir, ignore_errors=True)
 
     def test_create_document_stores_metadata_and_file(self):
         document = self.service.create_document(
@@ -69,7 +95,7 @@ class DocumentServiceTest(unittest.TestCase):
         self.assertTrue(any(doc["id"] == document["id"] for doc in documents))
 
     def test_missing_source_file_raises(self):
-        missing_path = Path("data/does_not_exist.pdf")
+        missing_path = self._tmpdir / "does_not_exist.pdf"
         with self.assertRaises(FileNotFoundError):
             self.service.create_document(
                 source_file_path=str(missing_path),
