@@ -10,6 +10,9 @@ import os
 
 import pytest
 
+# Überspringen wenn PyQt6 nicht installiert ist (z.B. CI-Ubuntu ohne GUI-Abhängigkeiten)
+pytest.importorskip("PyQt6")
+
 # Offscreen-Rendering erzwingen bevor PyQt6 initialisiert wird
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
