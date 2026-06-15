@@ -120,6 +120,13 @@ class SettingsService:
         except (TypeError, ValueError):
             return default
 
+    def get_bool(self, key: str, default: bool = False) -> bool:
+        """Return a boolean setting. Accepts 'true'/'1'/'yes' (case-insensitive) as True."""
+        value = self.get(key, None)
+        if value is None:
+            return default
+        return str(value).strip().lower() in ("true", "1", "yes")
+
     def get_setting(self, key: str) -> dict[str, Any] | None:
         return self.repository.get_setting(key)
 

@@ -137,6 +137,7 @@ def seed_settings(connection: sqlite3.Connection) -> None:
         ("HARDSHIP_FACTOR", "1.1", "number", "Härtefall", "Multiplikator zur Berechnung der Härtefallgrenze.", 1),
         ("CASE_NUMBER_PREFIX", "AS", "string", "Fallnummern", "Präfix für generierte Fallnummern (z.B. AS → AS-2026-000001).", 1),
         ("UPDATE_MANIFEST_URL", "https://www.schaer-systems.at/updates/manifest.json", "string", "Updates", "URL zum Update-Manifest (JSON). Leer = kein Update-Server konfiguriert.", 1),
+        ("AUTO_CHECK_UPDATES", "false", "boolean", "Updates", "Beim App-Start automatisch auf neue Versionen prüfen.", 1),
     ]
 
     connection.executemany(

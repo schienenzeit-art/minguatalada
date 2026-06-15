@@ -98,6 +98,7 @@ jobs:
             releases/CHANGELOG.txt
             releases/VERSION.txt
             deploy/manifest.json
+            deploy/MinGuataLada_Setup_*.exe
             deploy/update_*.mugala
 
   # ────────────────────────────────────────────────────────────────────────────

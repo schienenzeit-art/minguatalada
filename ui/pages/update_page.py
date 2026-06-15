@@ -15,6 +15,47 @@ from ui.components.page_header import PageHeader
 _ADMIN_ROLES = {"Admin"}
 
 
+class _OnlineCheckWorker(QThread):
+    """Prüft im Hintergrund auf Online-Updates."""
+    done = pyqtSignal(object)  # UpdateCheckResult
+
+    def __init__(self, update_service: UpdateService):
+        super().__init__()
+        self._svc = update_service
+
+    def run(self):
+        self.done.emit(self._svc.check_for_updates())
+
+
+class _DownloadInstallWorker(QThread):
+    """Lädt den Installer herunter und startet ihn. Fehler werden als Signal gemeldet."""
+    progress = pyqtSignal(int, int)   # bytes_done, total (-1 = unbekannt)
+    error    = pyqtSignal(str)
+
+    def __init__(self, update_service: UpdateService, installer_url: str,
+                 version: str, changelog: str, user_id: int | None):
+        super().__init__()
+        self._svc           = update_service
+        self._installer_url = installer_url
+        self._version       = version
+        self._changelog     = changelog
+        self._user_id       = user_id
+
+    def run(self):
+        try:
+            self._svc.download_and_install(
+                installer_url=self._installer_url,
+                version=self._version,
+                changelog=self._changelog,
+                on_progress=lambda done, total: self.progress.emit(done, total),
+                user_id=self._user_id,
+            )
+            # Wenn download_and_install() erfolgreich endet, ruft es sys.exit(0) — hier
+            # wird nie Code erreicht. Nur im Fehlerfall springt der Worker zurück.
+        except Exception as exc:
+            self.error.emit(str(exc))
+
+
 class _UpdateWorker(QThread):
     finished = pyqtSignal(bool, str, str)  # success, message, backup_path
 
@@ -51,6 +92,9 @@ class UpdatePage(QWidget):
         self._selected_package: Path | None = None
         self._validated_manifest = None
         self._worker = None
+        self._online_check_result = None
+        self._check_worker: _OnlineCheckWorker | None = None
+        self._download_worker: _DownloadInstallWorker | None = None
         # Label-Referenzen mit None vorinitialisieren –
         # werden nur gesetzt wenn der Benutzer Admin-Rechte hat.
         self._lbl_version      = None
@@ -88,8 +132,8 @@ class UpdatePage(QWidget):
 
         # Tab-Widget
         tabs = QTabWidget()
-        tabs.addTab(self._build_local_update_tab(), "Lokales Update einspielen")
-        tabs.addTab(self._build_online_tab(), "Online-Update prüfen")
+        tabs.addTab(self._build_online_tab(), "Online-Update")
+        tabs.addTab(self._build_local_update_tab(), "Manuell einspielen")
         tabs.addTab(self._build_history_tab(), "Update-Verlauf")
         tabs.addTab(self._build_backup_tab(), "Backup-Verwaltung")
         root.addWidget(tabs, 1)
@@ -343,7 +387,7 @@ class UpdatePage(QWidget):
             QMessageBox.critical(self, "Update fehlgeschlagen", message)
             self._btn_apply.setEnabled(self._validated_manifest is not None)
 
-    # ── Tab 2: Online-Update ───────────────────────────────────────────────
+    # ── Tab 1: Online-Update ───────────────────────────────────────────────
 
     def _build_online_tab(self) -> QWidget:
         w = QWidget()
@@ -352,61 +396,199 @@ class UpdatePage(QWidget):
         layout.setSpacing(12)
 
         url = self.update_service.get_manifest_url()
-        if url:
-            info = QLabel(f"Konfigurierter Update-Server:\n{url}")
-        else:
-            info = QLabel(
-                "Kein Update-Server konfiguriert.\n\n"
-                "Tragen Sie die URL des Update-Manifests in den Systemeinstellungen ein:\n"
-                "Administration → Einstellungen → UPDATE_MANIFEST_URL"
+        if not url:
+            warn = QLabel(
+                "Kein Update-Server konfiguriert.\n"
+                "Administration → Einstellungen → UPDATE_MANIFEST_URL setzen."
             )
-        info.setWordWrap(True)
-        info.setStyleSheet("color: #555; font-size: 12px;")
-        layout.addWidget(info)
+            warn.setWordWrap(True)
+            warn.setStyleSheet("color: #c0392b; font-size: 12px; padding: 4px;")
+            layout.addWidget(warn)
 
-        btn_check = QPushButton("Auf Updates prüfen")
-        btn_check.setObjectName("SoftButton")
-        btn_check.setEnabled(bool(url))
-        btn_check.clicked.connect(self._on_check_online)
-        layout.addWidget(btn_check, alignment=Qt.AlignmentFlag.AlignLeft)
+        # Versions-Status-Karte
+        status_frame = QFrame()
+        status_frame.setObjectName("Card")
+        grid = QGridLayout(status_frame)
+        grid.setContentsMargins(16, 12, 16, 12)
+        grid.setSpacing(8)
+        grid.setColumnMinimumWidth(0, 160)
 
-        self._txt_online_result = QTextEdit()
-        self._txt_online_result.setReadOnly(True)
-        self._txt_online_result.setMaximumHeight(200)
-        self._txt_online_result.setPlaceholderText("Ergebnis der Online-Prüfung erscheint hier.")
-        self._txt_online_result.setStyleSheet(
-            "font-family: Consolas, monospace; font-size: 12px;"
+        for row, label in enumerate(("Installierte Version:", "Server-Version:", "Status:")):
+            lbl = QLabel(label)
+            lbl.setStyleSheet("color: #888; font-size: 12px;")
+            grid.addWidget(lbl, row, 0)
+
+        self._lbl_installed_ver = QLabel(APP_VERSION)
+        self._lbl_installed_ver.setStyleSheet("font-weight: bold; font-size: 13px;")
+        grid.addWidget(self._lbl_installed_ver, 0, 1)
+
+        self._lbl_server_ver = QLabel("–")
+        self._lbl_server_ver.setStyleSheet("font-size: 13px;")
+        grid.addWidget(self._lbl_server_ver, 1, 1)
+
+        self._lbl_update_status = QLabel("Noch nicht geprüft")
+        self._lbl_update_status.setStyleSheet("font-size: 13px; color: #888;")
+        grid.addWidget(self._lbl_update_status, 2, 1)
+
+        layout.addWidget(status_frame)
+
+        # Changelog
+        group_cl = QGroupBox("Changelog")
+        cl_layout = QVBoxLayout(group_cl)
+        self._txt_online_changelog = QTextEdit()
+        self._txt_online_changelog.setReadOnly(True)
+        self._txt_online_changelog.setMaximumHeight(160)
+        self._txt_online_changelog.setPlaceholderText(
+            "Nach der Prüfung wird der Changelog hier angezeigt."
         )
-        layout.addWidget(self._txt_online_result)
+        cl_layout.addWidget(self._txt_online_changelog)
+        layout.addWidget(group_cl)
+
         layout.addStretch()
+
+        # Buttons
+        btn_row = QHBoxLayout()
+
+        self._btn_check_online = QPushButton("Auf Updates prüfen")
+        self._btn_check_online.setObjectName("SoftButton")
+        self._btn_check_online.setEnabled(bool(url))
+        self._btn_check_online.clicked.connect(self._on_check_online)
+        btn_row.addWidget(self._btn_check_online)
+
+        btn_row.addStretch()
+
+        self._btn_install_online = QPushButton("Jetzt installieren")
+        self._btn_install_online.setEnabled(False)
+        self._btn_install_online.setMinimumWidth(180)
+        self._btn_install_online.setStyleSheet(
+            "QPushButton { background-color: #27ae60; color: white; font-weight: bold;"
+            "  padding: 8px 20px; border-radius: 4px; font-size: 13px; }"
+            "QPushButton:hover { background-color: #219a52; }"
+            "QPushButton:disabled { background-color: #bbb; color: #888; }"
+        )
+        self._btn_install_online.clicked.connect(self._on_install_online)
+        btn_row.addWidget(self._btn_install_online)
+
+        layout.addLayout(btn_row)
         return w
 
     def _on_check_online(self):
-        result = self.update_service.check_for_updates()
+        self._btn_check_online.setEnabled(False)
+        self._btn_check_online.setText("Prüfe...")
+        self._btn_install_online.setEnabled(False)
+        self._online_check_result = None
+        self._lbl_server_ver.setText("–")
+        self._lbl_update_status.setText("Verbinde...")
+        self._lbl_update_status.setStyleSheet("font-size: 13px; color: #888;")
+        self._txt_online_changelog.clear()
+
+        self._check_worker = _OnlineCheckWorker(self.update_service)
+        self._check_worker.done.connect(self._on_check_done)
+        self._check_worker.start()
+
+    def _on_check_done(self, result) -> None:
+        self._btn_check_online.setEnabled(True)
+        self._btn_check_online.setText("Auf Updates prüfen")
+
         if result.error:
-            self._txt_online_result.setStyleSheet(
-                "font-family: Consolas, monospace; font-size: 12px; color: #c0392b;"
+            self._lbl_update_status.setText(f"Fehler: {result.error}")
+            self._lbl_update_status.setStyleSheet("font-size: 13px; color: #c0392b;")
+            return
+
+        if result.available:
+            self._online_check_result = result
+            self._lbl_server_ver.setText(result.version)
+            self._lbl_update_status.setText("Update verfügbar")
+            self._lbl_update_status.setStyleSheet(
+                "font-size: 13px; color: #27ae60; font-weight: bold;"
             )
-            self._txt_online_result.setPlainText(f"Fehler:\n{result.error}")
-        elif result.available:
-            self._txt_online_result.setStyleSheet(
-                "font-family: Consolas, monospace; font-size: 12px; color: #27ae60;"
-            )
-            self._txt_online_result.setPlainText(
-                f"UPDATE VERFÜGBAR\n"
-                f"  Neue Version: {result.version}\n"
-                f"  URL:          {result.url}\n\n"
-                f"Changelog:\n{result.release_notes or '–'}\n\n"
-                f"Laden Sie das Update-Paket herunter und spielen Sie es über\n"
-                f"den Tab 'Lokales Update einspielen' ein."
+            self._txt_online_changelog.setPlainText(result.release_notes or "Kein Changelog vorhanden.")
+            # Installer-Button nur aktivieren wenn auch ein direkter Link vorhanden ist
+            self._btn_install_online.setEnabled(bool(result.installer_url))
+            if not result.installer_url:
+                self._lbl_update_status.setText(
+                    "Update verfügbar — kein installer_url im Manifest (manuelles Update nötig)"
+                )
+        else:
+            self._lbl_server_ver.setText(result.version or APP_VERSION)
+            self._lbl_update_status.setText("Aktuell — kein Update verfügbar")
+            self._lbl_update_status.setStyleSheet("font-size: 13px; color: #27ae60;")
+
+    def _on_install_online(self):
+        result = self._online_check_result
+        if not result or not result.installer_url:
+            return
+
+        confirm = QMessageBox(self)
+        confirm.setWindowTitle("Update installieren")
+        confirm.setIcon(QMessageBox.Icon.Question)
+        confirm.setText(
+            f"<b>Update auf Version {result.version} installieren?</b><br><br>"
+            "Ablauf:<br>"
+            "&nbsp;&nbsp;1. Automatisches Datenbank-Backup<br>"
+            "&nbsp;&nbsp;2. Installer herunterladen<br>"
+            "&nbsp;&nbsp;3. Installer starten → Anwendung wird beendet<br><br>"
+            "<b>Nutzerdaten werden nicht gelöscht.</b><br><br>"
+            "Fortfahren?"
+        )
+        confirm.setStandardButtons(
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Cancel
+        )
+        confirm.setDefaultButton(QMessageBox.StandardButton.Cancel)
+        confirm.button(QMessageBox.StandardButton.Yes).setText("Ja, installieren")
+        confirm.button(QMessageBox.StandardButton.Cancel).setText("Abbrechen")
+
+        if confirm.exec() != QMessageBox.StandardButton.Yes:
+            return
+
+        user_id = (Session.get_user() or {}).get("id")
+
+        self._btn_install_online.setEnabled(False)
+        self._btn_check_online.setEnabled(False)
+
+        progress = QProgressDialog("Verbinde mit Update-Server...", None, 0, 100, self)
+        progress.setWindowTitle("Update wird heruntergeladen")
+        progress.setWindowModality(Qt.WindowModality.WindowModal)
+        progress.setAutoClose(False)
+        progress.setAutoReset(False)
+        progress.setMinimumDuration(0)
+        progress.setValue(0)
+        progress.show()
+
+        self._download_worker = _DownloadInstallWorker(
+            update_service=self.update_service,
+            installer_url=result.installer_url,
+            version=result.version,
+            changelog=result.release_notes or "",
+            user_id=user_id,
+        )
+        self._download_worker.progress.connect(
+            lambda done, total: self._on_download_progress(done, total, progress)
+        )
+        self._download_worker.error.connect(
+            lambda msg: self._on_download_error(msg, progress)
+        )
+        self._download_worker.start()
+
+    def _on_download_progress(self, done: int, total: int, progress: QProgressDialog) -> None:
+        mb_done = done / 1024 / 1024
+        if total > 0:
+            pct = int(done / total * 100)
+            mb_total = total / 1024 / 1024
+            progress.setMaximum(100)
+            progress.setValue(pct)
+            progress.setLabelText(
+                f"Herunterladen... {mb_done:.1f} / {mb_total:.1f} MB  ({pct} %)"
             )
         else:
-            self._txt_online_result.setStyleSheet(
-                "font-family: Consolas, monospace; font-size: 12px; color: #555;"
-            )
-            self._txt_online_result.setPlainText(
-                f"Kein Update verfügbar.\nInstallierte Version {APP_VERSION} ist aktuell."
-            )
+            progress.setMaximum(0)  # Pulse-Modus
+            progress.setLabelText(f"Herunterladen... {mb_done:.1f} MB")
+
+    def _on_download_error(self, message: str, progress: QProgressDialog) -> None:
+        progress.close()
+        self._btn_check_online.setEnabled(True)
+        self._btn_install_online.setEnabled(bool(self._online_check_result))
+        QMessageBox.critical(self, "Update fehlgeschlagen", message)
 
     # ── Tab 3: Update-Verlauf ──────────────────────────────────────────────
 

@@ -57,10 +57,11 @@ class UpdateManifest:
 
 class UpdateCheckResult:
     def __init__(self, available: bool, version: str = "", url: str = "",
-                 sha256: str = "", notes: str = "", error: str = ""):
+                 installer_url: str = "", sha256: str = "", notes: str = "", error: str = ""):
         self.available = available
         self.version = version
-        self.url = url
+        self.url = url                  # .mugala (Fallback / lokaler Tab)
+        self.installer_url = installer_url  # direkter .exe-Installer
         self.sha256 = sha256
         self.release_notes = notes
         self.error = error
@@ -130,6 +131,7 @@ class UpdateService:
                     available=True,
                     version=remote_version,
                     url=manifest.get("mugala_url", manifest.get("url", "")),
+                    installer_url=manifest.get("installer_url", ""),
                     sha256=manifest.get("sha256", ""),
                     notes=manifest.get("changelog", ""),
                 )
@@ -159,6 +161,85 @@ class UpdateService:
                     f"Prüfsumme ungültig.\nErwartet: {expected_sha256}\nErhalten:  {actual}"
                 )
         return dest
+
+    def download_and_install(
+        self,
+        installer_url: str,
+        version: str,
+        changelog: str = "",
+        on_progress=None,
+        user_id: int | None = None,
+    ) -> None:
+        """
+        One-Click-Update-Flow:
+          1. Datenbank-Backup erstellen
+          2. .exe-Installer herunterladen (on_progress(bytes_done, total) optional)
+          3. Update-Verlauf protokollieren
+          4. Installer starten → App beendet sich
+
+        on_progress(bytes_done: int, total: int) — total ist -1 wenn Content-Length fehlt.
+        Wirft RuntimeError bei Backup- oder Download-Fehler (App läuft weiter).
+        """
+        import sys as _sys
+        import urllib.request
+
+        # 1. Backup — Abbruch bei Fehler, bevor irgendetwas heruntergeladen wird
+        try:
+            backup_path = self.create_backup()
+        except Exception as exc:
+            raise RuntimeError(f"Backup fehlgeschlagen — Update abgebrochen:\n{exc}") from exc
+
+        # 2. Download
+        UPDATES_DIR.mkdir(parents=True, exist_ok=True)
+        filename = installer_url.split("/")[-1]
+        if not filename.lower().endswith(".exe"):
+            filename = f"MinGuataLada_Setup_{version}.exe"
+        dest = UPDATES_DIR / filename
+
+        req = urllib.request.Request(
+            installer_url,
+            headers={"User-Agent": f"MinGuataLada/{APP_VERSION}"},
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=300) as resp:
+                total = int(resp.headers.get("Content-Length", -1))
+                done = 0
+                with open(dest, "wb") as fh:
+                    while True:
+                        chunk = resp.read(65536)
+                        if not chunk:
+                            break
+                        fh.write(chunk)
+                        done += len(chunk)
+                        if on_progress:
+                            on_progress(done, total)
+        except Exception as exc:
+            dest.unlink(missing_ok=True)
+            raise RuntimeError(f"Download fehlgeschlagen:\n{exc}") from exc
+
+        # 3. Protokollieren
+        self._record_success(
+            version=version,
+            changelog=changelog,
+            backup_path=str(backup_path),
+            migrations=[],
+            user_id=user_id,
+        )
+
+        # 4. Installer starten + App beenden
+        try:
+            launch_args = [str(dest)]
+            if getattr(_sys, "frozen", False):
+                current_install_dir = Path(_sys.executable).parent.resolve()
+                if current_install_dir != UPDATES_DIR.resolve():
+                    launch_args += ["--mgl-replace", str(current_install_dir)]
+            subprocess.Popen(launch_args, creationflags=subprocess.DETACHED_PROCESS)
+            _sys.exit(0)
+        except Exception as exc:
+            raise RuntimeError(
+                f"Installer konnte nicht gestartet werden:\n{exc}\n\n"
+                f"Bitte manuell ausführen:\n{dest}"
+            ) from exc
 
     # ── Paket-Validierung ──────────────────────────────────────────────────
 

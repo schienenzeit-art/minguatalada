@@ -20,9 +20,10 @@ Ausgabe:
   ├── CHANGELOG.txt
   └── VERSION.txt
 
-  deploy/               ← per FTP/SSH auf web15.wh20.easyname.systems hochladen
+  deploy/               ← vollautomatisch per FTP auf schaer-systems.at/updates/
   ├── manifest.json
-  └── update_{version}.mugala
+  ├── MinGuataLada_Setup_{version}.exe   ← Direkt-Installer (ab v1.6.0 primärer Update-Kanal)
+  └── update_{version}.mugala            ← Fallback für manuelle / Offline-Updates
 
 Argumente:
   --skip-tests    Tests ueberspringen (nützlich wenn CI bereits getestet hat)
@@ -331,9 +332,11 @@ def step_server_manifest(
     _step(7, "Server-Manifest")
     version = ver["version"]
 
+    installer_name = f"MinGuataLada_Setup_{version}.exe"
     manifest = {
         "version":          version,
         "release_date":     date.today().isoformat(),
+        "installer_url":    f"{MANIFEST_BASE_URL}/{installer_name}",
         "mugala_url":       f"{MANIFEST_BASE_URL}/update_{version}.mugala",
         "sha256":           mugala_sha256,
         "min_base_version": ver.get("min_base_version", "1.0.0"),
@@ -353,7 +356,8 @@ def step_server_manifest(
     else:
         print(f"  {_Y}!{_X}  Server-Manifest NICHT signiert")
 
-    _ok(f"mugala_url: {manifest['mugala_url']}")
+    _ok(f"installer_url: {manifest['installer_url']}")
+    _ok(f"mugala_url:    {manifest['mugala_url']}")
     return manifest
 
 
@@ -398,11 +402,12 @@ def step_assemble(
         shutil.rmtree(DEPLOY_DIR)
     DEPLOY_DIR.mkdir(parents=True)
 
-    shutil.copy2(RELEASE_DIR / "manifest.json", DEPLOY_DIR / "manifest.json")
-    shutil.copy2(RELEASE_DIR / mugala_name, DEPLOY_DIR / mugala_name)
+    shutil.copy2(RELEASE_DIR / "manifest.json",    DEPLOY_DIR / "manifest.json")
+    shutil.copy2(RELEASE_DIR / installer_path.name, DEPLOY_DIR / installer_path.name)
+    shutil.copy2(RELEASE_DIR / mugala_name,         DEPLOY_DIR / mugala_name)
 
-    _ok(f"deploy/   [>>] manifest.json + {mugala_name}")
-    _info(f"Upload: SCP deploy/ [>>] web15.wh20.easyname.systems:/www/updates/")
+    _ok(f"deploy/   [>>] manifest.json + {installer_path.name} + {mugala_name}")
+    _info(f"Upload: FTP deploy/ [>>] schaer-systems.at/updates/")
 
 
 # ── Einstiegspunkt ────────────────────────────────────────────────────────────
@@ -450,9 +455,11 @@ def main() -> None:
     print(f"  Manifest:  {_W}releases/manifest.json{_X}")
     print(f"\n  Deploy-Artefakte in: {_W}deploy/{_X}")
     print(f"  Server:  {_B}https://www.schaer-systems.at/updates/{_X}")
-    print(f"\n  Nächste Schritte:")
-    print(f"    1. deploy/ per FTP/SCP auf web15.wh20.easyname.systems hochladen")
-    print(f"    2. In der App: Admin [>>] Updates [>>] Online prüfen")
+    print(f"\n  CI/CD: Tag pushen → vollautomatischer FTP-Deploy")
+    print(f"    git tag v{version} && git push origin v{version}")
+    print(f"\n  Manueller Übergang (Kunde auf 1.3.0):")
+    print(f"    releases/update_{version}.mugala  →  lokal einspielen (einmalig)")
+    print(f"    Ab v{version}: Auto-Update via installer_url vollautomatisch")
     print(f"{'='*60}\n")
 
 

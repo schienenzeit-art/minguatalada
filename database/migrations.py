@@ -493,6 +493,16 @@ def _m026_household_member_category(c: sqlite3.Connection) -> None:
     _add_col(c, "household_members", "category_id", "INTEGER REFERENCES categories(id)")
 
 
+def _m027_auto_check_updates_setting(c: sqlite3.Connection) -> None:
+    """Settings: AUTO_CHECK_UPDATES-Eintrag fuer bestehende Installationen einfuegen."""
+    c.execute(
+        "INSERT OR IGNORE INTO settings "
+        "(key, value, value_type, category, description, editable_by_admin) "
+        "VALUES ('AUTO_CHECK_UPDATES', 'false', 'boolean', 'Updates', "
+        "'Beim App-Start automatisch auf neue Versionen prüfen.', 1)"
+    )
+
+
 # ── Registrierung ─────────────────────────────────────────────────────────────
 
 MIGRATIONS: list[tuple[int, str]] = [
@@ -522,6 +532,7 @@ MIGRATIONS: list[tuple[int, str]] = [
     (24, "checklists: Templates, Items, Claim-Items"),
     (25, "update_history + update_migrations Tabellen"),
     (26, "household_members: category_id"),
+    (27, "settings: AUTO_CHECK_UPDATES Standardwert"),
 ]
 
 _MIGRATION_FNS = {
@@ -551,6 +562,7 @@ _MIGRATION_FNS = {
     24: _m024_checklists,
     25: _m025_update_history,
     26: _m026_household_member_category,
+    27: _m027_auto_check_updates_setting,
 }
 
 

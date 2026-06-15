@@ -1,5 +1,9 @@
+from PyQt6.QtCore import QThread, pyqtSignal, QTimer
 from PyQt6.QtGui import QAction
-from PyQt6.QtWidgets import QMainWindow, QMessageBox, QWidget, QHBoxLayout, QVBoxLayout
+from PyQt6.QtWidgets import (
+    QMainWindow, QMessageBox, QWidget, QHBoxLayout, QVBoxLayout,
+    QFrame, QLabel, QPushButton,
+)
 
 from app.container import ServiceContainer
 from core.session import Session
@@ -30,6 +34,67 @@ from ui.navigation.navigation_controller import NavigationController
 from ui.shell.workspace_host import WorkspaceHost
 
 
+class _UpdateCheckWorker(QThread):
+    """Prüft im Hintergrund auf verfügbare Updates ohne den UI-Thread zu blockieren."""
+    done = pyqtSignal(object)  # UpdateCheckResult
+
+    def __init__(self, update_service):
+        super().__init__()
+        self._update_service = update_service
+
+    def run(self):
+        result = self._update_service.check_for_updates()
+        self.done.emit(result)
+
+
+class _UpdateBanner(QFrame):
+    """Schmaler Hinweis-Banner wenn ein Update verfügbar ist."""
+    dismissed = pyqtSignal()
+    install_requested = pyqtSignal()
+
+    def __init__(self, version: str, parent=None):
+        super().__init__(parent)
+        self.setObjectName("UpdateBanner")
+        self.setStyleSheet(
+            "#UpdateBanner {"
+            "  background-color: #1a73e8; color: white;"
+            "  border-bottom: 1px solid #1558b0;"
+            "}"
+        )
+        self.setFixedHeight(38)
+
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(16, 0, 8, 0)
+        layout.setSpacing(12)
+
+        lbl = QLabel(f"Update verfügbar: Version {version}")
+        lbl.setStyleSheet("color: white; font-size: 12px; font-weight: bold;")
+        layout.addWidget(lbl)
+        layout.addStretch()
+
+        btn_install = QPushButton("Zum Update-Center")
+        btn_install.setStyleSheet(
+            "QPushButton { background: white; color: #1a73e8; border: none;"
+            "  padding: 4px 12px; border-radius: 3px; font-size: 12px; font-weight: bold; }"
+            "QPushButton:hover { background: #e8f0fe; }"
+        )
+        btn_install.clicked.connect(self.install_requested)
+        layout.addWidget(btn_install)
+
+        btn_close = QPushButton("✕")
+        btn_close.setFixedSize(24, 24)
+        btn_close.setStyleSheet(
+            "QPushButton { background: transparent; color: white; border: none; font-size: 14px; }"
+            "QPushButton:hover { color: #cce0ff; }"
+        )
+        btn_close.clicked.connect(self._on_dismiss)
+        layout.addWidget(btn_close)
+
+    def _on_dismiss(self):
+        self.hide()
+        self.dismissed.emit()
+
+
 class MainWindow(QMainWindow):
     def __init__(self, service_container: ServiceContainer):
         super().__init__()
@@ -39,7 +104,11 @@ class MainWindow(QMainWindow):
         self.navigation_controller = NavigationController(self.workspace_host, self.on_route_changed)
         self.topbar = None
         self.navigation = None
+        self._update_banner: _UpdateBanner | None = None
+        self._update_worker: _UpdateCheckWorker | None = None
         self.init_ui()
+        # Auto-Check 2 Sekunden nach Start (UI muss vollständig geladen sein)
+        QTimer.singleShot(2000, self._maybe_start_update_check)
 
     def init_ui(self):
         root = QWidget()
@@ -71,6 +140,11 @@ class MainWindow(QMainWindow):
         self.topbar.search_requested.connect(self.on_search_requested)
 
         root_layout.addWidget(self.topbar)
+
+        # Banner-Platzhalter — wird erst nach Update-Check befüllt und eingeblendet
+        self._banner_slot = QWidget()
+        self._banner_slot.setFixedHeight(0)
+        root_layout.addWidget(self._banner_slot)
 
         body_layout = QHBoxLayout()
         body_layout.setContentsMargins(0, 0, 0, 0)
@@ -409,3 +483,35 @@ class MainWindow(QMainWindow):
             parent=self,
         )
         dlg.exec()
+
+    # ── Auto-Update-Check ─────────────────────────────────────────────────
+
+    def _maybe_start_update_check(self) -> None:
+        """Startet den Hintergrund-Check nur wenn Setting aktiv und Benutzer Admin."""
+        user = Session.get_user() or {}
+        if user.get("role_name") != "Admin":
+            return
+        try:
+            enabled = self.services.settings_service.get_bool("AUTO_CHECK_UPDATES", False)
+        except Exception:
+            return
+        if not enabled:
+            return
+        self._update_worker = _UpdateCheckWorker(self.services.update_service)
+        self._update_worker.done.connect(self._on_update_check_done)
+        self._update_worker.start()
+
+    def _on_update_check_done(self, result) -> None:
+        if not result.available:
+            return
+        banner = _UpdateBanner(version=result.version, parent=self)
+        banner.install_requested.connect(lambda: self.route_to("software_update"))
+        banner.dismissed.connect(lambda: self._banner_slot.setFixedHeight(0))
+
+        # Banner in den Platzhalter einbetten
+        layout = QVBoxLayout(self._banner_slot)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+        layout.addWidget(banner)
+        self._banner_slot.setFixedHeight(38)
+        self._update_banner = banner
