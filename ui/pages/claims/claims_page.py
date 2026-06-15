@@ -15,6 +15,7 @@ from services.card_service import CardService
 from services.case_service import CaseService
 from services.claim_service import ClaimService
 from services.filter_preset_service import FilterPresetService
+from services.service_factory import make_claim_service
 from ui.components.page_header import PageHeader
 from ui.components.action_button import ActionButton
 from ui.pages.case_create_page import CaseCreateDialog
@@ -42,7 +43,7 @@ class ClaimsPage(QWidget):
         filter_preset_service: FilterPresetService | None = None,
     ):
         super().__init__()
-        self.claim_service = claim_service or ClaimService()
+        self.claim_service = claim_service or make_claim_service()
         self.case_service = case_service or CaseService()
         self.card_service = card_service or CardService()
         self.filter_preset_service = filter_preset_service or FilterPresetService()

@@ -112,6 +112,14 @@ class SettingsService:
             return default
         return setting["value"]
 
+    def get_float(self, key: str, default: float = 0.0) -> float:
+        """Return a numeric setting as float, guarding against DB-stored strings."""
+        value = self.get(key, default)
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return default
+
     def get_setting(self, key: str) -> dict[str, Any] | None:
         return self.repository.get_setting(key)
 

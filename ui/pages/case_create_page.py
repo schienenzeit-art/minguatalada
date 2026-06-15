@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 
 from PyQt6.QtWidgets import (
@@ -27,8 +28,11 @@ from PyQt6.QtCore import Qt, QDate
 from services.case_service import CaseService
 from services.claim_service import ClaimService
 from services.document_service import DocumentService
+from services.service_factory import make_claim_service
 from core.case_context import CaseContext
 from ui.pages.claim_evaluation_dialog import ClaimEvaluationDialog
+
+logger = logging.getLogger(__name__)
 
 
 class CaseCreateDialog(QDialog):
@@ -59,7 +63,7 @@ class CaseCreateDialog(QDialog):
             self.resize(900, 700)
 
         self.case_service = case_service or CaseService()
-        self.claim_service = claim_service or ClaimService()
+        self.claim_service = claim_service or make_claim_service()
         self.document_service = DocumentService()
 
         self.created_case = None
@@ -498,8 +502,8 @@ class CaseCreateDialog(QDialog):
                     relationship=rel.text() if rel else "Sonstiges",
                     category_id=category_id,
                 )
-        except Exception as e:
-            print(f"Haushaltsmitglieder konnten nicht gespeichert werden: {e}")
+        except Exception:
+            logger.exception("Haushaltsmitglieder konnten nicht gespeichert werden")
 
     def on_start_evaluation(self):
         if not self.created_case:
@@ -511,12 +515,21 @@ class CaseCreateDialog(QDialog):
         # CaseContext setzen bevor Dialog öffnet
         CaseContext.set(claim_id)
 
-        dlg = ClaimEvaluationDialog(claim_id=claim_id, claim_service=self.claim_service)
-        if dlg.exec() == QDialog.DialogCode.Accepted:
-            # Nach Prüfung direkt in den Fall navigieren
-            from ui.pages.claim_detail_page import ClaimDetailPage
-            detail = ClaimDetailPage(
-                claim_id=claim_id,
-                claim_service=self.claim_service,
+        try:
+            dlg = ClaimEvaluationDialog(claim_id=claim_id, claim_service=self.claim_service)
+            if dlg.exec() == QDialog.DialogCode.Accepted:
+                # Nach Prüfung direkt in den Fall navigieren
+                from ui.pages.claim_detail_page import ClaimDetailPage
+                detail = ClaimDetailPage(
+                    claim_id=claim_id,
+                    claim_service=self.claim_service,
+                )
+                detail.exec()
+        except Exception:
+            logger.exception("Prüfungsdialog konnte nicht geöffnet werden")
+            QMessageBox.critical(
+                self,
+                "Fehler beim Öffnen der Prüfung",
+                "Der Prüfungsdialog konnte nicht geöffnet werden.\n"
+                "Bitte prüfen Sie die App-Protokolldatei für weitere Details.",
             )
-            detail.exec()

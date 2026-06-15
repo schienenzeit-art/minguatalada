@@ -15,6 +15,7 @@ from PyQt6.QtWidgets import (
 from ui.components.page_header import PageHeader
 from services.document_template_service import DocumentTemplateService, TEMPLATE_TYPES
 from services.category_service import CategoryService
+from services.service_factory import make_pdf_service
 from core.claim_status import ClaimStatus
 
 
@@ -499,14 +500,13 @@ class _GenerateDialog(QDialog):
 
     def _save_as_pdf(self):
         from PyQt6.QtWidgets import QFileDialog
-        from services.pdf_service import PDFService
         path, _ = QFileDialog.getSaveFileName(
             self, "PDF speichern", f"{self._template['name']}.pdf", "PDF (*.pdf)"
         )
         if not path:
             return
         try:
-            pdf_svc = PDFService()
+            pdf_svc = make_pdf_service()
             pdf_svc.generate_letter_pdf(self._template["id"], self._get_context(), file_path=path)
             from PyQt6.QtCore import QUrl
             from PyQt6.QtGui import QDesktopServices
@@ -520,9 +520,8 @@ class _GenerateDialog(QDialog):
         if not ok or not to.strip():
             return
         try:
-            from services.pdf_service import PDFService
             from services.mail_service import MailService
-            pdf_svc  = PDFService()
+            pdf_svc  = make_pdf_service()
             pdf_path = pdf_svc.generate_letter_pdf(self._template["id"], self._get_context())
             mail_svc = MailService()
             name = f"{self._get_context().get('VORNAME','')} {self._get_context().get('NACHNAME','')}".strip()

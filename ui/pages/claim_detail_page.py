@@ -20,6 +20,7 @@ from PyQt6.QtCore import Qt, QDate
 
 from services.card_service import CardService
 from services.claim_service import ClaimService
+from services.service_factory import make_claim_service
 from core.claim_status import ClaimStatus
 from core.session import Session
 from core.case_context import CaseContext
@@ -42,7 +43,7 @@ class ClaimDetailPage(QDialog):
         flags |= Qt.WindowType.WindowMaximizeButtonHint
         self.setWindowFlags(flags)
         self.claim_id = claim_id
-        self.claim_service = claim_service or ClaimService()
+        self.claim_service = claim_service or make_claim_service()
         self.card_service = card_service or CardService()
         self.claim = None
         self.setup_ui()

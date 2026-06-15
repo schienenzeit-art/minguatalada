@@ -36,10 +36,10 @@ class ClaimService:
 
     def _default_pruefung_service(self) -> PruefungService:
         return PruefungService(
-            base_limit=self.settings_service.get("BASE_LIMIT"),
-            additional_adult_limit=self.settings_service.get("ADDITIONAL_ADULT_LIMIT"),
-            child_limit=self.settings_service.get("CHILD_LIMIT"),
-            hardship_factor=self.settings_service.get("HARDSHIP_FACTOR"),
+            base_limit=self.settings_service.get_float("BASE_LIMIT", 820.0),
+            additional_adult_limit=self.settings_service.get_float("ADDITIONAL_ADULT_LIMIT", 390.0),
+            child_limit=self.settings_service.get_float("CHILD_LIMIT", 185.0),
+            hardship_factor=self.settings_service.get_float("HARDSHIP_FACTOR", 1.1),
         )
 
     def _resolve_pruefung_service(self) -> PruefungService:

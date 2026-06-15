@@ -34,6 +34,7 @@ from services.claim_service import ClaimService
 from services.document_service import DocumentService
 from services.pdf_service import PDFService
 from services.person_note_service import PersonNoteService
+from services.service_factory import make_claim_service, make_pdf_service
 from database.repositories.person_repository import PersonRepository
 
 
@@ -48,9 +49,9 @@ class PersonDossierDialog(QDialog):
     ):
         super().__init__()
         self.person_id = person_id
-        self.claim_service = claim_service or ClaimService()
+        self.claim_service = claim_service or make_claim_service()
         self.document_service = document_service or DocumentService()
-        self.pdf_service = pdf_service or PDFService(document_service=self.document_service)
+        self.pdf_service = pdf_service or make_pdf_service()
         self.person_note_service = person_note_service or PersonNoteService()
         self.person_repository = PersonRepository()
         self.selected_files: list[str] = []

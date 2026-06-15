@@ -30,6 +30,7 @@ from core.task_type import TaskType
 from services.task_service import TaskService
 from services.user_service import UserService
 from services.location_service import LocationService
+from services.service_factory import make_task_service
 from ui.components.page_header import PageHeader
 from ui.pages.claim_detail_page import ClaimDetailPage
 from ui.pages.tasks.task_dialog import TaskDialog
@@ -120,7 +121,7 @@ class TasksPage(QWidget):
         navigate_callback=None,
     ):
         super().__init__()
-        self.task_service = task_service or TaskService()
+        self.task_service = task_service or make_task_service()
         self.user_service = user_service or UserService()
         self.location_service = location_service or LocationService()
         self.claim_service = claim_service

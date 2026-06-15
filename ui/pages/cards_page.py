@@ -20,6 +20,7 @@ from services.card_service import CardService
 from services.claim_service import ClaimService
 from services.location_service import LocationService
 from services.pdf_service import PDFService
+from services.service_factory import make_claim_service, make_pdf_service
 from ui.pages.claim_detail_page import ClaimDetailPage
 from core.card_status import CardStatus
 
@@ -40,8 +41,8 @@ class CardsPage(QWidget):
         super().__init__()
         self.card_service = card_service or CardService()
         self.location_service = location_service or LocationService()
-        self.claim_service = claim_service or ClaimService()
-        self.pdf_service = pdf_service or PDFService()
+        self.claim_service = claim_service or make_claim_service()
+        self.pdf_service = pdf_service or make_pdf_service()
         self.cards = []
         self.active_filters = {}  # KPI-Filter speichern
         self.setup_ui()

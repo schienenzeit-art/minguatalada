@@ -1,4 +1,5 @@
 import json
+import logging
 from datetime import datetime
 from typing import Dict
 
@@ -31,6 +32,9 @@ from services.checklist_service import ChecklistService
 from services.re_evaluation_service import ReEvaluationService
 from services.document_service import DocumentService
 from services.pdf_service import PDFService
+from services.service_factory import make_claim_service, make_re_evaluation_service
+
+logger = logging.getLogger(__name__)
 
 
 class ClaimEvaluationDialog(QDialog):
@@ -43,9 +47,9 @@ class ClaimEvaluationDialog(QDialog):
     ):
         super().__init__()
         self.claim_id = claim_id
-        self.claim_service = claim_service or ClaimService()
+        self.claim_service = claim_service or make_claim_service()
         self.checklist_service = checklist_service or ChecklistService()
-        self.re_evaluation_service = re_evaluation_service or ReEvaluationService()
+        self.re_evaluation_service = re_evaluation_service or make_re_evaluation_service()
         self.current_evaluation = None
         self.claim = None
         self._lock_state: dict = {"locked": False}
@@ -590,8 +594,7 @@ class ClaimEvaluationDialog(QDialog):
                     if Path(pdf_path).exists():
                         QDesktopServices.openUrl(QUrl.fromLocalFile(str(pdf_path)))
                 except Exception:
-                    # fall back to a simple success dialog offering open actions
-                    pass
+                    logger.exception("PDF öffnen nach Prüfungsprotokoll fehlgeschlagen")
         except Exception as e:
             QMessageBox.critical(self, "Fehler", f"Fehler beim Speichern der Daten: {e}")
             return
@@ -618,7 +621,7 @@ class ClaimEvaluationDialog(QDialog):
             )
             panel.exec()
         except Exception:
-            pass
+            logger.exception("PostEvaluationPanel konnte nicht geöffnet werden")
 
     def _update_lock_ui(self) -> None:
         """Aktualisiert den Lock-Banner und Buttons basierend auf dem aktuellen Sperr-Status."""
@@ -654,7 +657,7 @@ class ClaimEvaluationDialog(QDialog):
                 self._lock_banner.setVisible(False)
                 self._request_approval_button.setVisible(False)
         except Exception:
-            pass
+            logger.exception("Lock-UI-Update fehlgeschlagen")
 
     def _on_request_re_evaluation(self) -> None:
         """Mitarbeiter fordert Freigabe zur erneuten Prüfung an."""
@@ -708,7 +711,7 @@ class ClaimEvaluationDialog(QDialog):
             self._checklist_widget.setMinimumHeight(160)
             self._checklist_inner_layout.addWidget(self._checklist_widget)
         except Exception:
-            pass
+            logger.exception("Checkliste konnte nicht geladen werden")
 
     def _offer_open_pdf(self, pdf_path: str) -> None:
         """Zeigt nach erfolgreicher PDF-Erzeugung einen Dialog mit Öffnen/Ordner-Öffnen-Optionen."""
@@ -839,7 +842,7 @@ class ClaimEvaluationDialog(QDialog):
                     json.dumps(draft, ensure_ascii=False, indent=2), encoding="utf-8"
                 )
         except Exception:
-            pass
+            logger.exception("Autosave-Entwurf konnte nicht geschrieben werden")
 
     def _offer_draft_restore(self) -> None:
         """Fragt ob ein vorhandener Entwurf wiederhergestellt werden soll."""
@@ -861,7 +864,7 @@ class ClaimEvaluationDialog(QDialog):
             if answer == QMessageBox.StandardButton.Yes:
                 self._restore_from_draft(data)
         except Exception:
-            pass
+            logger.exception("Entwurf konnte nicht angeboten/geladen werden")
 
     def _restore_from_draft(self, data: dict) -> None:
         """Befüllt alle Formularfelder aus einem gespeicherten Entwurf."""
@@ -899,7 +902,7 @@ class ClaimEvaluationDialog(QDialog):
                 f"Entwurf vom {data.get('saved_at', '?')} wiederhergestellt."
             )
         except Exception:
-            pass
+            logger.exception("Entwurf konnte nicht wiederhergestellt werden")
 
     def _clear_draft(self) -> None:
         """Löscht den Entwurf nach erfolgreichem Speichern."""
@@ -908,4 +911,4 @@ class ClaimEvaluationDialog(QDialog):
             if path and path.exists():
                 path.unlink()
         except Exception:
-            pass
+            logger.exception("Entwurf konnte nicht gelöscht werden")

@@ -12,6 +12,7 @@ from PyQt6.QtWidgets import (
 )
 from ui.components.page_header import PageHeader
 from services.re_evaluation_service import ReEvaluationService
+from services.service_factory import make_re_evaluation_service
 
 
 _STATUS_STYLES = {
@@ -35,7 +36,7 @@ def _chip(status: str) -> QLabel:
 class ReEvaluationPage(QWidget):
     def __init__(self, re_evaluation_service: ReEvaluationService | None = None):
         super().__init__()
-        self.svc = re_evaluation_service or ReEvaluationService()
+        self.svc = re_evaluation_service or make_re_evaluation_service()
         self._pending: list[dict] = []
         self._setup_ui()
         self.refresh()

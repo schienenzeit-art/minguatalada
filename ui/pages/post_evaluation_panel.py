@@ -180,8 +180,8 @@ class PostEvaluationPanel(QDialog):
 
     def _get_pdf(self):
         if self._pdf is None:
-            from services.pdf_service import PDFService
-            self._pdf = PDFService()
+            from services.service_factory import make_pdf_service
+            self._pdf = make_pdf_service()
         return self._pdf
 
     def _ensure_pdfs(self) -> bool:

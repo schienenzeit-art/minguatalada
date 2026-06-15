@@ -29,6 +29,7 @@ def _logo_path() -> Path:
     return base / "assets" / "logo.png"
 
 from services.dashboard_service import DashboardService
+from services.service_factory import make_dashboard_service
 from ui.pages.case_create_page import CaseCreateDialog
 from ui.components.page_header import PageHeader
 from ui.components.table_widget import TableWidget
@@ -57,7 +58,7 @@ class DashboardPage(QWidget):
         case_service=None,
     ):
         super().__init__()
-        self.dashboard_service = dashboard_service or DashboardService()
+        self.dashboard_service = dashboard_service or make_dashboard_service()
         self.navigate_callback = navigate_callback
         self.claim_service = claim_service
         self.case_service = case_service

@@ -63,11 +63,11 @@ class LetterWizardDialog(QDialog):
             from services.document_template_service import DocumentTemplateService
             self._template_service = DocumentTemplateService()
         if self._pdf_service is None:
-            from services.pdf_service import PDFService
-            self._pdf_service = PDFService()
+            from services.service_factory import make_pdf_service
+            self._pdf_service = make_pdf_service()
         if self._claim_service is None:
-            from services.claim_service import ClaimService
-            self._claim_service = ClaimService()
+            from services.service_factory import make_claim_service
+            self._claim_service = make_claim_service()
 
     # ── UI ────────────────────────────────────────────────────────────────────
     def _setup_ui(self):
