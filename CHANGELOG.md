@@ -6,6 +6,32 @@ Versionierung nach [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
 
+## [1.6.0] – 2026-06-15
+
+### Added
+- **Online-Update-Center**: Automatischer Update-Check beim App-Start (Einstellung
+  `AUTO_CHECK_UPDATES`). Bei verfügbarem Update erscheint ein blauer Banner zwischen
+  Topbar und Inhalt — Klick führt direkt zum Update-Center.
+- **Direkter .exe-Installer-Download**: Update-Center lädt den Windows-Installer
+  automatisch herunter und startet ihn (kein manueller Datei-Import mehr nötig).
+  Fortschrittsanzeige mit MB-Anzeige während des Downloads.
+- **PostgreSQL-Backend**: Dual-Backend via `DATABASE_URL`-Umgebungsvariable.
+  Raspberry Pi als zentraler Datenbankserver via Tailscale VPN (100.64.0.0/10).
+  Bestehende SQLite-Installationen laufen unverändert weiter.
+
+### Changed
+- **Update-Center UI**: Tab „Online-Update" ist jetzt primärer Tab mit
+  Versions-Status-Karte und direktem „Jetzt installieren"-Button.
+  Tab „Manuell einspielen" bleibt als Fallback für Offline-Szenarien.
+- **Update-Manifest**: Server-Manifest enthält neu `installer_url` (direkter
+  Link zur Setup-EXE). `mugala_url` bleibt für Abwärtskompatibilität erhalten.
+
+### Fixed
+- Update-Check lieferte HTTP 400 bei easyname-Hosting — User-Agent-Header
+  `MinGuataLada/{version}` wird jetzt bei allen HTTP-Anfragen gesetzt.
+
+---
+
 ## [1.5.0] – 2026-06-07
 
 Architektur-Refactoring Sprint 2–3: Code-Qualitätsgates und Schuldenabbau.
