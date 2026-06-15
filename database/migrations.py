@@ -6,6 +6,9 @@ noch nicht angewandten Migrationen in Reihenfolge an.
 
 Neue Spalten oder Tabellen kommen ausschliesslich hierher — nie direkt in die
 executescript()-Basisschema-Sektion von db.py.
+
+Fuer PostgreSQL werden die Migrationen NICHT ausgefuehrt — das volle Schema wird
+durch schema_postgres.sql angelegt. Die Versionen werden nur als "applied" markiert.
 """
 
 import logging
@@ -16,18 +19,36 @@ logger = logging.getLogger(__name__)
 
 # ── Hilfsfunktionen ───────────────────────────────────────────────────────────
 
-def _col_exists(conn: sqlite3.Connection, table: str, col: str) -> bool:
+def _is_postgres(conn) -> bool:
+    """True wenn conn eine PgConnectionAdapter-Instanz ist."""
+    return not isinstance(conn, sqlite3.Connection)
+
+
+def _col_exists(conn, table: str, col: str) -> bool:
+    if _is_postgres(conn):
+        row = conn.execute(
+            "SELECT 1 FROM information_schema.columns "
+            "WHERE table_name = %s AND column_name = %s",
+            (table, col),
+        ).fetchone()
+        return row is not None
     rows = conn.execute(f"PRAGMA table_info({table})").fetchall()
     return any(r[1] == col for r in rows)
 
 
-def _table_exists(conn: sqlite3.Connection, table: str) -> bool:
+def _table_exists(conn, table: str) -> bool:
+    if _is_postgres(conn):
+        row = conn.execute(
+            "SELECT 1 FROM information_schema.tables WHERE table_name = %s",
+            (table,),
+        ).fetchone()
+        return row is not None
     return bool(conn.execute(
         "SELECT 1 FROM sqlite_master WHERE type='table' AND name=?", (table,)
     ).fetchone())
 
 
-def _add_col(conn: sqlite3.Connection, table: str, col: str, defn: str) -> None:
+def _add_col(conn, table: str, col: str, defn: str) -> None:
     if not _col_exists(conn, table, col):
         conn.execute(f"ALTER TABLE {table} ADD COLUMN {col} {defn}")
 
@@ -533,25 +554,51 @@ _MIGRATION_FNS = {
 }
 
 
-def _ensure_migrations_table(conn: sqlite3.Connection) -> None:
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS schema_migrations (
-            version INTEGER PRIMARY KEY,
-            description TEXT NOT NULL,
-            applied_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
+def _ensure_migrations_table(conn) -> None:
+    if _is_postgres(conn):
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS schema_migrations (
+                version    INTEGER PRIMARY KEY,
+                description TEXT NOT NULL,
+                applied_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+            )
+        """)
+    else:
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS schema_migrations (
+                version INTEGER PRIMARY KEY,
+                description TEXT NOT NULL,
+                applied_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
     conn.commit()
 
 
-def _applied_versions(conn: sqlite3.Connection) -> set[int]:
+def _applied_versions(conn) -> set[int]:
     return {r[0] for r in conn.execute("SELECT version FROM schema_migrations").fetchall()}
 
 
-def run_migrations(conn: sqlite3.Connection) -> None:
-    """Wendet alle noch nicht angewandten Migrationen in Reihenfolge an."""
+def run_migrations(conn) -> None:
+    """
+    Wendet alle noch nicht angewandten Migrationen in Reihenfolge an.
+    Bei PostgreSQL ist das Schema bereits vollständig durch schema_postgres.sql
+    angelegt — hier werden nur die Versionen als applied markiert.
+    """
     _ensure_migrations_table(conn)
     applied = _applied_versions(conn)
+
+    if _is_postgres(conn):
+        # Schema already created by schema_postgres.sql; just record versions.
+        placeholder = '%s'
+        for version, description in MIGRATIONS:
+            if version not in applied:
+                conn.execute(
+                    f"INSERT INTO schema_migrations (version, description) VALUES ({placeholder}, {placeholder})"
+                    f" ON CONFLICT (version) DO NOTHING",
+                    (version, description),
+                )
+        conn.commit()
+        return
 
     for version, description in MIGRATIONS:
         if version in applied:

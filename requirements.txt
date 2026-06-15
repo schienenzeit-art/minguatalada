@@ -9,3 +9,8 @@ uvicorn==0.48.0
 PyJWT==2.13.0
 pytest==8.3.5
 cryptography>=42.0
+# PostgreSQL (optional — only required when DATABASE_URL is set)
+psycopg[binary]>=3.1
+psycopg-pool>=3.1
+# .env file support (optional — loaded automatically in app/config.py if installed)
+python-dotenv>=1.0

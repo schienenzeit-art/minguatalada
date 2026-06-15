@@ -2,7 +2,7 @@ from sqlite3 import Row
 from typing import Optional
 from datetime import datetime
 
-from database.db import get_connection
+from database.db import get_connection, IS_POSTGRES
 from core.card_status import CardStatus
 
 
@@ -320,16 +320,23 @@ class CardRepository:
 
     def count_expiring_cards(self, days: int = 30) -> int:
         with get_connection() as connection:
-            row = connection.execute(
+            if IS_POSTGRES:
+                sql = """
+                SELECT COUNT(*) AS total
+                FROM cards c
+                WHERE c.status != %s
+                AND c.expiry_date <= (CURRENT_DATE + (%s * INTERVAL '1 day'))::text
+                AND c.expiry_date >= CURRENT_DATE::text
                 """
+            else:
+                sql = """
                 SELECT COUNT(*) AS total
                 FROM cards c
                 WHERE c.status != ?
                 AND DATE(c.expiry_date) <= DATE('now', '+' || ? || ' days')
                 AND DATE(c.expiry_date) >= DATE('now')
-                """,
-                (CardStatus.ARCHIVIERT, days),
-            ).fetchone()
+                """
+            row = connection.execute(sql, (CardStatus.ARCHIVIERT, days)).fetchone()
 
         return int(row["total"] if row else 0)
 
@@ -498,16 +505,25 @@ class CardRepository:
     def get_expiring_cards(self, days: int = 30) -> list[dict]:
         """Holt alle Karten die in den nächsten Tagen ablaufen."""
         with get_connection() as connection:
-            rows = connection.execute(
-                """
+            if IS_POSTGRES:
+                sql = """
                 SELECT
-                    c.id,
-                    c.card_number,
-                    c.person_id,
-                    c.expiry_date,
-                    c.status,
-                    p.first_name AS person_first_name,
-                    p.last_name AS person_last_name,
+                    c.id, c.card_number, c.person_id, c.expiry_date, c.status,
+                    p.first_name AS person_first_name, p.last_name AS person_last_name,
+                    l.name AS location_name
+                FROM cards c
+                LEFT JOIN persons p ON c.person_id = p.id
+                LEFT JOIN locations l ON c.location_id = l.id
+                WHERE c.status != %s
+                AND c.expiry_date <= (CURRENT_DATE + (%s * INTERVAL '1 day'))::text
+                AND c.expiry_date >= CURRENT_DATE::text
+                ORDER BY c.expiry_date ASC
+                """
+            else:
+                sql = """
+                SELECT
+                    c.id, c.card_number, c.person_id, c.expiry_date, c.status,
+                    p.first_name AS person_first_name, p.last_name AS person_last_name,
                     l.name AS location_name
                 FROM cards c
                 LEFT JOIN persons p ON c.person_id = p.id
@@ -516,9 +532,8 @@ class CardRepository:
                 AND DATE(c.expiry_date) <= DATE('now', '+' || ? || ' days')
                 AND DATE(c.expiry_date) >= DATE('now')
                 ORDER BY c.expiry_date ASC
-                """,
-                (CardStatus.ARCHIVIERT, days),
-            ).fetchall()
+                """
+            rows = connection.execute(sql, (CardStatus.ARCHIVIERT, days)).fetchall()
 
         return [self._row_to_dict(row) for row in rows]
 

@@ -33,7 +33,7 @@ from typing import Optional
 
 logger = logging.getLogger(__name__)
 
-from app.config import DATA_DIR, DB_PATH
+from app.config import DATA_DIR, DB_PATH, DATABASE_URL
 
 APP_VERSION = "1.3.0"
 
@@ -264,15 +264,31 @@ class UpdateService:
     def create_backup(self) -> Path:
         """
         Erstellt ein vollständiges Datenbank-Backup.
-        Ablauf:
-          1. WAL-Checkpoint — stellt sicher dass alle Änderungen in der DB-Datei sind
-          2. Datei kopieren
-          3. PRAGMA integrity_check auf der Backup-Kopie — verifiziert erfolgreichen Kopiervorgang
-        Wirft RuntimeError wenn die Integritätsprüfung fehlschlägt (Backup wird dann gelöscht).
+        PostgreSQL: pg_dump -F c (custom format, komprimiert, restore via pg_restore)
+        SQLite:     WAL-Checkpoint + Datei kopieren + PRAGMA integrity_check
         """
         BACKUPS_DIR.mkdir(parents=True, exist_ok=True)
-        self._wal_checkpoint()
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+        if DATABASE_URL:
+            return self._create_postgres_backup(timestamp)
+        return self._create_sqlite_backup(timestamp)
+
+    def _create_postgres_backup(self, timestamp: str) -> Path:
+        backup_name = f"backup_{timestamp}_v{APP_VERSION}.pgdump"
+        backup_path = BACKUPS_DIR / backup_name
+        cmd = ["pg_dump", "--format=custom", "--file", str(backup_path), DATABASE_URL]
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        if result.returncode != 0:
+            msg = f"pg_dump fehlgeschlagen: {result.stderr.strip()}"
+            logger.error(msg)
+            raise RuntimeError(msg)
+        logger.info("PostgreSQL-Backup erstellt: %s", backup_path.name)
+        self._cleanup_old_backups()
+        return backup_path
+
+    def _create_sqlite_backup(self, timestamp: str) -> Path:
+        self._wal_checkpoint()
         backup_name = f"backup_{timestamp}_v{APP_VERSION}.db"
         backup_path = BACKUPS_DIR / backup_name
         shutil.copy2(DB_PATH, backup_path)
@@ -289,10 +305,7 @@ class UpdateService:
         return backup_path
 
     def _verify_backup_integrity(self, backup_path: Path) -> tuple[bool, str]:
-        """
-        Öffnet eine Backup-Datei direkt (unabhängig von DB_PATH) und führt
-        PRAGMA integrity_check durch. Gibt (ok, detail) zurück.
-        """
+        """PRAGMA integrity_check auf einer SQLite-Backup-Kopie."""
         if not backup_path.exists():
             return False, f"Datei nicht gefunden: {backup_path.name}"
 
@@ -320,7 +333,7 @@ class UpdateService:
             return False, str(exc)
 
     def _wal_checkpoint(self) -> None:
-        """WAL-Checkpoint vor Backup für Datenkonsistenz."""
+        """WAL-Checkpoint vor SQLite-Backup für Datenkonsistenz."""
         try:
             from database.db import get_connection
             with get_connection() as conn:
@@ -329,20 +342,21 @@ class UpdateService:
             pass
 
     def _cleanup_old_backups(self) -> None:
-        backups = sorted(
-            BACKUPS_DIR.glob("backup_*.db"),
-            key=lambda p: p.stat().st_mtime,
-            reverse=True,
-        )
-        for old in backups[_MAX_BACKUPS:]:
-            try:
-                old.unlink()
-            except Exception:
-                pass
+        for pattern in ("backup_*.db", "backup_*.pgdump"):
+            backups = sorted(
+                BACKUPS_DIR.glob(pattern),
+                key=lambda p: p.stat().st_mtime,
+                reverse=True,
+            )
+            for old in backups[_MAX_BACKUPS:]:
+                try:
+                    old.unlink()
+                except Exception:
+                    pass
 
     def list_backups(self) -> list[dict]:
         backups = sorted(
-            BACKUPS_DIR.glob("backup_*.db"),
+            [*BACKUPS_DIR.glob("backup_*.db"), *BACKUPS_DIR.glob("backup_*.pgdump")],
             key=lambda p: p.stat().st_mtime,
             reverse=True,
         )
@@ -362,11 +376,38 @@ class UpdateService:
     def restore_backup(self, backup_path: Path) -> tuple[bool, str]:
         """
         Stellt die Datenbank aus einem Backup wieder her.
-        Erstellt vorher ein Sicherheits-Backup des aktuellen Zustands.
-        ACHTUNG: Die Anwendung muss nach der Wiederherstellung neu gestartet werden.
+        PostgreSQL: pg_restore — ACHTUNG: überschreibt alle Daten!
+        SQLite:     Datei-Kopie + Neustart erforderlich.
         """
         if not backup_path.exists():
             return False, f"Backup-Datei nicht gefunden: {backup_path}"
+
+        if DATABASE_URL and backup_path.suffix == ".pgdump":
+            return self._restore_postgres_backup(backup_path)
+        return self._restore_sqlite_backup(backup_path)
+
+    def _restore_postgres_backup(self, backup_path: Path) -> tuple[bool, str]:
+        try:
+            safety_path = self._create_postgres_backup(
+                datetime.now().strftime("pre_restore_%Y%m%d_%H%M%S")
+            )
+            cmd = ["pg_restore", "--clean", "--if-exists", "--dbname", DATABASE_URL, str(backup_path)]
+            result = subprocess.run(cmd, capture_output=True, text=True)
+            if result.returncode != 0:
+                return False, f"pg_restore fehlgeschlagen: {result.stderr.strip()}"
+            self._log_audit(
+                action="BACKUP_RESTORED",
+                details=f"PostgreSQL-Datenbank aus '{backup_path.name}' wiederhergestellt.",
+            )
+            return True, (
+                f"Datenbank aus '{backup_path.name}' wiederhergestellt.\n"
+                f"Sicherheits-Backup: {safety_path.name}\n\n"
+                "Die Anwendung muss jetzt neu gestartet werden."
+            )
+        except Exception as e:
+            return False, f"Wiederherstellung fehlgeschlagen: {e}"
+
+    def _restore_sqlite_backup(self, backup_path: Path) -> tuple[bool, str]:
         try:
             self._wal_checkpoint()
             safety_name = f"pre_restore_{datetime.now().strftime('%Y%m%d_%H%M%S')}.db"

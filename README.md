@@ -52,7 +52,7 @@ Desktop-Anwendung zur Prüfung von Anspruchsberechtigungen, Haushalts- und Perso
 | **Betriebssystem** | Windows 10 / Windows 11 (64-Bit) |
 | **Python** | 3.11 (`.python-version`), kompatibel mit 3.12 und 3.13 |
 | **Virtuelle Umgebung** | `.venv` im Projektverzeichnis |
-| **Datenbank** | SQLite (integriert, kein Server nötig) |
+| **Datenbank** | SQLite (Standard, kein Server nötig) oder PostgreSQL via `DATABASE_URL` |
 | **Build-Tool** | PyInstaller (nur für Release-Build) |
 | **Paketmanager** | pip |
 
@@ -592,7 +592,7 @@ Betrifft nur Versionen **vor v1.1**. Seit v1.1: Beim Schließen des Prüfdialogs
 
 | Thema | Priorität | Status |
 |---|---|---|
-| Zentrale Datenbank (PostgreSQL / Supabase) | Hoch | Geplant |
+| Zentrale Datenbank (PostgreSQL, Raspberry Pi) | Hoch | **in Umsetzung** |
 | API-Schicht (FastAPI, REST) | Mittel | Vorbereitet (web_api.py), nicht aktiv |
 | Audit-Log-Filter im Admin-Bereich | Mittel | Basisansicht vorhanden |
 | Integrationstests `persist_evaluation` | Mittel | ✓ Abgeschlossen (v1.3.0) |
@@ -600,19 +600,25 @@ Betrifft nur Versionen **vor v1.1**. Seit v1.1: Beim Schließen des Prüfdialogs
 
 ### Bewusst noch nicht umgesetzt
 
-- **Zentraler Datenbankserver**: Aktuell SQLite per Gerät. Kein Synchronisationsmechanismus. Migration zu PostgreSQL ist vorbereitet (Repository-Pattern).
 - **REST-API**: FastAPI, uvicorn und PyJWT sind installiert, aber nicht produktiv aktiv. `app/web_api.py` ist Platzhalter.
 - **Redis**: Kein Caching- oder Queue-Bedarf erkennbar. Wird erst implementiert wenn konkrete Anforderung entsteht.
 - **Mobile / Web-Client**: Kein aktueller Bedarf.
 
-### SQLite → PostgreSQL
+### SQLite → PostgreSQL (in Umsetzung)
 
-Das Repository-Pattern entkoppelt Datenzugriff von der Datenbankimplementierung. Migration erfordert:
-1. Neue Repository-Implementierungen für PostgreSQL
-2. `database/db.py` durch PostgreSQL-kompatible Initialisierung ersetzen
-3. `Session`-Klasse durch Request-Kontext ersetzen (für API-Betrieb)
+Architektur: Raspberry Pi (24/7) als PostgreSQL-Server, erreichbar über Tailscale-VPN.
+Alle drei Standorte greifen auf dieselbe zentrale Datenbank zu.
 
-Supabase Free Tier (0 €/Monat) eignet sich zum Testen. Supabase Pro (~23 €/Monat) für Produktion.
+**Implementierter Stand:**
+- `database/connection_adapter.py` — psycopg3-Adapter mit sqlite3-kompatiblem Interface
+- `database/schema_postgres.sql` — vollständiges PostgreSQL-Schema (alle 26 Migrationen eingebettet)
+- `database/db.py` — Dual-Backend: SQLite (Standard) oder PostgreSQL (wenn `DATABASE_URL` gesetzt)
+- `scripts/migrate_sqlite_to_postgres.py` — Einmalige Datenmigration SQLite → PostgreSQL
+- `docs/SERVER_SETUP_RASPBERRY_PI.md` — vollständige Pi-Setup-Anleitung
+- `.env.example` — Konfigurationsvorlage
+
+**Aktivieren:** `DATABASE_URL=postgresql://user:pw@tailscale-ip:5432/minguatalada` in `.env` setzen.
+Tests laufen weiterhin mit SQLite (kein PostgreSQL-Server nötig für CI).
 
 ---
 

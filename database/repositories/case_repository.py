@@ -1,6 +1,21 @@
 from typing import Optional, Dict, List
 
-from database.db import get_connection
+from database.db import get_connection, IS_POSTGRES
+
+
+def _claims_table(connection) -> str:
+    """Return the correct claims table name (handles legacy 'claim' table in SQLite)."""
+    if IS_POSTGRES:
+        return 'claims'
+    row = connection.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='claims' LIMIT 1"
+    ).fetchone()
+    if row:
+        return 'claims'
+    row2 = connection.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='claim' LIMIT 1"
+    ).fetchone()
+    return 'claim' if row2 else 'claims'
 
 
 class CaseRepository:
@@ -17,13 +32,7 @@ class CaseRepository:
         created_by: int | None = None,
     ) -> int:
         with get_connection() as connection:
-            # detect table name (claims vs legacy claim)
-            tbl = 'claims'
-            row = connection.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='claims' LIMIT 1").fetchone()
-            if not row:
-                row2 = connection.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='claim' LIMIT 1").fetchone()
-                if row2:
-                    tbl = 'claim'
+            tbl = _claims_table(connection)
 
             cursor = connection.execute(
                 f"""
@@ -49,13 +58,7 @@ class CaseRepository:
 
     def get_case_by_id(self, case_id: int) -> Optional[Dict[str, object]]:
         with get_connection() as connection:
-            # detect table name
-            tbl = 'claims'
-            rowt = connection.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='claims' LIMIT 1").fetchone()
-            if not rowt:
-                rowt2 = connection.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='claim' LIMIT 1").fetchone()
-                if rowt2:
-                    tbl = 'claim'
+            tbl = _claims_table(connection)
 
             sql = f"""
                 SELECT c.*, p.first_name, p.last_name, cat.name AS category_name, l.name AS location_name
@@ -71,13 +74,7 @@ class CaseRepository:
 
     def get_cases(self, location_id: int | None = None) -> List[Dict[str, object]]:
         with get_connection() as connection:
-            # detect table name
-            tbl = 'claims'
-            rowt = connection.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='claims' LIMIT 1").fetchone()
-            if not rowt:
-                rowt2 = connection.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='claim' LIMIT 1").fetchone()
-                if rowt2:
-                    tbl = 'claim'
+            tbl = _claims_table(connection)
 
             if location_id:
                 rows = connection.execute(
@@ -91,12 +88,7 @@ class CaseRepository:
 
     def get_last_case_number_for_year(self, year: int, prefix: str = "AS") -> Optional[str]:
         with get_connection() as connection:
-            tbl = 'claims'
-            row = connection.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='claims' LIMIT 1").fetchone()
-            if not row:
-                row2 = connection.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='claim' LIMIT 1").fetchone()
-                if row2:
-                    tbl = 'claim'
+            tbl = _claims_table(connection)
 
             sql = f"SELECT case_number FROM {tbl} WHERE case_number LIKE ? ORDER BY case_number DESC LIMIT 1"
             row = connection.execute(sql, (f"{prefix}-{year}-%",)).fetchone()

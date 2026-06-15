@@ -1,7 +1,7 @@
 from sqlite3 import Row
 from typing import List, Optional, Dict
 
-from database.db import get_connection
+from database.db import get_connection, IS_POSTGRES
 
 
 class TaskRepository:
@@ -194,9 +194,15 @@ class TaskRepository:
             params.append(source_type)
 
         if due_date_scope == "today":
-            query.append("AND DATE(t.due_date) = DATE('now')")
+            if IS_POSTGRES:
+                query.append("AND t.due_date = CURRENT_DATE::text")
+            else:
+                query.append("AND DATE(t.due_date) = DATE('now')")
         elif due_date_scope == "overdue":
-            query.append("AND t.due_date IS NOT NULL AND DATE(t.due_date) < DATE('now') AND t.status != ?")
+            if IS_POSTGRES:
+                query.append("AND t.due_date IS NOT NULL AND t.due_date < CURRENT_DATE::text AND t.status != %s")
+            else:
+                query.append("AND t.due_date IS NOT NULL AND DATE(t.due_date) < DATE('now') AND t.status != ?")
             params.append("ERLEDIGT")
 
         if search_text:

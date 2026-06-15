@@ -3,6 +3,12 @@ import sys
 from datetime import timedelta
 from pathlib import Path
 
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
 
 def _get_resource_dir() -> Path:
     """Verzeichnis mit gebündelten Programmressourcen (theme.qss etc.).
@@ -37,3 +43,27 @@ WINDOW_HEIGHT = 800
 SECRET_KEY = os.environ.get("APP_SECRET_KEY", "please-set-a-secure-secret")
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRY = timedelta(hours=8)
+
+# ── PostgreSQL connection ─────────────────────────────────────────────────────
+# Set DATABASE_URL to switch from SQLite to PostgreSQL.
+# Format: postgresql://user:password@host:port/dbname
+# Individual params (DB_HOST etc.) are used as fallback if DATABASE_URL is unset.
+
+def _build_database_url() -> str | None:
+    """Return DATABASE_URL from env, or build one from individual params."""
+    url = os.environ.get("DATABASE_URL", "").strip()
+    if url:
+        return url
+    host = os.environ.get("DB_HOST", "").strip()
+    if not host:
+        return None
+    port = os.environ.get("DB_PORT", "5432").strip()
+    name = os.environ.get("DB_NAME", "minguatalada").strip()
+    user = os.environ.get("DB_USER", "").strip()
+    password = os.environ.get("DB_PASSWORD", "").strip()
+    if not user:
+        return None
+    return f"postgresql://{user}:{password}@{host}:{port}/{name}"
+
+
+DATABASE_URL: str | None = _build_database_url()

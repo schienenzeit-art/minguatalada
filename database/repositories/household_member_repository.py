@@ -1,6 +1,6 @@
 from typing import Optional
 
-from database.db import get_connection
+from database.db import get_connection, IS_POSTGRES
 
 
 class HouseholdMemberRepository:
@@ -102,6 +102,16 @@ class HouseholdMemberRepository:
 
     def get_children_approaching_age(self, threshold_years: int = 20, warning_days: int = 60) -> list[dict]:
         """Gibt alle Kinder zurück, die in warning_days Tagen threshold_years Jahre alt werden."""
+        if IS_POSTGRES:
+            birthday_expr = f"(hm.birth_date::date + INTERVAL '{threshold_years} years')::text"
+            today_expr = "CURRENT_DATE::text"
+            future_expr = f"(CURRENT_DATE + INTERVAL '{warning_days} days')::text"
+            date_filter = f"AND {birthday_expr} BETWEEN {today_expr} AND {future_expr}"
+        else:
+            date_filter = (
+                f"AND DATE(hm.birth_date, '+{threshold_years} years')"
+                f" BETWEEN DATE('now') AND DATE('now', '+{warning_days} days')"
+            )
         with get_connection() as conn:
             rows = conn.execute(
                 f"""
@@ -113,7 +123,7 @@ class HouseholdMemberRepository:
                 LEFT JOIN persons p ON cl.person_id = p.id
                 WHERE hm.relationship IN ('Kind', 'Stiefkind', 'Pflegekind')
                   AND hm.birth_date IS NOT NULL
-                  AND DATE(hm.birth_date, '+{threshold_years} years') BETWEEN DATE('now') AND DATE('now', '+{warning_days} days')
+                  {date_filter}
                   AND cl.status NOT IN ('ARCHIVIERT', 'ABGELEHNT', 'ABGELAUFEN')
                 ORDER BY hm.birth_date ASC
                 """,
@@ -122,6 +132,11 @@ class HouseholdMemberRepository:
 
     def get_children_past_age(self, threshold_years: int = 20) -> list[dict]:
         """Gibt alle Kinder zurück, die threshold_years schon überschritten haben (ungelöste Alerts)."""
+        if IS_POSTGRES:
+            birthday_expr = f"(hm.birth_date::date + INTERVAL '{threshold_years} years')::text"
+            date_filter = f"AND {birthday_expr} <= CURRENT_DATE::text"
+        else:
+            date_filter = f"AND DATE(hm.birth_date, '+{threshold_years} years') <= DATE('now')"
         with get_connection() as conn:
             rows = conn.execute(
                 f"""
@@ -133,7 +148,7 @@ class HouseholdMemberRepository:
                 LEFT JOIN persons p ON cl.person_id = p.id
                 WHERE hm.relationship IN ('Kind', 'Stiefkind', 'Pflegekind')
                   AND hm.birth_date IS NOT NULL
-                  AND DATE(hm.birth_date, '+{threshold_years} years') <= DATE('now')
+                  {date_filter}
                   AND cl.status NOT IN ('ARCHIVIERT', 'ABGELEHNT', 'ABGELAUFEN')
                 ORDER BY hm.birth_date ASC
                 """,

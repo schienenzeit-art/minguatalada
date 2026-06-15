@@ -3,12 +3,14 @@ from sqlite3 import Row
 from typing import Optional
 
 from core.claim_status import ClaimStatus
-from database.db import get_connection
+from database.db import get_connection, IS_POSTGRES
 
 
 class ClaimRepository:
     def _table_name(self, connection) -> str:
-        # prefer 'claims', fall back to 'claim' if present
+        if IS_POSTGRES:
+            return 'claims'
+        # SQLite: prefer 'claims', fall back to legacy 'claim' table
         tbl = connection.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='claims' LIMIT 1").fetchone()
         if tbl:
             return 'claims'
@@ -308,27 +310,46 @@ class ClaimRepository:
                 params.append(status)
 
             if start_date:
-                filters.append("DATE(c.start_date) = DATE(?)")
+                if IS_POSTGRES:
+                    filters.append("c.start_date = %s")
+                else:
+                    filters.append("DATE(c.start_date) = DATE(?)")
                 params.append(start_date)
 
             if created_since_days is not None:
-                filters.append("DATE(c.created_at) >= DATE('now', ?)")
-                params.append(f"-{created_since_days} days")
+                if IS_POSTGRES:
+                    filters.append("c.created_at >= NOW() - (%s * INTERVAL '1 day')")
+                    params.append(created_since_days)
+                else:
+                    filters.append("DATE(c.created_at) >= DATE('now', ?)")
+                    params.append(f"-{created_since_days} days")
 
             if created_from is not None:
-                filters.append("DATE(c.created_at) >= DATE(?)")
+                if IS_POSTGRES:
+                    filters.append("c.created_at::date >= %s::date")
+                else:
+                    filters.append("DATE(c.created_at) >= DATE(?)")
                 params.append(created_from)
 
             if created_to is not None:
-                filters.append("DATE(c.created_at) <= DATE(?)")
+                if IS_POSTGRES:
+                    filters.append("c.created_at::date <= %s::date")
+                else:
+                    filters.append("DATE(c.created_at) <= DATE(?)")
                 params.append(created_to)
 
             if evaluation_from is not None:
-                filters.append("DATE(c.evaluation_date) >= DATE(?)")
+                if IS_POSTGRES:
+                    filters.append("c.evaluation_date >= %s")
+                else:
+                    filters.append("DATE(c.evaluation_date) >= DATE(?)")
                 params.append(evaluation_from)
 
             if evaluation_to is not None:
-                filters.append("DATE(c.evaluation_date) <= DATE(?)")
+                if IS_POSTGRES:
+                    filters.append("c.evaluation_date <= %s")
+                else:
+                    filters.append("DATE(c.evaluation_date) <= DATE(?)")
                 params.append(evaluation_to)
 
             if filters:
@@ -357,12 +378,16 @@ class ClaimRepository:
             if location_id is not None:
                 where += " AND c.location_id = ?"
                 params.append(location_id)
+            if IS_POSTGRES:
+                wait_days_expr = "EXTRACT(epoch FROM NOW() - c.created_at)::INTEGER / 86400"
+            else:
+                wait_days_expr = "CAST(julianday('now') - julianday(c.created_at) AS INTEGER)"
             rows = connection.execute(
                 f"""
                 SELECT c.id, c.case_number, c.status, c.created_at,
                        p.first_name AS person_first_name, p.last_name AS person_last_name,
                        l.name AS location_name,
-                       CAST(julianday('now') - julianday(c.created_at) AS INTEGER) AS wait_days
+                       {wait_days_expr} AS wait_days
                 FROM {tbl} c
                 LEFT JOIN persons p ON c.person_id = p.id
                 LEFT JOIN locations l ON c.location_id = l.id

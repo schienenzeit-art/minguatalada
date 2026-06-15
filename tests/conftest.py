@@ -2,7 +2,13 @@
 Gemeinsame Test-Fixtures für alle Test-Module.
 
 Kernprinzip: Jede Test-Funktion/Klasse bekommt eine frische, isolierte
-SQLite-Datenbank (tmp_path). Produktionsdaten bleiben unberührt.
+Datenbank (tmp_path für SQLite, eigenes Schema für PostgreSQL).
+Produktionsdaten bleiben unberührt.
+
+PostgreSQL-Tests: TEST_DATABASE_URL setzen, z.B.:
+    TEST_DATABASE_URL=postgresql://testuser:pw@localhost/mgl_test pytest
+
+Ohne TEST_DATABASE_URL: SQLite-Fallback (Standard, CI-kompatibel).
 
 Verwendung:
     def test_etwas(db, auth_service):
@@ -21,43 +27,105 @@ import pytest
 # PYTEST_RUNNING früh setzen, damit seed_basic_data den Test-Admin anlegt
 os.environ["PYTEST_RUNNING"] = "1"
 
+_TEST_PG_URL = os.environ.get("TEST_DATABASE_URL", "").strip()
+_USE_POSTGRES = bool(_TEST_PG_URL)
+
 
 # ─── Datenbank-Isolation ──────────────────────────────────────────────────────
 
 @pytest.fixture()
 def db(tmp_path, monkeypatch):
     """
-    Isolierte SQLite-Testdatenbank in einem temporären Verzeichnis.
+    Isolierte Testdatenbank.
 
-    Patcht sowohl `app.config` als auch `database.db` so, dass ALLE
-    Repository-Importe auf diese Datenbank zeigen.
-    Wird nach jedem Test automatisch gelöscht.
+    SQLite (Standard): frische DB in tmp_path, nach dem Test gelöscht.
+    PostgreSQL (TEST_DATABASE_URL gesetzt): alle Tabellen werden am Anfang
+    des Tests geleert (TRUNCATE) und danach erneut geseeded.
     """
+    if _USE_POSTGRES:
+        yield from _db_postgres(monkeypatch)
+    else:
+        yield from _db_sqlite(tmp_path, monkeypatch)
+
+
+def _db_sqlite(tmp_path, monkeypatch):
     test_db = tmp_path / "test.db"
     test_data_dir = tmp_path
 
-    # Alle Module die DB_PATH / DATA_DIR direkt importieren patchen
     import app.config as cfg
     import database.db as dbmod
 
     monkeypatch.setattr(cfg, "DB_PATH", test_db)
     monkeypatch.setattr(cfg, "DATA_DIR", test_data_dir)
     monkeypatch.setattr(dbmod, "DB_PATH", test_db)
+    monkeypatch.setattr(dbmod, "IS_POSTGRES", False)
 
     from database.db import initialize_database
     initialize_database()
 
-    return test_db
+    yield test_db
+
+
+def _db_postgres(monkeypatch):
+    import app.config as cfg
+    import database.db as dbmod
+
+    monkeypatch.setattr(cfg, "DATABASE_URL", _TEST_PG_URL)
+    monkeypatch.setattr(dbmod, "DATABASE_URL", _TEST_PG_URL)
+    monkeypatch.setattr(dbmod, "IS_POSTGRES", True)
+    monkeypatch.setattr(dbmod, "_pool", None)  # force new pool with test URL
+
+    from database.db import initialize_database, get_connection
+    initialize_database()
+
+    # Truncate all data tables between tests to ensure isolation
+    _truncate_postgres_tables()
+
+    # Re-seed after truncate
+    from database.seed import seed_basic_data
+    with get_connection() as conn:
+        seed_basic_data(conn)
+        conn.commit()
+
+    yield _TEST_PG_URL
+
+
+def _truncate_postgres_tables():
+    from database.db import get_connection
+    tables = [
+        "claim_checklist_items", "checklist_items", "checklist_templates",
+        "age_alerts", "household_members", "re_evaluation_requests",
+        "approval_requests", "person_notes", "claim_notes", "claim_history",
+        "wiedervorlagen", "notifications", "tasks", "audit_logs",
+        "update_history", "update_migrations",
+        "incomes", "expenses", "documents", "cards",
+        "claims", "persons", "filter_presets",
+        "user_mail_configs", "appointments",
+        "document_templates", "settings",
+        "users", "schema_migrations",
+    ]
+    with get_connection() as conn:
+        for tbl in tables:
+            try:
+                conn.execute(f"TRUNCATE TABLE {tbl} RESTART IDENTITY CASCADE")
+            except Exception:
+                pass
+        conn.commit()
 
 
 @pytest.fixture()
 def db_conn(db):
-    """Rohe SQLite-Verbindung zur Testdatenbank für direkte SQL-Asserts."""
-    import sqlite3
-    con = sqlite3.connect(str(db))
-    con.row_factory = sqlite3.Row
-    yield con
-    con.close()
+    """Datenbankverbindung zur Testdatenbank für direkte SQL-Asserts."""
+    if _USE_POSTGRES:
+        from database.db import get_connection as _gc
+        with _gc() as conn:
+            yield conn
+    else:
+        import sqlite3
+        con = sqlite3.connect(str(db))
+        con.row_factory = sqlite3.Row
+        yield con
+        con.close()
 
 
 # ─── Session-Fixtures ──────────────────────────────────────────────────────────
