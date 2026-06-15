@@ -24,7 +24,6 @@ def _get_pool():
     global _pool
     if _pool is None:
         try:
-            import psycopg
             from psycopg.rows import dict_row
             from psycopg_pool import ConnectionPool
 
