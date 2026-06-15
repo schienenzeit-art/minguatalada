@@ -455,10 +455,10 @@ def main() -> None:
     print(f"  Manifest:  {_W}releases/manifest.json{_X}")
     print(f"\n  Deploy-Artefakte in: {_W}deploy/{_X}")
     print(f"  Server:  {_B}https://www.schaer-systems.at/updates/{_X}")
-    print(f"\n  CI/CD: Tag pushen → vollautomatischer FTP-Deploy")
+    print(f"\n  CI/CD: Tag pushen -> vollautomatischer FTP-Deploy")
     print(f"    git tag v{version} && git push origin v{version}")
-    print(f"\n  Manueller Übergang (Kunde auf 1.3.0):")
-    print(f"    releases/update_{version}.mugala  →  lokal einspielen (einmalig)")
+    print(f"\n  Manueller Uebergang (Kunde auf 1.3.0):")
+    print(f"    releases/update_{version}.mugala  ->  lokal einspielen (einmalig)")
     print(f"    Ab v{version}: Auto-Update via installer_url vollautomatisch")
     print(f"{'='*60}\n")
 
