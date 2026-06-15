@@ -107,7 +107,11 @@ class UpdateService:
             )
         try:
             import urllib.request
-            with urllib.request.urlopen(manifest_url, timeout=10) as resp:
+            req = urllib.request.Request(
+                manifest_url,
+                headers={"User-Agent": f"MinGuataLada/{APP_VERSION}"},
+            )
+            with urllib.request.urlopen(req, timeout=10) as resp:
                 raw = resp.read().decode("utf-8-sig")
             manifest = json.loads(raw)
 
@@ -141,7 +145,12 @@ class UpdateService:
         if not filename.endswith((".mugala", ".zip")):
             filename += ".mugala"
         dest = UPDATES_DIR / filename
-        urllib.request.urlretrieve(url, dest)
+        req = urllib.request.Request(
+            url,
+            headers={"User-Agent": f"MinGuataLada/{APP_VERSION}"},
+        )
+        with urllib.request.urlopen(req, timeout=300) as resp:
+            dest.write_bytes(resp.read())
         if expected_sha256:
             actual = hashlib.sha256(dest.read_bytes()).hexdigest()
             if actual.lower() != expected_sha256.lower():
