@@ -14,6 +14,10 @@ from typing import Any
 _INSERT_RE = re.compile(r'^\s*INSERT\s+', re.IGNORECASE)
 _RETURNING_RE = re.compile(r'\bRETURNING\b', re.IGNORECASE)
 _INSERT_OR_IGNORE_RE = re.compile(r'\bINSERT\s+OR\s+IGNORE\s+INTO\b', re.IGNORECASE)
+_INSERT_TABLE_RE = re.compile(r'INSERT\s+(?:OR\s+IGNORE\s+)?INTO\s+(\w+)', re.IGNORECASE)
+
+# Tables that have no 'id' column — RETURNING id must not be appended to INSERTs.
+_TABLES_WITHOUT_ID = frozenset({'schema_migrations'})
 
 
 def _sqlite_to_pg(sql: str) -> str:
@@ -28,6 +32,12 @@ def _sqlite_to_pg(sql: str) -> str:
         if 'ON CONFLICT' not in sql.upper():
             sql = sql.rstrip().rstrip(';') + ' ON CONFLICT DO NOTHING'
     return sql
+
+
+def _table_from_insert(sql: str) -> str | None:
+    """Extract the target table name from an INSERT statement (lowercased)."""
+    m = _INSERT_TABLE_RE.search(sql)
+    return m.group(1).lower() if m else None
 
 
 def _normalize_value(v: Any) -> Any:
@@ -45,6 +55,52 @@ def _normalize_row(row: dict | None) -> dict | None:
     if row is None:
         return None
     return {k: _normalize_value(v) for k, v in row.items()}
+
+
+def _split_sql(script: str) -> list[str]:
+    """Split a SQL script on semicolons, ignoring those inside -- comments or '...' literals.
+
+    Handles:
+    - ``--`` single-line comments (skipped entirely, not added to any statement)
+    - ``'...'`` string literals including ``''`` escaped quotes
+    - Semicolons as statement terminators only when outside the above contexts
+    """
+    statements: list[str] = []
+    buf: list[str] = []
+    i, n = 0, len(script)
+    while i < n:
+        ch = script[i]
+        if ch == '-' and i + 1 < n and script[i + 1] == '-':
+            # Skip single-line comment up to (but not including) the newline
+            while i < n and script[i] != '\n':
+                i += 1
+        elif ch == "'":
+            buf.append(ch)
+            i += 1
+            while i < n:
+                c = script[i]
+                buf.append(c)
+                i += 1
+                if c == "'":
+                    if i < n and script[i] == "'":
+                        # Escaped quote '' inside string literal
+                        buf.append(script[i])
+                        i += 1
+                    else:
+                        break
+        elif ch == ';':
+            stmt = ''.join(buf).strip()
+            if stmt:
+                statements.append(stmt)
+            buf = []
+            i += 1
+        else:
+            buf.append(ch)
+            i += 1
+    stmt = ''.join(buf).strip()
+    if stmt:
+        statements.append(stmt)
+    return statements
 
 
 class PgCursorAdapter:
@@ -83,9 +139,17 @@ class PgConnectionAdapter:
 
     Key translations:
     - ? placeholders  →  %s
-    - INSERT statements automatically receive RETURNING id; lastrowid is captured
-    - executescript() splits on ; and executes each statement
-    - Row results are normalised (Decimal→float, datetime→str)
+    - INSERT OR IGNORE INTO  →  INSERT INTO … ON CONFLICT DO NOTHING
+    - INSERT statements receive ``RETURNING id`` only when the target table has an id
+      column.  Tables listed in ``_TABLES_WITHOUT_ID`` (e.g. schema_migrations) are
+      excluded unconditionally.  Any other table that turns out to have no id column
+      is handled via a savepoint: if PostgreSQL raises undefined_column (pgcode 42703)
+      the statement is retried without RETURNING and lastrowid is set to None.
+    - RETURNING is always appended *after* ON CONFLICT DO NOTHING (correct PG syntax).
+      When a conflict fires, fetchone() returns None and lastrowid is silently None.
+    - executescript() splits on ``;`` using a state machine that ignores semicolons
+      inside ``--`` comments and ``'...'`` string literals.
+    - Row results are normalised (Decimal→float, datetime→str).
     """
 
     def __init__(self, conn):
@@ -94,17 +158,39 @@ class PgConnectionAdapter:
     def execute(self, sql: str, params=None) -> PgCursorAdapter:
         pg_sql = _sqlite_to_pg(sql)
         is_insert = bool(_INSERT_RE.match(pg_sql.lstrip()))
+        last_id: int | None = None
 
         if is_insert and not _RETURNING_RE.search(pg_sql):
-            pg_sql = pg_sql.rstrip().rstrip(';') + ' RETURNING id'
-
-        cursor = self._conn.execute(pg_sql, params or ())
-
-        last_id: int | None = None
-        if is_insert:
-            row = cursor.fetchone()
-            if row:
-                last_id = row.get('id') if isinstance(row, dict) else row[0]
+            table = _table_from_insert(pg_sql)
+            if table in _TABLES_WITHOUT_ID:
+                # Known id-less table: skip RETURNING entirely.
+                cursor = self._conn.execute(pg_sql, params or ())
+            else:
+                # Optimistically append RETURNING id.  Use a savepoint so that an
+                # undefined_column error does not abort the surrounding transaction.
+                pg_sql_ret = pg_sql.rstrip().rstrip(';') + ' RETURNING id'
+                try:
+                    self._conn.execute('SAVEPOINT _pg_ret')
+                    cursor = self._conn.execute(pg_sql_ret, params or ())
+                    row = cursor.fetchone()
+                    self._conn.execute('RELEASE SAVEPOINT _pg_ret')
+                    if row:
+                        last_id = row.get('id') if isinstance(row, dict) else row[0]
+                except Exception as exc:
+                    # pgcode 42703 = undefined_column — table has no 'id' column.
+                    if getattr(exc, 'pgcode', '') == '42703':
+                        self._conn.execute('ROLLBACK TO SAVEPOINT _pg_ret')
+                        self._conn.execute('RELEASE SAVEPOINT _pg_ret')
+                        cursor = self._conn.execute(pg_sql, params or ())
+                    else:
+                        raise
+        else:
+            cursor = self._conn.execute(pg_sql, params or ())
+            if is_insert:
+                # SQL already carries RETURNING — consume the id row.
+                row = cursor.fetchone()
+                if row:
+                    last_id = row.get('id') if isinstance(row, dict) else row[0]
 
         return PgCursorAdapter(cursor, captured_lastrowid=last_id)
 
@@ -115,11 +201,15 @@ class PgConnectionAdapter:
         return PgCursorAdapter(cursor)
 
     def executescript(self, sql: str) -> None:
-        """Execute multiple semicolon-separated SQL statements (psycopg3 compat)."""
-        for stmt in sql.split(';'):
-            stmt = stmt.strip()
-            if stmt and not stmt.startswith('--'):
-                self._conn.execute(stmt)
+        """Execute multiple SQL statements separated by semicolons.
+
+        Uses ``_split_sql`` to correctly handle semicolons inside ``--`` comments
+        and ``'...'`` string literals.  The schema passed to this method must contain
+        only plain CREATE/INSERT/ALTER statements — dollar-quoted strings and block
+        comments (``/* */``) are not handled.
+        """
+        for stmt in _split_sql(sql):
+            self._conn.execute(stmt)
 
     def commit(self) -> None:
         self._conn.commit()

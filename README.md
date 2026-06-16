@@ -111,7 +111,7 @@ minguatalada/
 │   ├── dialogs/                Modale Dialoge
 │   └── components/             Wiederverwendbare UI-Bausteine
 │
-├── tests/                      Automatisierte Tests (156 Tests, alle grün)
+├── tests/                      Automatisierte Tests (282 Tests, davon 279 ohne PostgreSQL grün)
 │   ├── conftest.py             Gemeinsame Fixtures (isolierte Test-DB, Session-Helpers)
 │   ├── test_auth_service.py    Auth-Tests (10 Szenarien)
 │   ├── test_claim_status.py    Rollenübergänge, reine Unit-Tests
@@ -119,7 +119,8 @@ minguatalada/
 │   ├── test_update_service.py  Backup, Validierung, destruktive-SQL-Block
 │   ├── test_logging_audit.py   Audit-Events, kein Passwort im Log
 │   ├── test_password_service.py bcrypt-Tests
-│   └── test_household_service.py Haushalt-Kategorie-Feature
+│   ├── test_household_service.py Haushalt-Kategorie-Feature
+│   └── test_pg_adapter_integration.py  PgConnectionAdapter gegen echtes PostgreSQL (skipped ohne TEST_DATABASE_URL)
 │
 ├── scripts/                    Hilfsskripte (Entwicklung und Betrieb)
 │   ├── reset_admin.py          Admin-Passwort zurücksetzen
@@ -246,16 +247,16 @@ for r in con.execute('SELECT u.username, u.is_active, u.locked_until, r.name rol
 "
 ```
 
-### Spätere PostgreSQL-/Supabase-Migration
+### PostgreSQL (Dual-Backend, bereits implementiert)
 
-Das Repository-Pattern ist vollständig implementiert — alle Datenbankzugriffe laufen über Repository-Klassen in `database/repositories/`. Ein Wechsel auf PostgreSQL erfordert:
+Seit v1.6.0 unterstützt `database/db.py` zwei Backends parallel — gesteuert über die Umgebungsvariable `DATABASE_URL`:
 
-1. Neue Repository-Implementierungen für PostgreSQL (gleiche Interfaces wie `app/ports.py`)
-2. Ersatz von `database/db.py` durch eine PostgreSQL-kompatible Initialisierung
-3. Anpassung von `app/config.py` (Verbindungsstring statt Dateipfad)
-4. Ersetzen von `Session`-Klasse durch Request-Kontext für API-Betrieb
+- **Keine `DATABASE_URL`**: SQLite wie gehabt (`data/system.db`)
+- **`DATABASE_URL` gesetzt**: PostgreSQL über `database/connection_adapter.py` (psycopg3), sqlite3-kompatibles Interface — alle Repository-Klassen funktionieren unverändert
 
-**Empfehlung**: Supabase Free (0 €/Monat) zum Testen, Supabase Pro (~23 €/Monat) für Produktion.
+`PgConnectionAdapter` übersetzt `?`-Platzhalter zu `%s`, hängt `RETURNING id` nur an INSERTs in Tabellen mit `id`-Spalte an (Whitelist + Savepoint-Fallback für unbekannte id-lose Tabellen wie `schema_migrations`), und garantiert die korrekte SQL-Reihenfolge `ON CONFLICT … RETURNING id`. Details siehe [TECHNICAL_DESIGN_DOCUMENT.md](TECHNICAL_DESIGN_DOCUMENT.md#10-datenbankentscheidung).
+
+**Empfehlung**: Eigener Raspberry-Pi-Server via Tailscale-VPN (siehe `docs/SERVER_SETUP_RASPBERRY_PI.md`) statt Cloud-Anbieter — Daten bleiben selbst gehostet.
 
 ---
 
@@ -332,6 +333,10 @@ for r in con.execute('''SELECT u.id, u.username, u.full_name, u.is_active,
 
 # Langsame Tests ausschließen (Update/Backup)
 .\.venv\Scripts\python.exe -m pytest tests/ -m "not slow" -v
+
+# PostgreSQL-Adapter-Integrationstests (nur mit echter Test-DB)
+$env:TEST_DATABASE_URL = "postgresql://user:pass@host/testdb"
+.\.venv\Scripts\python.exe -m pytest tests/test_pg_adapter_integration.py -v
 ```
 
 ### Testübersicht
@@ -353,7 +358,8 @@ for r in con.execute('''SELECT u.id, u.username, u.full_name, u.is_active,
 | `test_document_service.py` | Integration | 4 | Dokumente hochladen, Fehlerbehandlung |
 | `test_person_service.py` | Unit (Mock) | 2 | Personen filtern, abrufen |
 | `test_dashboard_service.py` | Unit (Mock) | 2 | KPI-Daten, Filter |
-| **Gesamt** | | **157** | |
+| `test_pg_adapter_integration.py` | Integration (PostgreSQL, optional) | 3 | RETURNING id bei/ohne id-Spalte, ON-CONFLICT-Konflikt ohne Crash |
+| **Gesamt** | | **282** (279 ohne PostgreSQL) | |
 
 ### Test-Infrastruktur
 
@@ -610,12 +616,13 @@ Architektur: Raspberry Pi (24/7) als PostgreSQL-Server, erreichbar über Tailsca
 Alle drei Standorte greifen auf dieselbe zentrale Datenbank zu.
 
 **Implementierter Stand:**
-- `database/connection_adapter.py` — psycopg3-Adapter mit sqlite3-kompatiblem Interface
+- `database/connection_adapter.py` — psycopg3-Adapter mit sqlite3-kompatiblem Interface, inkl. Savepoint-basiertem Fallback für id-lose Tabellen und robustem `executescript()`-Parser (ignoriert `;` in Kommentaren/Stringliteralen)
 - `database/schema_postgres.sql` — vollständiges PostgreSQL-Schema (alle 26 Migrationen eingebettet)
 - `database/db.py` — Dual-Backend: SQLite (Standard) oder PostgreSQL (wenn `DATABASE_URL` gesetzt)
 - `scripts/migrate_sqlite_to_postgres.py` — Einmalige Datenmigration SQLite → PostgreSQL
 - `docs/SERVER_SETUP_RASPBERRY_PI.md` — vollständige Pi-Setup-Anleitung
 - `.env.example` — Konfigurationsvorlage
+- `tests/test_pg_adapter_integration.py` — Adapter-Integrationstests gegen echtes PostgreSQL (optional, via `TEST_DATABASE_URL`)
 
 **Aktivieren:** `DATABASE_URL=postgresql://user:pw@tailscale-ip:5432/minguatalada` in `.env` setzen.
 Tests laufen weiterhin mit SQLite (kein PostgreSQL-Server nötig für CI).
@@ -626,7 +633,7 @@ Tests laufen weiterhin mit SQLite (kein PostgreSQL-Server nötig für CI).
 
 ### Vor jedem Release
 
-1. `python -m pytest tests/` — alle 273 Tests müssen grün sein
+1. `python -m pytest tests/` — alle 279 Tests müssen grün sein (3 weitere PostgreSQL-Integrationstests nur mit `TEST_DATABASE_URL`)
 2. Manuelles Backup auf dem Produktivgerät erstellen
 3. Versionsnummer erhöhen (`services/update_service.py → APP_VERSION`)
 4. Changelog in `manifest.json` des Update-Pakets pflegen
@@ -667,4 +674,4 @@ Tests laufen weiterhin mit SQLite (kein PostgreSQL-Server nötig für CI).
 
 ---
 
-*Stand: 2026-06-04 — Version 1.3.0*
+*Stand: 2026-06-16 — Version 1.6.0*

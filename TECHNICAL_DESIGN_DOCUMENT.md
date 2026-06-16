@@ -5,9 +5,9 @@
 |---|---|
 | **Dokumentname** | Technical Design Document — Min Guata Lada ERP |
 | **Projektname** | Min Guata Lada — Tischlein Deck Dich Vorarlberg |
-| **Version** | 1.1 |
+| **Version** | 1.2 |
 | **Status** | Draft |
-| **Datum** | 2026-06-03 |
+| **Datum** | 2026-06-16 |
 | **Owner** | Dario Schaer / Projektleitung |
 | **Repository** | github.com/schienenzeit-art/minguatalada |
 
@@ -409,24 +409,36 @@ Alle Statuses → ARCHIVIERT (nur privilegierte Rollen)
 - **Kein zentraler Stand**: Jedes Gerät hat seine eigene Kopie → Inkonsistenz ist strukturell unvermeidbar
 - **Kein WAL-Modus** aktiv (nur Checkpoint im Backup-Pfad)
 
-### Empfehlung nach Zeithorizont
+### Status: PostgreSQL-Dual-Backend implementiert (seit v1.6.0)
 
-| Zeithorizont | Empfehlung | Begründung |
+Die ursprünglich geplante Migration ist umgesetzt — `database/db.py` unterstützt SQLite (Standard) und PostgreSQL parallel, gesteuert über `DATABASE_URL`. Repository-Klassen, Services und UI bleiben unverändert; die Umschaltung erfolgt vollständig in der Datenzugriffsschicht.
+
+| Zeithorizont | Stand | Begründung |
 |---|---|---|
-| **Kurzfristig (jetzt)** | SQLite behalten | Stabil für Einzelplatz, Risiken beherrschbar solange Geräte isoliert bleiben |
-| **Mittelfristig (6–12 Monate)** | **PostgreSQL via Supabase** | Zentrale DB für alle Standorte, echter Mehrbenutzerbetrieb, Cloud-Ready |
+| **Kurzfristig (erledigt)** | Dual-Backend implementiert | SQLite bleibt Default für Entwicklung/Tests, PostgreSQL für Produktion aktivierbar |
+| **Mittelfristig (in Umsetzung)** | Zentraler PostgreSQL-Server auf Raspberry Pi, erreichbar via Tailscale-VPN | Eigene Infrastruktur statt Cloud-Anbieter — Daten bleiben selbst gehostet, kein monatliches Hosting-Budget nötig |
 | **Langfristig** | PostgreSQL + API-Schicht | Skalierbar, auditfähig, mehrere Clients möglich |
 
-### PostgreSQL / Supabase
-- Repository-Pattern ist bereits implementiert → Wechsel erfordert nur neue Repository-Implementierungen
-- Supabase Free Tier: 500 MB, 0 €/Monat (ausreichend zum Start)
-- Supabase Pro: ~23 €/Monat (für Produktion mit Backup)
+### PostgreSQL-Architektur (`database/connection_adapter.py`)
+
+`PgConnectionAdapter` bildet ein sqlite3.Connection-kompatibles Interface auf psycopg3 ab, damit alle Repositories `with get_connection() as conn:` unverändert nutzen können:
+
+- **Platzhalter-Übersetzung**: `?` → `%s`
+- **`INSERT OR IGNORE INTO` → `INSERT INTO … ON CONFLICT DO NOTHING`**, RETURNING wird syntaktisch korrekt *nach* ON CONFLICT angehängt
+- **`RETURNING id` nur bei Tabellen mit `id`-Spalte**: Eine Whitelist (`_TABLES_WITHOUT_ID`, aktuell `schema_migrations`) schließt bekannte id-lose Tabellen aus. Für unbekannte Fälle läuft das INSERT in einem SQL-Savepoint; wirft PostgreSQL `undefined_column` (pgcode `42703`), wird zur Savepoint-Grenze zurückgerollt und ohne RETURNING erneut ausgeführt — ohne die umgebende Transaktion abzubrechen
+- **`executescript()`** nutzt einen Mini-Parser (`_split_sql`), der Semikolons in `--`-Kommentaren und `'...'`-Stringliteralen (inkl. `''`-Escape) korrekt ignoriert, statt naiv auf `;` zu splitten
+- **Row-Normalisierung**: `Decimal` → `float`, `datetime`/`date` → sqlite3-kompatible Strings
+
+Weitere Bausteine:
+- `database/schema_postgres.sql` — vollständiges Schema, alle 26 SQLite-Migrationen eingebettet (idempotent)
+- `scripts/migrate_sqlite_to_postgres.py` — einmalige Datenübernahme, öffnet die SQLite-Quelle read-only
+- `docs/SERVER_SETUP_RASPBERRY_PI.md` — Pi-Setup inkl. Tailscale/pg_hba.conf-Härtung
 - **Kein Redis**: Kein Caching-/Queue-Bedarf erkennbar. Hinzufügen nur wenn konkrete Anforderung entsteht.
 
-### SQLite im Testkontext
-- Alle 156 Tests nutzen isolierte In-Memory- oder `tmp_path`-SQLite-DBs
-- Bei PostgreSQL-Migration: gleiche Tests mit `conftest_postgres.py`-Fixture ausführbar
-- SQLite-spezifisches Risiko: `executescript()`, fehlende `RETURNING`-Clause, unterschiedliches `DATETIME`-Verhalten
+### Tests gegen beide Backends
+- Alle 279 SQLite-Tests laufen weiterhin isoliert über `tmp_path`-Fixtures (kein PostgreSQL-Server nötig, auch nicht in CI)
+- `tests/test_pg_adapter_integration.py` (3 Tests) läuft zusätzlich gegen eine echte PostgreSQL-Instanz, sobald `TEST_DATABASE_URL` gesetzt ist — deckt die drei kritischen Adapter-Fälle ab: INSERT mit id-Spalte, INSERT ohne id-Spalte, INSERT-OR-IGNORE-Konflikt
+- Verbleibendes SQLite-spezifisches Risiko bei künftigen Schemaänderungen: neue id-lose Tabellen müssen zur `_TABLES_WITHOUT_ID`-Whitelist hinzugefügt werden (der Savepoint-Fallback fängt den Fall zwar ab, kostet aber einen Roundtrip)
 
 ---
 
@@ -569,7 +581,7 @@ Vollständige Testdokumentation: in `tests/` und im Commit-Log.
 ### Testinfrastruktur
 - **`conftest.py`**: Isolierte `tmp_path`-SQLite-DB per Test, Session-Fixtures für alle Rollen
 - **`pytest.ini`**: Marker `unit`, `integration`, `slow`
-- **156 Tests, alle grün** (Stand 2026-06-03)
+- **282 Tests** (279 SQLite-Tests grün ohne weitere Voraussetzungen, 3 PostgreSQL-Adapter-Tests zusätzlich grün mit `TEST_DATABASE_URL`) — Stand 2026-06-16
 
 ### Kritisch abgedeckte Bereiche
 
@@ -582,6 +594,7 @@ Vollständige Testdokumentation: in `tests/` und im Commit-Log.
 | Audit-Logging / kein Passwort im Log | 12 | `test_logging_audit.py` |
 | Passwort-Hashing | 13 | `test_password_service.py` |
 | Haushalt-Kategorien | 12 | `test_household_service.py` |
+| PostgreSQL-Adapter (optional, `TEST_DATABASE_URL`) | 3 | `test_pg_adapter_integration.py` |
 
 ### CI-Integration
 - GitHub Actions (`.github/workflows/ci.yml`): Tests bei jedem Push auf `main`
@@ -664,24 +677,24 @@ Verdächtig: `is_active = 0`, `locked_until` in der Zukunft (besonders Jahr 2099
 | Login schlägt für bestimmten User fehl | `is_active=0` oder `locked_until` in Zukunft | DB: User reaktivieren |
 | Login funktioniert nur als Admin | Admin-Auto-Reaktivierung in `seed_basic_data()` | Andere User manuell reaktivieren |
 | Prüfungsmatrix schließt sich | Exception in Service-Layer (alt: v1.0) | Update auf v1.1 |
-| Keine Daten nach Gerätewechsel | Per-Gerät-SQLite, kein gemeinsamer Stand | DB-Export/Import oder PostgreSQL-Migration |
+| Keine Daten nach Gerätewechsel | Per-Gerät-SQLite, kein gemeinsamer Stand | DB-Export/Import oder `DATABASE_URL` auf zentralen PostgreSQL-Server umstellen |
 | Manuelle Sperren mit Datum 2099 | Direkter DB-Eingriff durch IT | `UPDATE users SET locked_until=NULL WHERE ...` |
 
 ---
 
 ## 18. Architekturentscheidungen
 
-### ADR-001: SQLite als Datenbank (aktuell)
-**Entscheidung**: SQLite im Einzelplatz-Desktop-Modus.
-**Begründung**: Keine Serverinfrastruktur nötig, triviales Backup, ausreichend für aktuelle Nutzung.
-**Konsequenz**: Kein gemeinsamer Datenstand zwischen Geräten. Daten divergieren.
-**Revisionsauslöser**: Wenn mehr als ein Gerät gleichzeitig auf dieselben Daten zugreifen muss.
+### ADR-001: SQLite als Datenbank (Default, weiterhin gültig für Einzelplatz)
+**Entscheidung**: SQLite bleibt Default-Backend für Entwicklung, Tests und Einzelplatzbetrieb.
+**Begründung**: Keine Serverinfrastruktur nötig, triviales Backup, ausreichend wenn Geräte isoliert bleiben.
+**Konsequenz**: Kein gemeinsamer Datenstand zwischen Geräten — gilt nur noch für Installationen ohne `DATABASE_URL`.
+**Revisionsauslöser**: Erledigt durch ADR-007 (Dual-Backend) für Mehrgeräte-Standorte.
 
-### ADR-002: Pro-Gerät-Datenbank
+### ADR-002: Pro-Gerät-Datenbank (überholt durch zentrale PostgreSQL-Option)
 **Entscheidung**: Jedes Gerät hat `%LOCALAPPDATA%\Anspruchssystem\system.db`.
 **Begründung**: Vereinfacht Installation, keine Netzwerkabhängigkeit.
-**Konsequenz**: Ist die Hauptursache aller Synchronisationsprobleme und Umgebungsunterschiede.
-**Revisionsauslöser**: PostgreSQL/Supabase-Migration.
+**Konsequenz**: War die Hauptursache aller Synchronisationsprobleme und Umgebungsunterschiede.
+**Revisionsauslöser**: Durch ADR-007 abgelöst — Standorte mit Mehrgeräte-Bedarf nutzen `DATABASE_URL` gegen einen zentralen Raspberry-Pi-Server.
 
 ### ADR-003: Logging im Admin-Bereich sichtbar
 **Entscheidung**: `audit_logs` in DB, sichtbar über `audit_log_page`.
@@ -699,6 +712,18 @@ Verdächtig: `is_active = 0`, `locked_until` in der Zukunft (besonders Jahr 2099
 **Entscheidung**: Redis wird nicht eingesetzt.
 **Begründung**: Kein Caching-, Queue- oder PubSub-Bedarf erkennbar. Würde nur Betriebskomplexität hinzufügen.
 
+### ADR-007: PostgreSQL-Dual-Backend statt Hard-Cutover
+**Entscheidung**: `database/db.py` unterstützt SQLite und PostgreSQL gleichzeitig über `DATABASE_URL`; `PgConnectionAdapter` bildet die sqlite3-Schnittstelle nach, statt Repositories für PostgreSQL neu zu schreiben.
+**Begründung**: Repository-Pattern war bereits vorhanden — ein kompatibler Adapter erlaubt produktiven Einsatz ohne jede Repository-Klasse anzufassen, und Tests/CI bleiben ohne PostgreSQL-Server lauffähig.
+**Konsequenz**: Der Adapter muss SQLite-Eigenheiten aktiv nachbilden (z. B. `lastrowid`), was Sonderfälle wie id-lose Tabellen (`schema_migrations`) erfordert. Gelöst über Whitelist + Savepoint-Fallback bei `undefined_column` (pgcode 42703), siehe Abschnitt 10.
+**Revisionsauslöser**: Wenn der Adapter-Overhead (zusätzlicher Savepoint-Roundtrip je INSERT in unbekannte Tabellen) messbar zum Performance-Problem wird.
+
+### ADR-008: Eigener Raspberry-Pi-Server statt Supabase/Cloud
+**Entscheidung**: Zentraler PostgreSQL-Server läuft auf einem Raspberry Pi (24/7), Zugriff ausschließlich über Tailscale-VPN (100.64.0.0/10), kein öffentliches Port-Forwarding.
+**Begründung**: Daten bleiben selbst gehostet (Datenschutz, kein laufendes Cloud-Budget), Tailscale erspart komplexe Firewall-/VPN-Konfiguration.
+**Konsequenz**: Verfügbarkeit hängt an Heimnetz/Pi-Stabilität statt an einem SLA-gestützten Cloud-Anbieter; Monitoring der VPN-Verbindung ist Eigenverantwortung.
+**Revisionsauslöser**: Wenn Standortzahl oder Lastanforderungen einen Managed-Service rechtfertigen.
+
 ---
 
 ## 19. Offene Punkte und Roadmap
@@ -707,9 +732,9 @@ Verdächtig: `is_active = 0`, `locked_until` in der Zukunft (besonders Jahr 2099
 
 | Punkt | Priorität | Status |
 |---|---|---|
-| Zentrale Datenbank (PostgreSQL/Supabase) | Hoch | Geplant, nicht begonnen |
+| Zentrale Datenbank (PostgreSQL, Raspberry Pi) | Hoch | **In Umsetzung** — Dual-Backend implementiert, Produktiv-Pi noch nicht aktiviert |
 | Admin-UI für Log-Ansicht mit Filter | Mittel | Basis vorhanden, Filter fehlen |
-| `persist_evaluation()` Integrationstests | Mittel | Offen |
+| `persist_evaluation()` Integrationstests | Mittel | ✓ Abgeschlossen (v1.3.0) |
 | `UserService` Tests | Mittel | Offen |
 | `Session` durch Request-Kontext ersetzen | Mittel | Für API-Betrieb nötig |
 | Direkte `get_connection()`-Aufrufe in Services | Niedrig | Refactor für API |
@@ -717,8 +742,8 @@ Verdächtig: `is_active = 0`, `locked_until` in der Zukunft (besonders Jahr 2099
 
 ### Geplante Erweiterungen
 
-1. **PostgreSQL via Supabase** (mittelfristig): Repository-Pattern ist bereit. Migrationsaufwand: Repository-Klassen für PostgreSQL implementieren, `db.py` ersetzen.
-2. **API-Schicht** (nach DB-Migration): FastAPI/uvicorn bereit, Session durch Request-Kontext ersetzen.
+1. **PostgreSQL-Produktivaktivierung** (kurzfristig): Code ist fertig (`connection_adapter.py`, `schema_postgres.sql`, Migrationsskript). Noch offen: Raspberry-Pi-Hardware aufsetzen, `DATABASE_URL` auf Produktivgeräten aktivieren, Migration laufen lassen.
+2. **API-Schicht** (nach Pi-Aktivierung): FastAPI/uvicorn bereit, Session durch Request-Kontext ersetzen.
 3. **Admin-Log-Filter**: Audit-Log-Seite um Filter (Aktion, Benutzer, Zeitraum) und Export erweitern.
 4. **Monitoring**: Strukturiertes Logging mit Alerting (z. B. bei wiederholten Login-Fehlschlägen).
 5. **Automatisches Backup-Monitoring**: Warnung wenn letztes Backup zu alt.
@@ -756,7 +781,7 @@ Verdächtig: `is_active = 0`, `locked_until` in der Zukunft (besonders Jahr 2099
 
 ### Verweise
 
-- Testdokumentation: `tests/` (156 Tests, Ausführung: `python -m pytest tests/`)
+- Testdokumentation: `tests/` (282 Tests, Ausführung: `python -m pytest tests/`)
 - CI/CD-Workflow: `.github/workflows/ci.yml`
 - Benutzerhandbuch: `Benutzerhandbuch.pdf`
 - Diagnosescript für Vereins-PC: s. Kapitel 17
