@@ -145,7 +145,9 @@ minguatalada/
 ├── pytest.ini                  Test-Konfiguration
 ├── anspruchssystem.spec        PyInstaller-Build-Konfiguration
 ├── build.bat                   Windows Build-Skript
-└── TECHNICAL_DESIGN_DOCUMENT.md  Technische Architektur-Dokumentation
+├── TECHNICAL_DESIGN_DOCUMENT.md  Architektur, Komponenten, Datenmodell, Schnittstellen
+├── OPERATIONS_GUIDE.md         Vereins-PC-Diagnose, Backup/Restore, Deployment, Troubleshooting
+└── SECURITY_GUIDE.md           Threat Model, Berechtigungen, DSGVO, Audit-Logging
 ```
 
 ---
@@ -254,7 +256,7 @@ Seit v1.6.0 unterstützt `database/db.py` zwei Backends parallel — gesteuert �
 - **Keine `DATABASE_URL`**: SQLite wie gehabt (`data/system.db`)
 - **`DATABASE_URL` gesetzt**: PostgreSQL über `database/connection_adapter.py` (psycopg3), sqlite3-kompatibles Interface — alle Repository-Klassen funktionieren unverändert
 
-`PgConnectionAdapter` übersetzt `?`-Platzhalter zu `%s`, hängt `RETURNING id` nur an INSERTs in Tabellen mit `id`-Spalte an (Whitelist + Savepoint-Fallback für unbekannte id-lose Tabellen wie `schema_migrations`), und garantiert die korrekte SQL-Reihenfolge `ON CONFLICT … RETURNING id`. Details siehe [TECHNICAL_DESIGN_DOCUMENT.md](TECHNICAL_DESIGN_DOCUMENT.md#10-datenbankentscheidung).
+`PgConnectionAdapter` übersetzt `?`-Platzhalter zu `%s`, hängt `RETURNING id` nur an INSERTs in Tabellen mit `id`-Spalte an (Whitelist + Savepoint-Fallback für unbekannte id-lose Tabellen wie `schema_migrations`), und garantiert die korrekte SQL-Reihenfolge `ON CONFLICT … RETURNING id`. Details siehe [TECHNICAL_DESIGN_DOCUMENT.md](TECHNICAL_DESIGN_DOCUMENT.md#12-datenbankentscheidung).
 
 **Empfehlung**: Eigener Raspberry-Pi-Server via Tailscale-VPN (siehe `docs/SERVER_SETUP_RASPBERRY_PI.md`) statt Cloud-Anbieter — Daten bleiben selbst gehostet.
 
@@ -671,6 +673,8 @@ Tests laufen weiterhin mit SQLite (kein PostgreSQL-Server nötig für CI).
 | **Lizenz** | Proprietary - All Rights Reserved |
 
 > **Technische Architektur**: Siehe [TECHNICAL_DESIGN_DOCUMENT.md](TECHNICAL_DESIGN_DOCUMENT.md)
+> **Betrieb und Troubleshooting**: Siehe [OPERATIONS_GUIDE.md](OPERATIONS_GUIDE.md)
+> **Sicherheit und Datenschutz**: Siehe [SECURITY_GUIDE.md](SECURITY_GUIDE.md)
 
 ---
 
